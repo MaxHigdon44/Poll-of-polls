@@ -1,14 +1,18 @@
 import { load } from 'cheerio'
+import type { Element } from 'cheerio'
 
 export type ScrapedPoll = {
   pollDate: string
   pollster: string
+  sampleSize: number | null
   area: string | null
   labour: number | null
   conservative: number | null
   libdem: number | null
   green: number | null
   reform: number | null
+  snp: number | null
+  pc: number | null
   others: number | null
 }
 
@@ -39,6 +43,49 @@ function toNumber(value: string): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
+function toSampleSize(value: string): number | null {
+  const cleaned = value.replace(/[^0-9]/g, '')
+  if (!cleaned) return null
+  const parsed = Number(cleaned)
+  return Number.isNaN(parsed) ? null : parsed
+}
+
+function normalizeHeader(text: string): string {
+  return text.replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
+}
+
+function buildColumnIndexMap($: ReturnType<typeof load>, table: Element) {
+  const map: Record<string, number> = {}
+  let headerRow = $(table).find('thead tr').last()
+  if (headerRow.length === 0) {
+    headerRow = $(table)
+      .find('tbody tr')
+      .filter((_, row) => $(row).find('th').length > 0)
+      .first()
+  }
+
+  const headerCells = headerRow.find('th')
+  headerCells.each((index, cell) => {
+    const header = normalizeHeader($(cell).text())
+    if (!header) return
+
+    if (header.includes('date')) map.date = index
+    else if (header.includes('pollster')) map.pollster = index
+    else if (header.includes('sample')) map.sampleSize = index
+    else if (header.includes('area')) map.area = index
+    else if (header === 'lab' || header.includes('labour')) map.labour = index
+    else if (header === 'con' || header.includes('conservative')) map.conservative = index
+    else if (header.includes('lib') || header.includes('ld')) map.libdem = index
+    else if (header.includes('reform') || header === 'ref') map.reform = index
+    else if (header.includes('green') || header === 'grn') map.green = index
+    else if (header.includes('snp')) map.snp = index
+    else if (header.includes('pc') || header.includes('plaid')) map.pc = index
+    else if (header.includes('other')) map.others = index
+  })
+
+  return map
+}
+
 export async function scrapePolls(lastMonths = 2): Promise<{
   sourceUrl: string
   polls: ScrapedPoll[]
@@ -55,29 +102,43 @@ export async function scrapePolls(lastMonths = 2): Promise<{
   const cutoffDate = new Date()
   cutoffDate.setMonth(cutoffDate.getMonth() - lastMonths)
 
-  $('table.wikitable tbody tr').each((_, el) => {
-    const tds = $(el).find('td')
-    if (tds.length < 11) return
+  $('table.wikitable').each((_, table) => {
+    const columnMap = buildColumnIndexMap($, table)
+    if (!Number.isFinite(columnMap.date) || !Number.isFinite(columnMap.pollster)) return
 
-    const dateText = $(tds[0]).text().trim()
-    const pollster = $(tds[1]).text().trim()
-    const area = $(tds[2]).text().trim()
+    $(table)
+      .find('tbody tr')
+      .each((_, el) => {
+        const tds = $(el).find('td')
+        if (tds.length === 0) return
 
-    const parsedDate = parsePollDate(dateText)
-    if (!parsedDate) return
-    if (parsedDate < cutoffDate) return
+        const dateText = $(tds[columnMap.date]).text().trim()
+        const pollster = $(tds[columnMap.pollster]).text().trim()
+        if (!dateText || !pollster) return
 
-    polls.push({
-      pollDate: parsedDate.toISOString().slice(0, 10),
-      pollster,
-      area: area || null,
-      labour: toNumber($(tds[5]).text()),
-      conservative: toNumber($(tds[6]).text()),
-      libdem: toNumber($(tds[7]).text()),
-      green: toNumber($(tds[8]).text()),
-      reform: toNumber($(tds[9]).text()),
-      others: toNumber($(tds[10]).text()),
-    })
+        const parsedDate = parsePollDate(dateText)
+        if (!parsedDate) return
+        if (parsedDate < cutoffDate) return
+
+        const areaIndex = columnMap.area ?? -1
+        const sampleIndex = columnMap.sampleSize ?? -1
+
+        polls.push({
+          pollDate: parsedDate.toISOString().slice(0, 10),
+          pollster,
+          sampleSize: sampleIndex >= 0 ? toSampleSize($(tds[sampleIndex]).text()) : null,
+          area: areaIndex >= 0 ? $(tds[areaIndex]).text().trim() || null : null,
+          labour: columnMap.labour != null ? toNumber($(tds[columnMap.labour]).text()) : null,
+          conservative:
+            columnMap.conservative != null ? toNumber($(tds[columnMap.conservative]).text()) : null,
+          libdem: columnMap.libdem != null ? toNumber($(tds[columnMap.libdem]).text()) : null,
+          green: columnMap.green != null ? toNumber($(tds[columnMap.green]).text()) : null,
+          reform: columnMap.reform != null ? toNumber($(tds[columnMap.reform]).text()) : null,
+          snp: columnMap.snp != null ? toNumber($(tds[columnMap.snp]).text()) : null,
+          pc: columnMap.pc != null ? toNumber($(tds[columnMap.pc]).text()) : null,
+          others: columnMap.others != null ? toNumber($(tds[columnMap.others]).text()) : null,
+        })
+      })
   })
 
   return { sourceUrl: SOURCE_URL, polls }

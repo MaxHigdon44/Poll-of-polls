@@ -11,12 +11,15 @@ CREATE TABLE IF NOT EXISTS polls (
   run_id INTEGER NOT NULL REFERENCES poll_runs(id) ON DELETE CASCADE,
   poll_date DATE NOT NULL,
   pollster TEXT NOT NULL,
+  sample_size INTEGER,
   area TEXT,
   labour NUMERIC,
   conservative NUMERIC,
   libdem NUMERIC,
   green NUMERIC,
   reform NUMERIC,
+  snp NUMERIC,
+  pc NUMERIC,
   others NUMERIC
 );
 

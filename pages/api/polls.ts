@@ -4,12 +4,15 @@ import { sql } from '@vercel/postgres'
 type PollRow = {
   poll_date: string
   pollster: string
+  sample_size: number | null
   area: string | null
   labour: number | null
   conservative: number | null
   libdem: number | null
   green: number | null
   reform: number | null
+  snp: number | null
+  pc: number | null
   others: number | null
 }
 
@@ -34,7 +37,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     const runId = runResult.rows[0].id
     const pollsResult = await sql<PollRow>`
-      SELECT poll_date, pollster, area, labour, conservative, libdem, green, reform, others
+      SELECT poll_date, pollster, sample_size, area,
+        labour, conservative, libdem, green, reform, snp, pc, others
       FROM polls
       WHERE run_id = ${runId}
       ORDER BY poll_date DESC, pollster ASC
