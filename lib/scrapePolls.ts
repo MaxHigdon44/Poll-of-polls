@@ -1,5 +1,4 @@
 import { load } from 'cheerio'
-import type { Element } from 'cheerio'
 
 export type ScrapedPoll = {
   pollDate: string
@@ -54,7 +53,9 @@ function normalizeHeader(text: string): string {
   return text.replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
 }
 
-function buildColumnIndexMap($: ReturnType<typeof load>, table: Element) {
+type CheerioElement = Parameters<ReturnType<typeof load>>[0]
+
+function buildColumnIndexMap($: ReturnType<typeof load>, table: CheerioElement) {
   const map: Record<string, number> = {}
   let headerRow = $(table).find('thead tr').last()
   if (headerRow.length === 0) {
