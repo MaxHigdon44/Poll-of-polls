@@ -54,6 +54,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json({ runId, count: polls.length })
   } catch (err) {
     console.error(err)
+    const detail = err instanceof Error ? err.message : String(err)
     if (runId) {
       await sql`
         UPDATE poll_runs
@@ -68,6 +69,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         DO UPDATE SET success = false
       `
     }
-    return res.status(500).json({ error: 'Failed to scrape polling data' })
+    return res.status(500).json({ error: 'Failed to scrape polling data', detail })
   }
 }
