@@ -158,8 +158,8 @@ export default function AggregatePage() {
         <h1 style={{ margin: 0 }}>Poll of Polls</h1>
         <a href="/polls">Recent UK National Polls</a>
       </div>
-      <div style={{ marginBottom: '1rem', color: '#555' }}>
-        UK National Poll Results from the Past Two Months
+      <div style={{ marginBottom: '1rem', fontSize: '1.4rem', fontWeight: 600 }}>
+        UK National Polling Average
       </div>
       <div style={{ marginBottom: '1rem' }} />
       <div
@@ -170,7 +170,6 @@ export default function AggregatePage() {
           background: '#fafafa',
         }}
       >
-        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Aggregate</div>
         {aggregate ? (
           <div
             style={{
@@ -181,13 +180,34 @@ export default function AggregatePage() {
               fontSize: '0.95rem',
             }}
           >
-            <div>Lab: {aggregate.labour?.toFixed(1) ?? '—'}</div>
-            <div>Con: {aggregate.conservative?.toFixed(1) ?? '—'}</div>
-            <div>Reform: {aggregate.reform?.toFixed(1) ?? '—'}</div>
-            <div>LD: {aggregate.libdem?.toFixed(1) ?? '—'}</div>
-            <div>Grn: {aggregate.green?.toFixed(1) ?? '—'}</div>
-            <div>SNP: {aggregate.snp?.toFixed(1) ?? '—'}</div>
-            <div>PC: {aggregate.pc?.toFixed(1) ?? '—'}</div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '10px', height: '10px', background: '#E4003B' }} />
+              <span>Lab: {aggregate.labour?.toFixed(1) ?? '—'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '10px', height: '10px', background: '#0087DC' }} />
+              <span>Con: {aggregate.conservative?.toFixed(1) ?? '—'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '10px', height: '10px', background: '#12B6CF' }} />
+              <span>Reform: {aggregate.reform?.toFixed(1) ?? '—'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '10px', height: '10px', background: '#FAA61A' }} />
+              <span>LD: {aggregate.libdem?.toFixed(1) ?? '—'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '10px', height: '10px', background: '#02A95B' }} />
+              <span>Grn: {aggregate.green?.toFixed(1) ?? '—'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '10px', height: '10px', background: '#FDF38E' }} />
+              <span>SNP: {aggregate.snp?.toFixed(1) ?? '—'}</span>
+            </div>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <span style={{ width: '10px', height: '10px', background: '#008672' }} />
+              <span>PC: {aggregate.pc?.toFixed(1) ?? '—'}</span>
+            </div>
             <div>Other: {aggregate.others?.toFixed(1) ?? '—'}</div>
             <div>Lead: {aggregate.lead || '—'}</div>
           </div>
