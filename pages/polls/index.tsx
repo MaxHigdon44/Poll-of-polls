@@ -104,6 +104,9 @@ export default function PollsPage() {
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Poll of Polls</h1>
+      <div style={{ marginBottom: '1rem', color: '#555' }}>
+        UK National Poll Results from the Past Two Months
+      </div>
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         <label>
           Pollster
