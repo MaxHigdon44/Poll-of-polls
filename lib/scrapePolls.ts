@@ -124,7 +124,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
         const areaIndex = columnMap.area ?? -1
         const sampleIndex = columnMap.sampleSize ?? -1
 
-        polls.push({
+        const poll = {
           pollDate: parsedDate.toISOString().slice(0, 10),
           pollster,
           sampleSize: sampleIndex >= 0 ? toSampleSize($(tds[sampleIndex]).text()) : null,
@@ -138,7 +138,21 @@ export async function scrapePolls(lastMonths = 2): Promise<{
           snp: columnMap.snp != null ? toNumber($(tds[columnMap.snp]).text()) : null,
           pc: columnMap.pc != null ? toNumber($(tds[columnMap.pc]).text()) : null,
           others: columnMap.others != null ? toNumber($(tds[columnMap.others]).text()) : null,
-        })
+        }
+
+        const hasPartyData =
+          poll.labour != null ||
+          poll.conservative != null ||
+          poll.libdem != null ||
+          poll.green != null ||
+          poll.reform != null ||
+          poll.snp != null ||
+          poll.pc != null ||
+          poll.others != null
+
+        if (!hasPartyData) return
+
+        polls.push(poll)
       })
   })
 
