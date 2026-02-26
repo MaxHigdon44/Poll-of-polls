@@ -79,9 +79,9 @@ function selectNationalYearTables($: ReturnType<typeof load>, year: number) {
   const nationalHeading = $('#National_poll_results').closest('h2')
   if (nationalHeading.length === 0) return []
 
-  const yearHeading = nationalHeading
-    .nextAll('h3, h4')
-    .filter((_, el) => $(el).find(`#${year}`).length > 0)
+  const nationalSection = nationalHeading.nextUntil('h2')
+  const yearHeading = nationalSection
+    .filter((_, el) => $(el).is('h3, h4') && $(el).find(`#${year}`).length > 0)
     .first()
 
   if (yearHeading.length === 0) return []
