@@ -81,18 +81,23 @@ function selectNationalYearTables($: ReturnType<typeof load>, year: number) {
     .first()
   if (nationalHeading.length === 0) return []
 
-  const nationalSection = nationalHeading.nextUntil('h2')
+  const headingWrapper = nationalHeading.closest('div.mw-heading')
+  if (headingWrapper.length === 0) return []
+
+  const nationalSection = headingWrapper.nextUntil('div.mw-heading2')
   const yearHeading = nationalSection
-    .filter(
-      (_, el) =>
-        $(el).is('h3, h4') &&
-        $(el).text().replace(/\s+/g, ' ').trim().includes(String(year))
-    )
+    .find('h3, h4')
+    .filter((_, el) => $(el).text().replace(/\s+/g, ' ').trim().includes(String(year)))
     .first()
 
   if (yearHeading.length === 0) return []
 
-  return yearHeading.nextUntil('h2, h3, h4').filter('table.wikitable').toArray()
+  const yearWrapper = yearHeading.closest('div.mw-heading')
+  if (yearWrapper.length === 0) return []
+
+  return yearWrapper.nextUntil('div.mw-heading2, div.mw-heading3, div.mw-heading4')
+    .filter('table.wikitable')
+    .toArray()
 }
 
 function hasNationalPollHeaders(columnMap: Record<string, number>) {
