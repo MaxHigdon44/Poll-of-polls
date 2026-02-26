@@ -30,7 +30,8 @@ const HOC_SOURCES = [
 ]
 
 const WARD_GEOJSON_URL = 'https://files.planning.data.gov.uk/dataset/ward.geojson'
-const LAD_GEOJSON_URL = 'https://files.planning.data.gov.uk/dataset/local-authority-district.geojson'
+const LAD_GEOJSON_URL =
+  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/3f29d2c4a5834360a540ff206718c4f2/geojson?layers=0'
 const WARD_LAD_LOOKUP_URL =
   'https://opendata.arcgis.com/api/v3/datasets/ab1ae1a7600e483d82c8f76566cae805_0/downloads/data?format=csv&spatialRefId=4326'
 
@@ -177,7 +178,11 @@ async function buildBaseline() {
   await ensureDir(OUT_DIR)
 
   await downloadIfMissing(path.join(RAW_DIR, 'ward.geojson'), WARD_GEOJSON_URL)
-  await downloadIfMissing(path.join(RAW_DIR, 'lad.geojson'), LAD_GEOJSON_URL)
+  const ladPath = path.join(RAW_DIR, 'lad.geojson')
+  if (fs.existsSync(ladPath)) {
+    await fsp.unlink(ladPath)
+  }
+  await downloadIfMissing(ladPath, LAD_GEOJSON_URL)
   const wardData = new Map()
 
   const sortedSources = [...HOC_SOURCES].sort((a, b) => b.year - a.year)
@@ -291,6 +296,18 @@ async function buildBaseline() {
 
   const wardGeo = JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'ward.geojson'), 'utf8'))
   const ladGeo = JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'lad.geojson'), 'utf8'))
+
+  ladGeo.features = ladGeo.features.map(feature => {
+    const props = feature.properties || {}
+    if (!props.reference && props.LAD23CD) {
+      props.reference = props.LAD23CD
+    }
+    if (!props.name && props.LAD23NM) {
+      props.name = props.LAD23NM
+    }
+    feature.properties = props
+    return feature
+  })
 
   const wardCodes = new Set(baseline.map(entry => entry.wardCode))
   const wardGeoCodes = new Set(wardGeo.features.map(feature => feature.properties?.reference))

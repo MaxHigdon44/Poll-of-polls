@@ -119,6 +119,7 @@ export default function PollsPage() {
         <h1 style={{ margin: 0 }}>Poll of Polls</h1>
         <a href="/aggregate">UK National Polling Average</a>
         <a href="/polls">Recent UK Polls</a>
+        <a href="/local-2026">May 2026 Local Elections Projections</a>
       </div>
       <div style={{ marginBottom: '1rem', color: '#555' }}>
         UK National Poll Results from the Past Two Months
