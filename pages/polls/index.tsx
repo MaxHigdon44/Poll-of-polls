@@ -73,7 +73,7 @@ export default function PollsPage() {
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h1>Poll-of-Polls</h1>
+      <h1>Poll of Polls</h1>
       <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
         <label>
           Pollster
@@ -94,9 +94,9 @@ export default function PollsPage() {
       <table border={1} cellPadding={8} style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>
           <tr>
-            <th>Date Conducted</th>
-            <th>Pollster</th>
-            <th>Sample Size</th>
+            <th rowSpan={2}>Date Conducted</th>
+            <th rowSpan={2}>Pollster</th>
+            <th rowSpan={2}>Sample Size</th>
             <th>Labour</th>
             <th>Conservative</th>
             <th>Reform</th>
@@ -104,36 +104,17 @@ export default function PollsPage() {
             <th>Grn</th>
             <th>SNP</th>
             <th>PC</th>
-            <th>Other</th>
-            <th>Lead</th>
+            <th rowSpan={2}>Other</th>
+            <th rowSpan={2}>Lead</th>
           </tr>
           <tr>
-            <th />
-            <th />
-            <th />
-            <th style={{ padding: 0 }}>
-              <div style={{ height: '6px', background: '#E4003B' }} />
-            </th>
-            <th style={{ padding: 0 }}>
-              <div style={{ height: '6px', background: '#0087DC' }} />
-            </th>
-            <th style={{ padding: 0 }}>
-              <div style={{ height: '6px', background: '#12B6CF' }} />
-            </th>
-            <th style={{ padding: 0 }}>
-              <div style={{ height: '6px', background: '#FAA61A' }} />
-            </th>
-            <th style={{ padding: 0 }}>
-              <div style={{ height: '6px', background: '#02A95B' }} />
-            </th>
-            <th style={{ padding: 0 }}>
-              <div style={{ height: '6px', background: '#FDF38E' }} />
-            </th>
-            <th style={{ padding: 0 }}>
-              <div style={{ height: '6px', background: '#008672' }} />
-            </th>
-            <th />
-            <th />
+            <th style={{ padding: 0, background: '#E4003B', height: '18px' }} />
+            <th style={{ padding: 0, background: '#0087DC', height: '18px' }} />
+            <th style={{ padding: 0, background: '#12B6CF', height: '18px' }} />
+            <th style={{ padding: 0, background: '#FAA61A', height: '18px' }} />
+            <th style={{ padding: 0, background: '#02A95B', height: '18px' }} />
+            <th style={{ padding: 0, background: '#FDF38E', height: '18px' }} />
+            <th style={{ padding: 0, background: '#008672', height: '18px' }} />
           </tr>
         </thead>
         <tbody>
