@@ -75,13 +75,13 @@ function cleanPollster(text: string): string {
 
 type CheerioElement = Parameters<ReturnType<typeof load>>[0]
 
-function selectNational2026Tables($: ReturnType<typeof load>) {
+function selectNationalYearTables($: ReturnType<typeof load>, year: number) {
   const nationalHeading = $('#National_poll_results').closest('h2')
   if (nationalHeading.length === 0) return []
 
   const yearHeading = nationalHeading
     .nextAll('h3, h4')
-    .filter((_, el) => $(el).find('#2026').length > 0)
+    .filter((_, el) => $(el).find(`#${year}`).length > 0)
     .first()
 
   if (yearHeading.length === 0) return []
@@ -155,8 +155,12 @@ export async function scrapePolls(lastMonths = 2): Promise<{
 
   const seen = new Set<string>()
 
-  const candidateTables = selectNational2026Tables($)
-  const tablesToParse = candidateTables.length > 0 ? candidateTables : $('table.wikitable').toArray()
+  const candidateTables = selectNationalYearTables($, currentYear)
+  const tablesToParse = candidateTables
+
+  if (tablesToParse.length === 0) {
+    return { sourceUrl: SOURCE_URL, polls }
+  }
 
   tablesToParse.forEach(table => {
     const columnMap = buildColumnIndexMap($, table)
