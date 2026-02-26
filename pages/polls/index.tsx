@@ -132,11 +132,25 @@ export default function PollsPage() {
     }
 
     const lead = (() => {
-      if (agg.labour == null || agg.conservative == null) return ''
-      const diff = agg.labour - agg.conservative
+      const entries: Array<[string, number | null]> = [
+        ['Lab', agg.labour],
+        ['Con', agg.conservative],
+        ['Reform', agg.reform],
+        ['LD', agg.libdem],
+        ['Grn', agg.green],
+        ['SNP', agg.snp],
+        ['PC', agg.pc],
+        ['Other', agg.others],
+      ]
+
+      const valid = entries.filter(([, value]) => value != null) as Array<[string, number]>
+      if (valid.length < 2) return ''
+      valid.sort((a, b) => b[1] - a[1])
+      const [topName, topValue] = valid[0]
+      const [, secondValue] = valid[1]
+      const diff = topValue - secondValue
       if (diff === 0) return 'Tied'
-      const leader = diff > 0 ? 'Lab' : 'Con'
-      return `${leader} ${diff > 0 ? '+' : ''}${diff.toFixed(1)}`
+      return `${topName} +${diff.toFixed(1)}`
     })()
 
     return { ...agg, lead }
