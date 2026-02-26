@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 
 type Poll = {
   poll_date: string
@@ -17,12 +17,26 @@ type Poll = {
 
 export default function PollsPage() {
   const [polls, setPolls] = useState<Poll[]>([])
+  const [pollsterFilter, setPollsterFilter] = useState('')
 
   useEffect(() => {
     fetch('/api/polls')
       .then(res => res.json())
       .then(data => setPolls(data.polls ?? []))
   }, [])
+
+  const pollsterOptions = useMemo(() => {
+    const unique = new Set<string>()
+    polls.forEach(poll => {
+      if (poll.pollster) unique.add(poll.pollster)
+    })
+    return Array.from(unique).sort((a, b) => a.localeCompare(b))
+  }, [polls])
+
+  const displayedPolls = useMemo(() => {
+    if (!pollsterFilter) return polls
+    return polls.filter(poll => poll.pollster === pollsterFilter)
+  }, [polls, pollsterFilter])
 
   const dateFormatter = new Intl.DateTimeFormat('en-GB', {
     day: '2-digit',
@@ -60,6 +74,23 @@ export default function PollsPage() {
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Poll-of-Polls</h1>
+      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+        <label>
+          Pollster
+          <select
+            style={{ marginLeft: '0.5rem' }}
+            value={pollsterFilter}
+            onChange={event => setPollsterFilter(event.target.value)}
+          >
+            <option value="">All</option>
+            {pollsterOptions.map(pollster => (
+              <option key={pollster} value={pollster}>
+                {pollster}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <table border={1} cellPadding={8} style={{ borderCollapse: 'collapse', width: '100%' }}>
         <thead>
           <tr>
@@ -76,9 +107,37 @@ export default function PollsPage() {
             <th>Other</th>
             <th>Lead</th>
           </tr>
+          <tr>
+            <th />
+            <th />
+            <th />
+            <th style={{ padding: 0 }}>
+              <div style={{ height: '6px', background: '#E4003B' }} />
+            </th>
+            <th style={{ padding: 0 }}>
+              <div style={{ height: '6px', background: '#0087DC' }} />
+            </th>
+            <th style={{ padding: 0 }}>
+              <div style={{ height: '6px', background: '#12B6CF' }} />
+            </th>
+            <th style={{ padding: 0 }}>
+              <div style={{ height: '6px', background: '#FAA61A' }} />
+            </th>
+            <th style={{ padding: 0 }}>
+              <div style={{ height: '6px', background: '#02A95B' }} />
+            </th>
+            <th style={{ padding: 0 }}>
+              <div style={{ height: '6px', background: '#FDF38E' }} />
+            </th>
+            <th style={{ padding: 0 }}>
+              <div style={{ height: '6px', background: '#008672' }} />
+            </th>
+            <th />
+            <th />
+          </tr>
         </thead>
         <tbody>
-          {polls.map((poll, index) => (
+          {displayedPolls.map((poll, index) => (
             <tr key={index}>
               <td>{formatDate(poll.poll_date, poll.poll_date_label)}</td>
               <td>{poll.pollster}</td>
