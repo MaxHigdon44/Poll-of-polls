@@ -76,12 +76,18 @@ function cleanPollster(text: string): string {
 type CheerioElement = Parameters<ReturnType<typeof load>>[0]
 
 function selectNationalYearTables($: ReturnType<typeof load>, year: number) {
-  const nationalHeading = $('#National_poll_results').closest('h2')
+  const nationalHeading = $('h2')
+    .filter((_, el) => $(el).text().replace(/\s+/g, ' ').trim().includes('National poll results'))
+    .first()
   if (nationalHeading.length === 0) return []
 
   const nationalSection = nationalHeading.nextUntil('h2')
   const yearHeading = nationalSection
-    .filter((_, el) => $(el).is('h3, h4') && $(el).find(`#${year}`).length > 0)
+    .filter(
+      (_, el) =>
+        $(el).is('h3, h4') &&
+        $(el).text().replace(/\s+/g, ' ').trim().includes(String(year))
+    )
     .first()
 
   if (yearHeading.length === 0) return []
