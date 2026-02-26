@@ -22,11 +22,16 @@ export default function AggregatePage() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [minSampleSize, setMinSampleSize] = useState('')
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
     fetch('/api/polls')
       .then(res => res.json())
       .then(data => setPolls(data.polls ?? []))
+  }, [])
+
+  useEffect(() => {
+    setIsClient(true)
   }, [])
 
   const pollsterOptions = useMemo(() => {
@@ -54,7 +59,7 @@ export default function AggregatePage() {
   }, [polls, pollsterFilter, startDate, endDate, minSampleSize])
 
   const aggregate = useMemo(() => {
-    if (filteredPolls.length === 0) return null
+    if (!isClient || filteredPolls.length === 0) return null
 
     const now = new Date()
     const totals = {
@@ -137,11 +142,22 @@ export default function AggregatePage() {
     })()
 
     return { ...agg, lead }
-  }, [filteredPolls])
+  }, [filteredPolls, isClient])
 
   return (
     <div style={{ padding: '2rem' }}>
-      <h1>Poll of Polls</h1>
+      <div
+        style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          alignItems: 'baseline',
+          gap: '1rem',
+          marginBottom: '0.25rem',
+        }}
+      >
+        <h1 style={{ margin: 0 }}>Poll of Polls</h1>
+        <a href="/polls">Recent UK National Polls</a>
+      </div>
       <div style={{ marginBottom: '1rem', color: '#555' }}>
         UK National Poll Results from the Past Two Months
       </div>
