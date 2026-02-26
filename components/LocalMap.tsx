@@ -15,6 +15,7 @@ type LocalMapProps = {
   selectedLad: string | null
   selectedLadFeature: GeoFeature | null
   onSelectLad: (lad: string | null) => void
+  eligibleLads: Set<string>
 }
 
 function FitBounds({ feature }: { feature: GeoFeature | null }) {
@@ -37,12 +38,17 @@ export default function LocalMap({
   selectedLad,
   selectedLadFeature,
   onSelectLad,
+  eligibleLads,
 }: LocalMapProps) {
-  const ladStyle = {
-    color: '#444',
-    weight: 1,
-    fillColor: '#f2f2f2',
-    fillOpacity: 0.3,
+  const ladStyle = (feature: GeoFeature) => {
+    const ladCode = feature.properties?.reference
+    const isEligible = ladCode && eligibleLads.has(ladCode)
+    return {
+      color: isEligible ? '#333' : '#bbb',
+      weight: 1,
+      fillColor: isEligible ? '#e6e6e6' : '#f5f5f5',
+      fillOpacity: isEligible ? 0.5 : 0.25,
+    }
   }
 
   const wardStyle = (feature: GeoFeature) => {
@@ -94,7 +100,9 @@ export default function LocalMap({
             click: event => {
               const feature = (event as any)?.sourceTarget?.feature
               const ladCode = feature?.properties?.reference
-              if (ladCode) onSelectLad(ladCode)
+              if (ladCode && eligibleLads.has(ladCode)) {
+                onSelectLad(ladCode)
+              }
             },
           }}
         />

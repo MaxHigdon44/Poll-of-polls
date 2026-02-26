@@ -60,6 +60,73 @@ const PARTY_COLORS: Record<string, string> = {
   Other: '#9a9a9a',
 }
 
+const ELECTION_LADS_2026 = new Set(
+  [
+    'Adur',
+    'Basildon',
+    'Basingstoke and Deane',
+    'Brentwood',
+    'Broxbourne',
+    'Burnley',
+    'Cambridge',
+    'Cannock Chase',
+    'Cheltenham',
+    'Cherwell',
+    'Chorley',
+    'Colchester',
+    'Crawley',
+    'Eastleigh',
+    'Epping Forest',
+    'Exeter',
+    'Fareham',
+    'Gosport',
+    'Harlow',
+    'Hart',
+    'Hastings',
+    'Havant',
+    'Huntingdonshire',
+    'Hyndburn',
+    'Ipswich',
+    'Lincoln',
+    'Newcastle-under-Lyme',
+    'Norwich',
+    'Nuneaton and Bedworth',
+    'Oxford',
+    'Pendle',
+    'Preston',
+    'Redditch',
+    'Rochford',
+    'Rugby',
+    'Rushmoor',
+    'South Cambridgeshire',
+    'St Albans',
+    'Stevenage',
+    'Tamworth',
+    'Three Rivers',
+    'Tunbridge Wells',
+    'Watford',
+    'Welwyn Hatfield',
+    'West Lancashire',
+    'West Oxfordshire',
+    'Winchester',
+    'Worthing',
+  ].map(name =>
+    name
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/\s+/g, ' ')
+      .trim()
+  )
+)
+
+function normalizeName(value: string | undefined | null) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function normalize(value: string) {
   return value.toLowerCase()
 }
@@ -180,6 +247,18 @@ export default function Local2026Page() {
     return map
   }, [baseline, aggregate])
 
+  const eligibleLads = useMemo(() => {
+    if (!ladGeo) return new Set<string>()
+    const eligible = new Set<string>()
+    ladGeo.features.forEach(feature => {
+      const name = feature.properties?.name
+      if (ELECTION_LADS_2026.has(normalizeName(name))) {
+        eligible.add(feature.properties?.reference)
+      }
+    })
+    return eligible
+  }, [ladGeo])
+
   const selectedLadFeature = useMemo(() => {
     if (!selectedLad || !ladGeo) return null
     return ladGeo.features.find(feature => feature.properties?.reference === selectedLad) ?? null
@@ -250,6 +329,7 @@ export default function Local2026Page() {
               selectedLad={selectedLad}
               selectedLadFeature={selectedLadFeature}
               onSelectLad={setSelectedLad}
+              eligibleLads={eligibleLads}
             />
           ) : (
             <div style={{ padding: '1rem' }}>Loading map data...</div>
