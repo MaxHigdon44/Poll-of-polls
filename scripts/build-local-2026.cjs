@@ -30,11 +30,13 @@ const HOC_SOURCES = [
 ]
 
 const WARD_GEOJSON_URL =
-  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/8070640af6f34c59913e3e57c436560a/geojson?layers=0'
+  'https://opendata.arcgis.com/api/v3/datasets/1ff1b4c40cf344e7afc05d6d09f16315_0/downloads/data?format=geojson&spatialRefId=4326'
 const LAD_GEOJSON_URL =
-  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/3f29d2c4a5834360a540ff206718c4f2/geojson?layers=0'
-const WARD_LAD_LOOKUP_URL =
-  'https://opendata.arcgis.com/api/v3/datasets/ab1ae1a7600e483d82c8f76566cae805_0/downloads/data?format=csv&spatialRefId=4326'
+  'https://opendata.arcgis.com/api/v3/datasets/2e9f5c259fec4e1c9951ecb974253c66_0/downloads/data?format=geojson&spatialRefId=4326'
+const MSOA_WD22_LAD22_LOOKUP_URL =
+  'https://opendata.arcgis.com/api/v3/datasets/fc3bf6fe8ea949869af0a018205ac952_0/downloads/data?format=csv&spatialRefId=4326'
+const MSOA_WD23_LAD23_LOOKUP_URL =
+  'https://opendata.arcgis.com/api/v3/datasets/f9fa90df09024becb455ab3f7f7b4a15_0/downloads/data?format=csv&spatialRefId=4326'
 
 const NATIONAL_PARTIES = [
   'Labour',
@@ -91,18 +93,119 @@ function sumObject(obj) {
   return Object.values(obj).reduce((acc, value) => acc + (value || 0), 0)
 }
 
+function parseCsvLine(line) {
+  const result = []
+  let current = ''
+  let inQuotes = false
+  for (let i = 0; i < line.length; i++) {
+    const char = line[i]
+    if (char === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"'
+        i++
+      } else {
+        inQuotes = !inQuotes
+      }
+      continue
+    }
+    if (char === ',' && !inQuotes) {
+      result.push(current)
+      current = ''
+      continue
+    }
+    current += char
+  }
+  result.push(current)
+  return result
+}
+
+async function loadCsv(filePath) {
+  const content = await fsp.readFile(filePath, 'utf8')
+  const lines = content.split(/\r?\n/).filter(Boolean)
+  const headers = parseCsvLine(lines[0])
+  const rows = []
+  for (let i = 1; i < lines.length; i++) {
+    const cols = parseCsvLine(lines[i])
+    if (cols.length < headers.length) continue
+    const row = {}
+    headers.forEach((header, index) => {
+      row[header] = cols[index]
+    })
+    rows.push(row)
+  }
+  return { headers, rows }
+}
+
+async function buildWardCodeCrosswalk() {
+  const wd22Path = path.join(RAW_DIR, 'msoa_wd22_lad22.csv')
+  const wd23Path = path.join(RAW_DIR, 'msoa_wd23_lad23.csv')
+  await downloadIfMissing(wd22Path, MSOA_WD22_LAD22_LOOKUP_URL)
+  await downloadIfMissing(wd23Path, MSOA_WD23_LAD23_LOOKUP_URL)
+
+  const wd22 = await loadCsv(wd22Path)
+  const wd23 = await loadCsv(wd23Path)
+
+  const wd22ByMsoa = new Map()
+  wd22.rows.forEach(row => {
+    const msoa = row.MSOA21CD || row['MSOA21CD']
+    const wd = row.WD22CD || row['WD22CD']
+    if (msoa && wd) wd22ByMsoa.set(msoa, wd)
+  })
+
+  const counts = new Map()
+  wd23.rows.forEach(row => {
+    const msoa = row.MSOA21CD || row['MSOA21CD']
+    const wd23Code = row.WD23CD || row['WD23CD'] || row.WD23D
+    if (!msoa || !wd23Code) return
+    const wd22Code = wd22ByMsoa.get(msoa)
+    if (!wd22Code) return
+    const key = `${wd22Code}|${wd23Code}`
+    counts.set(key, (counts.get(key) || 0) + 1)
+  })
+
+  const mapping = new Map()
+  counts.forEach((count, key) => {
+    const [wd22Code, wd23Code] = key.split('|')
+    const existing = mapping.get(wd22Code)
+    if (!existing || count > existing.count) {
+      mapping.set(wd22Code, { wd23Code, count })
+    }
+  })
+
+  const result = new Map()
+  mapping.forEach((value, wd22Code) => {
+    result.set(wd22Code, value.wd23Code)
+  })
+
+  return result
+}
+
 async function ensureDir(dir) {
   await fsp.mkdir(dir, { recursive: true })
 }
 
 async function downloadIfMissing(filePath, url) {
   if (fs.existsSync(filePath)) return
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Failed to download ${url}: ${res.status} ${res.statusText}`)
+  await downloadWithRetry(filePath, url)
+}
+
+async function downloadWithRetry(filePath, url) {
+  for (let attempt = 0; attempt < 5; attempt++) {
+    const res = await fetch(url)
+    if (!res.ok) {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      continue
+    }
+    const buffer = Buffer.from(await res.arrayBuffer())
+    const text = buffer.toString('utf8')
+    if (text.includes('"status":"ExportingData"') || text.includes('"status":"InProgress"')) {
+      await new Promise(resolve => setTimeout(resolve, 2000))
+      continue
+    }
+    await fsp.writeFile(filePath, buffer)
+    return
   }
-  const buffer = Buffer.from(await res.arrayBuffer())
-  await fsp.writeFile(filePath, buffer)
+  throw new Error(`Failed to download after retries: ${url}`)
 }
 
 function parseWardResults(filePath) {
@@ -178,13 +281,31 @@ async function buildBaseline() {
   await ensureDir(RAW_DIR)
   await ensureDir(OUT_DIR)
 
-  await downloadIfMissing(path.join(RAW_DIR, 'ward.geojson'), WARD_GEOJSON_URL)
+  const wardPath = path.join(RAW_DIR, 'ward.geojson')
+  if (fs.existsSync(wardPath)) {
+    await fsp.unlink(wardPath)
+  }
+  await downloadIfMissing(wardPath, WARD_GEOJSON_URL)
   const ladPath = path.join(RAW_DIR, 'lad.geojson')
   if (fs.existsSync(ladPath)) {
     await fsp.unlink(ladPath)
   }
   await downloadIfMissing(ladPath, LAD_GEOJSON_URL)
   const wardData = new Map()
+  const wardGeo = JSON.parse(await fsp.readFile(wardPath, 'utf8'))
+  wardGeo.features = wardGeo.features.map(feature => {
+    const props = feature.properties || {}
+    if (!props.reference && props.WD23CD) {
+      props.reference = props.WD23CD
+    }
+    if (!props.name && props.WD23NM) {
+      props.name = props.WD23NM
+    }
+    feature.properties = props
+    return feature
+  })
+  const wardGeoCodes = new Set(wardGeo.features.map(feature => feature.properties?.reference))
+  const wardCodeCrosswalk = await buildWardCodeCrosswalk()
 
   const sortedSources = [...HOC_SOURCES].sort((a, b) => b.year - a.year)
   const missingFiles = []
@@ -203,11 +324,16 @@ async function buildBaseline() {
     const filePath = path.join(RAW_DIR, source.filename)
     const rows = parseWardResults(filePath)
     rows.forEach(row => {
-      const wardCode = row.wardCode
+      let wardCode = row.wardCode
       const wardName = row.wardName
       const ladCode = row.ladCode
       const ladName = row.ladName
       if (!wardCode || !ladCode || !wardName || !ladName) return
+
+      if (!wardGeoCodes.has(wardCode)) {
+        const mapped = wardCodeCrosswalk.get(wardCode)
+        if (mapped) wardCode = mapped
+      }
 
       const key = wardCode
       if (!wardData.has(key)) {
@@ -295,20 +421,7 @@ async function buildBaseline() {
     JSON.stringify(output)
   )
 
-  const wardGeo = JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'ward.geojson'), 'utf8'))
   const ladGeo = JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'lad.geojson'), 'utf8'))
-
-  wardGeo.features = wardGeo.features.map(feature => {
-    const props = feature.properties || {}
-    if (!props.reference && props.WD23CD) {
-      props.reference = props.WD23CD
-    }
-    if (!props.name && props.WD23NM) {
-      props.name = props.WD23NM
-    }
-    feature.properties = props
-    return feature
-  })
 
   ladGeo.features = ladGeo.features.map(feature => {
     const props = feature.properties || {}
@@ -323,7 +436,6 @@ async function buildBaseline() {
   })
 
   const wardCodes = new Set(baseline.map(entry => entry.wardCode))
-  const wardGeoCodes = new Set(wardGeo.features.map(feature => feature.properties?.reference))
   wardGeo.features = wardGeo.features.filter(feature =>
     wardCodes.has(feature.properties?.reference)
   )
