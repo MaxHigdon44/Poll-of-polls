@@ -166,6 +166,9 @@ export default function PollsPage() {
           ))}
         </tbody>
       </table>
+      <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#555' }}>
+        Data sourced from Wikipedia (CC BY-SA 4.0). Updated daily.
+      </div>
     </div>
   )
 }
