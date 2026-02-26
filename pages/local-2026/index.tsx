@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 
-const LocalMap = dynamic(() => import('../../src/components/LocalMap'), { ssr: false })
+const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
 
 type GeoFeature = {
   type: 'Feature'
