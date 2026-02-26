@@ -40,11 +40,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     for (const poll of polls) {
       await sql`
         INSERT INTO polls (
-          run_id, poll_date, pollster, sample_size, area,
+          run_id, poll_date, poll_date_label, pollster, sample_size, area,
           labour, conservative, libdem, green, reform, snp, pc, others
         )
         VALUES (
-          ${runId}, ${poll.pollDate}, ${poll.pollster}, ${poll.sampleSize}, ${poll.area},
+          ${runId}, ${poll.pollDate}, ${poll.pollDateLabel}, ${poll.pollster}, ${poll.sampleSize}, ${poll.area},
           ${poll.labour}, ${poll.conservative}, ${poll.libdem}, ${poll.green},
           ${poll.reform}, ${poll.snp}, ${poll.pc}, ${poll.others}
         )

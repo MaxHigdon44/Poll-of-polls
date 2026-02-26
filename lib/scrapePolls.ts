@@ -2,6 +2,7 @@ import { load } from 'cheerio'
 
 export type ScrapedPoll = {
   pollDate: string
+  pollDateLabel: string
   pollster: string
   sampleSize: number | null
   area: string | null
@@ -51,6 +52,11 @@ function parsePollDate(dateText: string, fallbackYear?: number): Date | null {
   return parsed
 }
 
+function parseSortDate(value: string): Date | null {
+  const parsed = new Date(value)
+  return Number.isNaN(parsed.getTime()) ? null : parsed
+}
+
 function toNumber(value: string): number | null {
   const cleaned = value.replace('%', '').trim()
   if (!cleaned) return null
@@ -71,6 +77,10 @@ function normalizeHeader(text: string): string {
 
 function cleanPollster(text: string): string {
   return text.replace(/\[[^\]]*\]/g, '').replace(/\s+/g, ' ').trim()
+}
+
+function cleanDateLabel(text: string): string {
+  return text.replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim()
 }
 
 type CheerioElement = Parameters<ReturnType<typeof load>>[0]
@@ -182,14 +192,15 @@ export async function scrapePolls(lastMonths = 2): Promise<{
         if (tds.length === 0) return
 
         const dateCell = $(tds[columnMap.date])
-        const dateText = dateCell.text().trim()
+        const dateText = cleanDateLabel(dateCell.text())
         const pollster = cleanPollster($(tds[columnMap.pollster]).text())
         if (!dateText || !pollster) return
 
-        const sortValue = dateCell.attr('data-sort-value')
-        const parsedDate = sortValue
-          ? parsePollDate(sortValue, currentYear)
-          : parsePollDate(dateText, currentYear)
+        const sortValue =
+          dateCell.attr('data-sort-value') ?? dateCell.find('[data-sort-value]').attr('data-sort-value')
+        const parsedDate =
+          (sortValue ? parseSortDate(sortValue) : null) ??
+          parsePollDate(dateText, currentYear)
         if (!parsedDate) return
         if (parsedDate.getFullYear() < currentYear) return
         if (parsedDate < cutoffDate) return
@@ -199,6 +210,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
 
         const poll = {
           pollDate: parsedDate.toISOString().slice(0, 10),
+          pollDateLabel: dateText,
           pollster,
           sampleSize: sampleIndex >= 0 ? toSampleSize($(tds[sampleIndex]).text()) : null,
           area: areaIndex >= 0 ? $(tds[areaIndex]).text().trim() || null : null,

@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS polls (
   id SERIAL PRIMARY KEY,
   run_id INTEGER NOT NULL REFERENCES poll_runs(id) ON DELETE CASCADE,
   poll_date DATE NOT NULL,
+  poll_date_label TEXT,
   pollster TEXT NOT NULL,
   sample_size INTEGER,
   area TEXT,

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 type Poll = {
   poll_date: string
+  poll_date_label: string | null
   pollster: string
   sample_size: number | null
   labour: number | null
@@ -33,7 +34,8 @@ export default function PollsPage() {
     value == null ? '' : `${value.toString()}%`
   const formatSampleSize = (value: number | null) =>
     value == null ? '' : numberFormatter.format(value)
-  const formatDate = (value: string) => {
+  const formatDate = (value: string, label?: string | null) => {
+    if (label) return label
     const parsed = new Date(value)
     return Number.isNaN(parsed.getTime()) ? value : dateFormatter.format(parsed)
   }
@@ -78,7 +80,7 @@ export default function PollsPage() {
         <tbody>
           {polls.map((poll, index) => (
             <tr key={index}>
-              <td>{formatDate(poll.poll_date)}</td>
+              <td>{formatDate(poll.poll_date, poll.poll_date_label)}</td>
               <td>{poll.pollster}</td>
               <td>{formatSampleSize(poll.sample_size)}</td>
               <td>{formatPercent(poll.labour)}</td>

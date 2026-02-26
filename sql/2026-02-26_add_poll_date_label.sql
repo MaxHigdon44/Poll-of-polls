@@ -1,0 +1,1 @@
+ALTER TABLE polls ADD COLUMN IF NOT EXISTS poll_date_label TEXT;
