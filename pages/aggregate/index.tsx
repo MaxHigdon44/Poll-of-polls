@@ -145,52 +145,7 @@ export default function AggregatePage() {
       <div style={{ marginBottom: '1rem', color: '#555' }}>
         UK National Poll Results from the Past Two Months
       </div>
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        <label>
-          Pollster
-          <select
-            style={{ marginLeft: '0.5rem' }}
-            value={pollsterFilter}
-            onChange={event => setPollsterFilter(event.target.value)}
-          >
-            <option value="">All</option>
-            {pollsterOptions.map(pollster => (
-              <option key={pollster} value={pollster}>
-                {pollster}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Start date
-          <input
-            type="date"
-            value={startDate}
-            onChange={event => setStartDate(event.target.value)}
-            style={{ marginLeft: '0.5rem' }}
-          />
-        </label>
-        <label>
-          End date
-          <input
-            type="date"
-            value={endDate}
-            onChange={event => setEndDate(event.target.value)}
-            style={{ marginLeft: '0.5rem' }}
-          />
-        </label>
-        <label>
-          Min sample size
-          <input
-            type="number"
-            min={0}
-            step={1}
-            value={minSampleSize}
-            onChange={event => setMinSampleSize(event.target.value)}
-            style={{ marginLeft: '0.5rem', width: '7rem' }}
-          />
-        </label>
-      </div>
+      <div style={{ marginBottom: '1rem' }} />
       <div
         style={{
           padding: '1rem',
@@ -223,9 +178,6 @@ export default function AggregatePage() {
         ) : (
           <div style={{ color: '#666' }}>No polls match the current filters.</div>
         )}
-      </div>
-      <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#555' }}>
-        Data sourced from Wikipedia (CC BY-SA 4.0). Updated daily.
       </div>
     </div>
   )
