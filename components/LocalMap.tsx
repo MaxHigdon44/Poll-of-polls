@@ -11,7 +11,7 @@ type GeoCollection = FeatureCollection
 type LocalMapProps = {
   ladGeo: GeoCollection
   wardFeatures: GeoFeature[]
-  wardMap: Map<string, any>
+  wardMap: Map<string, { winner: string; shares: Record<string, number>; color: string }>
   selectedLad: string | null
   selectedLadFeature: GeoFeature | null
   onSelectLad: (lad: string | null) => void
@@ -66,8 +66,10 @@ export default function LocalMap({
     let topParty = projection.winner
     let topValue = -1
     Object.entries(projection.shares).forEach(([party, value]) => {
-      if (value > topValue) {
-        topValue = value
+      const numericValue = Number(value)
+      if (Number.isNaN(numericValue)) return
+      if (numericValue > topValue) {
+        topValue = numericValue
         topParty = party
       }
     })
