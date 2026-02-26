@@ -151,6 +151,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
 
   const cutoffDate = new Date()
   cutoffDate.setMonth(cutoffDate.getMonth() - lastMonths)
+  const currentYear = new Date().getFullYear()
 
   const seen = new Set<string>()
 
@@ -171,8 +172,9 @@ export async function scrapePolls(lastMonths = 2): Promise<{
         const pollster = cleanPollster($(tds[columnMap.pollster]).text())
         if (!dateText || !pollster) return
 
-        const parsedDate = parsePollDate(dateText, new Date().getFullYear())
+        const parsedDate = parsePollDate(dateText, currentYear)
         if (!parsedDate) return
+        if (parsedDate.getFullYear() < currentYear) return
         if (parsedDate < cutoffDate) return
 
         const areaIndex = columnMap.area ?? -1
