@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
 
-const MapContainer = dynamic(
-  () => import('react-leaflet').then(mod => mod.MapContainer),
-  { ssr: false }
-)
-const TileLayer = dynamic(() => import('react-leaflet').then(mod => mod.TileLayer), { ssr: false })
-const GeoJSON = dynamic(() => import('react-leaflet').then(mod => mod.GeoJSON), { ssr: false })
-const useMap = dynamic(() => import('react-leaflet').then(mod => mod.useMap), { ssr: false })
+const LocalMap = dynamic(() => import('../../src/components/LocalMap'), { ssr: false })
 
 type GeoFeature = {
   type: 'Feature'
@@ -142,28 +136,6 @@ function computeWardProjection(
   return { shares: combined, winner }
 }
 
-function FitBounds({ feature }: { feature: GeoFeature | null }) {
-  // @ts-ignore
-  const map = useMap()
-  useEffect(() => {
-    if (!feature) return
-    let active = true
-    ;(async () => {
-      const leaflet = await import('leaflet')
-      if (!active) return
-      const layer = leaflet.geoJSON(feature as any)
-      const bounds = layer.getBounds()
-      if (bounds) {
-        map.fitBounds(bounds, { padding: [20, 20] })
-      }
-    })()
-    return () => {
-      active = false
-    }
-  }, [feature, map])
-  return null
-}
-
 export default function Local2026Page() {
   const [wardGeo, setWardGeo] = useState<GeoCollection | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
@@ -199,10 +171,11 @@ export default function Local2026Page() {
     if (!baseline || !aggregate) return new Map<string, any>()
     const map = new Map<string, any>()
     baseline.wards.forEach(ward => {
-      map.set(
-        ward.wardCode,
-        computeWardProjection(ward, baseline.baselineNational, aggregate)
-      )
+      const projection = computeWardProjection(ward, baseline.baselineNational, aggregate)
+      map.set(ward.wardCode, {
+        ...projection,
+        color: PARTY_COLORS[projection.winner] || '#ccc',
+      })
     })
     return map
   }, [baseline, aggregate])
@@ -221,48 +194,6 @@ export default function Local2026Page() {
     return wardGeo.features.filter(feature => wardCodes.has(feature.properties?.reference))
   }, [wardGeo, selectedLad, baseline])
 
-  const ladStyle = {
-    color: '#444',
-    weight: 1,
-    fillColor: '#f2f2f2',
-    fillOpacity: 0.3,
-  }
-
-  const wardStyle = (feature: GeoFeature) => {
-    const wardCode = feature.properties?.reference
-    const projection = wardMap.get(wardCode)
-    const color = projection ? PARTY_COLORS[projection.winner] || '#ccc' : '#ccc'
-    return {
-      color: '#333',
-      weight: 0.5,
-      fillColor: color,
-      fillOpacity: 0.7,
-    }
-  }
-
-  const wardOnEachFeature = (feature: GeoFeature, layer: any) => {
-    // @ts-ignore
-    const wardCode = feature.properties?.reference
-    const wardName = feature.properties?.name
-    const projection = wardMap.get(wardCode)
-    if (!projection) return
-
-    let topParty = projection.winner
-    let topValue = -1
-    Object.entries(projection.shares).forEach(([party, value]) => {
-      if (value > topValue) {
-        topValue = value
-        topParty = party
-      }
-    })
-
-    // @ts-ignore
-    layer.bindTooltip(
-      `<strong>${wardName}</strong><br/>${topParty}: ${topValue.toFixed(1)}%`,
-      { sticky: true }
-    )
-  }
-
   return (
     <div style={{ padding: '2rem' }}>
       <div
@@ -277,6 +208,7 @@ export default function Local2026Page() {
         <h1 style={{ margin: 0 }}>Local Elections 2026</h1>
         <a href="/aggregate">National Polling Average</a>
         <a href="/polls">Recent UK Polls</a>
+        <a href="/local-2026">May 2026 Local Elections Projections</a>
       </div>
       <div style={{ marginTop: '0.75rem', marginBottom: '1.25rem', color: '#555' }}>
         Click a council area to zoom into ward-level projections.
@@ -311,36 +243,14 @@ export default function Local2026Page() {
         </div>
         <div style={{ height: '70vh', border: '1px solid #eee' }}>
           {ladGeo ? (
-            <MapContainer
-              center={[53.7, -1.4]}
-              zoom={6}
-              style={{ height: '100%', width: '100%' }}
-              scrollWheelZoom
-            >
-              <TileLayer
-                attribution='&copy; OpenStreetMap contributors'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              {!selectedLad && (
-                <GeoJSON
-                  data={ladGeo as any}
-                  style={ladStyle}
-                  eventHandlers={{
-                    click: event => {
-                      const feature = event?.sourceTarget?.feature
-                      const ladCode = feature?.properties?.reference
-                      if (ladCode) setSelectedLad(ladCode)
-                    },
-                  }}
-                />
-              )}
-              {selectedLad && wardFeatures.length > 0 && (
-                <>
-                  <GeoJSON data={wardFeatures as any} style={wardStyle} onEachFeature={wardOnEachFeature} />
-                  <FitBounds feature={selectedLadFeature} />
-                </>
-              )}
-            </MapContainer>
+            <LocalMap
+              ladGeo={ladGeo}
+              wardFeatures={wardFeatures}
+              wardMap={wardMap}
+              selectedLad={selectedLad}
+              selectedLadFeature={selectedLadFeature}
+              onSelectLad={setSelectedLad}
+            />
           ) : (
             <div style={{ padding: '1rem' }}>Loading map data...</div>
           )}
