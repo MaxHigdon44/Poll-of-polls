@@ -144,6 +144,28 @@ export default function AggregatePage() {
     return { ...agg, lead }
   }, [filteredPolls, isClient])
 
+  const chartData = useMemo(() => {
+    if (!aggregate) return null
+    const entries: Array<{ label: string; value: number | null; color: string }> = [
+      { label: 'Labour', value: aggregate.labour, color: '#E4003B' },
+      { label: 'Conservative', value: aggregate.conservative, color: '#0087DC' },
+      { label: 'Reform', value: aggregate.reform, color: '#12B6CF' },
+      { label: 'Liberal Democrat', value: aggregate.libdem, color: '#FAA61A' },
+      { label: 'Green', value: aggregate.green, color: '#02A95B' },
+      { label: 'SNP', value: aggregate.snp, color: '#FDF38E' },
+      { label: 'Plaid Cymru', value: aggregate.pc, color: '#008672' },
+      { label: 'Other', value: aggregate.others, color: '#888' },
+    ]
+
+    const sorted = [...entries].sort((a, b) => {
+      const aVal = a.value ?? -1
+      const bVal = b.value ?? -1
+      return bVal - aVal
+    })
+    const maxValue = Math.max(...sorted.map(entry => entry.value ?? 0), 0)
+    return { entries: sorted, maxValue }
+  }, [aggregate])
+
   return (
     <div style={{ padding: '2rem' }}>
       <div
@@ -158,58 +180,65 @@ export default function AggregatePage() {
         <h1 style={{ margin: 0 }}>Poll of Polls</h1>
         <a href="/polls">Recent UK National Polls</a>
       </div>
-      <div style={{ marginBottom: '1rem', fontSize: '1.4rem', fontWeight: 600 }}>
+      <div style={{ marginTop: '0.9rem', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
         UK National Polling Average
       </div>
       <div style={{ marginBottom: '1rem' }} />
-      <div
-        style={{
-          padding: '1rem',
-          border: '1px solid #ddd',
-          borderRadius: '8px',
-          background: '#fafafa',
-        }}
-      >
+      <div style={{ padding: '0.25rem 0' }}>
         {aggregate ? (
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(9, minmax(0, 1fr))',
-              gap: '0.5rem',
-              alignItems: 'center',
-              fontSize: '0.95rem',
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', background: '#E4003B' }} />
-              <span>Lab: {aggregate.labour?.toFixed(1) ?? '—'}</span>
+          <div style={{ display: 'grid', gap: '0.75rem' }}>
+            {chartData?.entries.map(entry => {
+              const width =
+                chartData.maxValue > 0 && entry.value != null
+                  ? Math.max((entry.value / chartData.maxValue) * 100, 6)
+                  : 0
+              return (
+                <div
+                  key={entry.label}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '160px 1fr 70px',
+                    alignItems: 'center',
+                    gap: '0.75rem',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <span style={{ width: '12px', height: '12px', background: entry.color }} />
+                    <span>{entry.label}</span>
+                  </div>
+                  <div
+                    style={{
+                      height: '12px',
+                      background: '#eee',
+                      borderRadius: '999px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <div
+                      style={{
+                        height: '100%',
+                        width: `${width}%`,
+                        background: entry.color,
+                        borderRadius: '999px',
+                      }}
+                    />
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    {entry.value != null ? `${entry.value.toFixed(1)}%` : '—'}
+                  </div>
+                </div>
+              )
+            })}
+            <div
+              style={{
+                marginTop: '0.5rem',
+                paddingTop: '0.5rem',
+                borderTop: '1px solid #eee',
+                fontWeight: 600,
+              }}
+            >
+              Lead: {aggregate.lead || '—'}
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', background: '#0087DC' }} />
-              <span>Con: {aggregate.conservative?.toFixed(1) ?? '—'}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', background: '#12B6CF' }} />
-              <span>Reform: {aggregate.reform?.toFixed(1) ?? '—'}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', background: '#FAA61A' }} />
-              <span>LD: {aggregate.libdem?.toFixed(1) ?? '—'}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', background: '#02A95B' }} />
-              <span>Grn: {aggregate.green?.toFixed(1) ?? '—'}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', background: '#FDF38E' }} />
-              <span>SNP: {aggregate.snp?.toFixed(1) ?? '—'}</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '10px', height: '10px', background: '#008672' }} />
-              <span>PC: {aggregate.pc?.toFixed(1) ?? '—'}</span>
-            </div>
-            <div>Other: {aggregate.others?.toFixed(1) ?? '—'}</div>
-            <div>Lead: {aggregate.lead || '—'}</div>
           </div>
         ) : (
           <div style={{ color: '#666' }}>No polls match the current filters.</div>
