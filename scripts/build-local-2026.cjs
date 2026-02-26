@@ -29,7 +29,8 @@ const HOC_SOURCES = [
   },
 ]
 
-const WARD_GEOJSON_URL = 'https://files.planning.data.gov.uk/dataset/ward.geojson'
+const WARD_GEOJSON_URL =
+  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/8070640af6f34c59913e3e57c436560a/geojson?layers=0'
 const LAD_GEOJSON_URL =
   'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/3f29d2c4a5834360a540ff206718c4f2/geojson?layers=0'
 const WARD_LAD_LOOKUP_URL =
@@ -296,6 +297,18 @@ async function buildBaseline() {
 
   const wardGeo = JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'ward.geojson'), 'utf8'))
   const ladGeo = JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'lad.geojson'), 'utf8'))
+
+  wardGeo.features = wardGeo.features.map(feature => {
+    const props = feature.properties || {}
+    if (!props.reference && props.WD23CD) {
+      props.reference = props.WD23CD
+    }
+    if (!props.name && props.WD23NM) {
+      props.name = props.WD23NM
+    }
+    feature.properties = props
+    return feature
+  })
 
   ladGeo.features = ladGeo.features.map(feature => {
     const props = feature.properties || {}
