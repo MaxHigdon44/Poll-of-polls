@@ -66,12 +66,21 @@ export default function PollsPage() {
     return Number.isNaN(parsed.getTime()) ? value : dateFormatter.format(parsed)
   }
   const formatLead = (poll: Poll) => {
-    if (poll.labour == null || poll.conservative == null) return ''
-    const lead = poll.labour - poll.conservative
-    if (lead === 0) return '0'
-    const leader = lead > 0 ? 'Lab' : 'Con'
-    const formattedLead = `${lead > 0 ? '+' : ''}${lead}`
-    return `${leader} ${formattedLead}`
+    const values = [
+      poll.labour,
+      poll.conservative,
+      poll.reform,
+      poll.libdem,
+      poll.green,
+      poll.snp,
+      poll.pc,
+      poll.others,
+    ].filter((value): value is number => value != null)
+
+    if (values.length < 2) return ''
+    const sorted = [...values].sort((a, b) => b - a)
+    const lead = sorted[0] - sorted[1]
+    return lead.toString()
   }
 
   return (

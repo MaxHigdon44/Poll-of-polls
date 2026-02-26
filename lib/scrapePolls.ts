@@ -33,8 +33,15 @@ function parsePollDate(dateText: string, fallbackYear?: number): Date | null {
     const shortMatch = cleaned.match(/(\d{1,2})(?:\s*[–-]\s*\d{1,2})?\s+([A-Za-z]+)/)
     if (shortMatch) {
       const firstDateStr = `${shortMatch[1]} ${shortMatch[2]} ${fallbackYear}`
-      const parsed = new Date(firstDateStr)
-      if (!Number.isNaN(parsed.getTime())) return parsed
+      let parsed = new Date(firstDateStr)
+      if (!Number.isNaN(parsed.getTime())) {
+        const now = new Date()
+        const oneWeekMs = 7 * 24 * 60 * 60 * 1000
+        if (parsed.getTime() > now.getTime() + oneWeekMs) {
+          parsed = new Date(`${shortMatch[1]} ${shortMatch[2]} ${fallbackYear - 1}`)
+        }
+        return parsed
+      }
     }
   }
 
@@ -164,7 +171,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
         const pollster = cleanPollster($(tds[columnMap.pollster]).text())
         if (!dateText || !pollster) return
 
-        const parsedDate = parsePollDate(dateText, 2026)
+        const parsedDate = parsePollDate(dateText, new Date().getFullYear())
         if (!parsedDate) return
         if (parsedDate < cutoffDate) return
 
