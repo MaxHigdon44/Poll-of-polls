@@ -104,8 +104,7 @@ function hasNationalPollHeaders(columnMap: Record<string, number>) {
     Number.isFinite(columnMap.conservative) &&
     Number.isFinite(columnMap.reform) &&
     Number.isFinite(columnMap.libdem) &&
-    Number.isFinite(columnMap.green) &&
-    Number.isFinite(columnMap.lead)
+    Number.isFinite(columnMap.green)
   )
 }
 
@@ -136,7 +135,6 @@ function buildColumnIndexMap($: ReturnType<typeof load>, table: CheerioElement) 
     else if (header.includes('snp')) map.snp = index
     else if (header.includes('pc') || header.includes('plaid')) map.pc = index
     else if (header.includes('other')) map.others = index
-    else if (header.includes('lead')) map.lead = index
   })
 
   return map
@@ -178,11 +176,15 @@ export async function scrapePolls(lastMonths = 2): Promise<{
         const tds = $(el).find('td')
         if (tds.length === 0) return
 
-        const dateText = $(tds[columnMap.date]).text().trim()
+        const dateCell = $(tds[columnMap.date])
+        const dateText = dateCell.text().trim()
         const pollster = cleanPollster($(tds[columnMap.pollster]).text())
         if (!dateText || !pollster) return
 
-        const parsedDate = parsePollDate(dateText, currentYear)
+        const sortValue = dateCell.attr('data-sort-value')
+        const parsedDate = sortValue
+          ? parsePollDate(sortValue, currentYear)
+          : parsePollDate(dateText, currentYear)
         if (!parsedDate) return
         if (parsedDate.getFullYear() < currentYear) return
         if (parsedDate < cutoffDate) return
