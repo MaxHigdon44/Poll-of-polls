@@ -71,6 +71,36 @@ export default function PollsPage() {
     return lead.toString()
   }
 
+  const getLeadColor = (poll: Poll) => {
+    const entries: Array<[string, number | null]> = [
+      ['labour', poll.labour],
+      ['conservative', poll.conservative],
+      ['reform', poll.reform],
+      ['libdem', poll.libdem],
+      ['green', poll.green],
+      ['snp', poll.snp],
+      ['pc', poll.pc],
+    ]
+
+    const valid = entries.filter(([, value]) => value != null) as Array<[string, number]>
+    if (valid.length === 0) return undefined
+
+    valid.sort((a, b) => b[1] - a[1])
+    const top = valid[0]?.[0]
+
+    const colors: Record<string, string> = {
+      labour: '#E4003B',
+      conservative: '#0087DC',
+      reform: '#12B6CF',
+      libdem: '#FAA61A',
+      green: '#02A95B',
+      snp: '#FDF38E',
+      pc: '#008672',
+    }
+
+    return top ? colors[top] : undefined
+  }
+
   return (
     <div style={{ padding: '2rem' }}>
       <h1>Poll of Polls</h1>
@@ -131,7 +161,7 @@ export default function PollsPage() {
               <td>{formatPercent(poll.snp)}</td>
               <td>{formatPercent(poll.pc)}</td>
               <td>{formatPercent(poll.others)}</td>
-              <td>{formatLead(poll)}</td>
+              <td style={{ background: getLeadColor(poll) }}>{formatLead(poll)}</td>
             </tr>
           ))}
         </tbody>
