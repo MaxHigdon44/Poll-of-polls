@@ -18,7 +18,7 @@ export type ScrapedPoll = {
 const SOURCE_URL =
   'https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_United_Kingdom_general_election'
 
-function parsePollDate(dateText: string): Date | null {
+function parsePollDate(dateText: string, fallbackYear?: number): Date | null {
   const cleaned = dateText.replace(/\[\d+\]/g, '').trim()
   const rangeMatch = cleaned.match(
     /(\d{1,2})(?:\s*[–-]\s*\d{1,2})?\s+([A-Za-z]+)\s+(\d{4})/
@@ -27,6 +27,15 @@ function parsePollDate(dateText: string): Date | null {
     const firstDateStr = `${rangeMatch[1]} ${rangeMatch[2]} ${rangeMatch[3]}`
     const parsed = new Date(firstDateStr)
     if (!Number.isNaN(parsed.getTime())) return parsed
+  }
+
+  if (fallbackYear) {
+    const shortMatch = cleaned.match(/(\d{1,2})(?:\s*[–-]\s*\d{1,2})?\s+([A-Za-z]+)/)
+    if (shortMatch) {
+      const firstDateStr = `${shortMatch[1]} ${shortMatch[2]} ${fallbackYear}`
+      const parsed = new Date(firstDateStr)
+      if (!Number.isNaN(parsed.getTime())) return parsed
+    }
   }
 
   const firstDateStr = cleaned.split('–')[0].split('-')[0].trim()
@@ -73,6 +82,20 @@ function selectNational2026Tables($: ReturnType<typeof load>) {
   return yearHeading.nextUntil('h2, h3, h4').filter('table.wikitable').toArray()
 }
 
+function hasNationalPollHeaders(columnMap: Record<string, number>) {
+  return (
+    Number.isFinite(columnMap.date) &&
+    Number.isFinite(columnMap.pollster) &&
+    Number.isFinite(columnMap.sampleSize) &&
+    Number.isFinite(columnMap.labour) &&
+    Number.isFinite(columnMap.conservative) &&
+    Number.isFinite(columnMap.reform) &&
+    Number.isFinite(columnMap.libdem) &&
+    Number.isFinite(columnMap.green) &&
+    Number.isFinite(columnMap.lead)
+  )
+}
+
 function buildColumnIndexMap($: ReturnType<typeof load>, table: CheerioElement) {
   const map: Record<string, number> = {}
   let headerRow = $(table).find('thead tr').last()
@@ -100,6 +123,7 @@ function buildColumnIndexMap($: ReturnType<typeof load>, table: CheerioElement) 
     else if (header.includes('snp')) map.snp = index
     else if (header.includes('pc') || header.includes('plaid')) map.pc = index
     else if (header.includes('other')) map.others = index
+    else if (header.includes('lead')) map.lead = index
   })
 
   return map
@@ -128,7 +152,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
 
   tablesToParse.forEach(table => {
     const columnMap = buildColumnIndexMap($, table)
-    if (!Number.isFinite(columnMap.date) || !Number.isFinite(columnMap.pollster)) return
+    if (!hasNationalPollHeaders(columnMap)) return
 
     $(table)
       .find('tbody tr')
@@ -140,7 +164,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
         const pollster = cleanPollster($(tds[columnMap.pollster]).text())
         if (!dateText || !pollster) return
 
-        const parsedDate = parsePollDate(dateText)
+        const parsedDate = parsePollDate(dateText, 2026)
         if (!parsedDate) return
         if (parsedDate < cutoffDate) return
 
