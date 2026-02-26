@@ -53,6 +53,10 @@ function normalizeHeader(text: string): string {
   return text.replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim().toLowerCase()
 }
 
+function cleanPollster(text: string): string {
+  return text.replace(/\[[^\]]*\]/g, '').replace(/\s+/g, ' ').trim()
+}
+
 type CheerioElement = Parameters<ReturnType<typeof load>>[0]
 
 function buildColumnIndexMap($: ReturnType<typeof load>, table: CheerioElement) {
@@ -103,6 +107,8 @@ export async function scrapePolls(lastMonths = 2): Promise<{
   const cutoffDate = new Date()
   cutoffDate.setMonth(cutoffDate.getMonth() - lastMonths)
 
+  const seen = new Set<string>()
+
   $('table.wikitable').each((_, table) => {
     const columnMap = buildColumnIndexMap($, table)
     if (!Number.isFinite(columnMap.date) || !Number.isFinite(columnMap.pollster)) return
@@ -114,7 +120,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
         if (tds.length === 0) return
 
         const dateText = $(tds[columnMap.date]).text().trim()
-        const pollster = $(tds[columnMap.pollster]).text().trim()
+        const pollster = cleanPollster($(tds[columnMap.pollster]).text())
         if (!dateText || !pollster) return
 
         const parsedDate = parsePollDate(dateText)
@@ -151,6 +157,24 @@ export async function scrapePolls(lastMonths = 2): Promise<{
           poll.others != null
 
         if (!hasPartyData) return
+
+        const dedupeKey = [
+          poll.pollDate,
+          poll.pollster,
+          poll.sampleSize ?? '',
+          poll.area ?? '',
+          poll.labour ?? '',
+          poll.conservative ?? '',
+          poll.libdem ?? '',
+          poll.green ?? '',
+          poll.reform ?? '',
+          poll.snp ?? '',
+          poll.pc ?? '',
+          poll.others ?? '',
+        ].join('|')
+
+        if (seen.has(dedupeKey)) return
+        seen.add(dedupeKey)
 
         polls.push(poll)
       })
