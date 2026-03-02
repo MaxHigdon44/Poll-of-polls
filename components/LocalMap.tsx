@@ -180,7 +180,7 @@ export default function LocalMap({
       {selectedLad && wardFeatures.length > 0 && (
         <>
           <GeoJSON
-            data={wardFeatures as GeoJsonObject}
+            data={{ type: 'FeatureCollection', features: wardFeatures } as GeoJsonObject}
             style={wardStyle}
             onEachFeature={wardOnEachFeature}
           />
