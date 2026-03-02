@@ -103,7 +103,15 @@ export default function LocalMap({
     fillOpacity: 0.35,
   })
 
-  const wardStyle = (feature: GeoFeature) => {
+  const wardStyle = (feature?: GeoFeature) => {
+    if (!feature) {
+      return {
+        color: '#333',
+        weight: 0.5,
+        fillColor: '#ccc',
+        fillOpacity: 0.7,
+      }
+    }
     const wardCode = feature.properties?.reference
     const projection = wardMap.get(wardCode)
     const color = projection ? projection.color || '#ccc' : '#ccc'
