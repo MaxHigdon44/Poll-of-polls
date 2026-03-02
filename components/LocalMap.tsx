@@ -48,7 +48,15 @@ export default function LocalMap({
   eligibleLads,
   ladCategoryByCode,
 }: LocalMapProps) {
-  const ladStyle = (feature: GeoFeature) => {
+  const ladStyle = (feature?: GeoFeature) => {
+    if (!feature) {
+      return {
+        color: '#bbb',
+        weight: 1,
+        fillColor: '#f5f5f5',
+        fillOpacity: 0.1,
+      }
+    }
     const ladCode = feature.properties?.reference
     if (ladCode && hiddenLadCodes?.has(ladCode)) {
       return {
