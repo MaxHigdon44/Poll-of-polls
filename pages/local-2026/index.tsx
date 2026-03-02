@@ -661,7 +661,7 @@ export default function Local2026Page() {
         geometry: { type: 'MultiPolygon', coordinates: westPolys },
       })
     }
-    return { type: 'FeatureCollection', features }
+    return { type: 'FeatureCollection' as const, features }
   }, [ladGeo])
 
   const selectedLadFeature = useMemo(() => {
