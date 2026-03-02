@@ -10,12 +10,16 @@ type GeoCollection = FeatureCollection
 
 type LocalMapProps = {
   ladGeo: GeoCollection
+  overlayAreas?: GeoCollection | null
+  overlayAreaCodes?: Set<string>
+  hiddenLadCodes?: Set<string>
   wardFeatures: GeoFeature[]
   wardMap: Map<string, { winner: string; shares: Record<string, number>; color: string }>
   selectedLad: string | null
   selectedLadFeature: GeoFeature | null
   onSelectLad: (lad: string | null) => void
   eligibleLads: Set<string>
+  ladCategoryByCode: Map<string, 'district' | 'london' | 'metro' | 'unitary'>
 }
 
 function FitBounds({ feature }: { feature: GeoFeature | null }) {
@@ -33,23 +37,63 @@ function FitBounds({ feature }: { feature: GeoFeature | null }) {
 
 export default function LocalMap({
   ladGeo,
+  overlayAreas,
+  overlayAreaCodes,
+  hiddenLadCodes,
   wardFeatures,
   wardMap,
   selectedLad,
   selectedLadFeature,
   onSelectLad,
   eligibleLads,
+  ladCategoryByCode,
 }: LocalMapProps) {
   const ladStyle = (feature: GeoFeature) => {
     const ladCode = feature.properties?.reference
+    if (ladCode && hiddenLadCodes?.has(ladCode)) {
+      return {
+        color: 'transparent',
+        weight: 0,
+        fillColor: 'transparent',
+        fillOpacity: 0,
+      }
+    }
     const isEligible = ladCode && eligibleLads.has(ladCode)
+    const category = ladCode ? ladCategoryByCode.get(ladCode) : null
+    const fillColor =
+      category === 'london'
+        ? '#6A1B9A'
+        : category === 'metro'
+          ? '#FB8C00'
+          : category === 'unitary'
+            ? '#1E88E5'
+            : category === 'district'
+              ? '#2E8B57'
+              : '#f5f5f5'
+    const strokeColor =
+      category === 'london'
+        ? '#4A148C'
+        : category === 'metro'
+          ? '#EF6C00'
+          : category === 'unitary'
+            ? '#1565C0'
+            : category === 'district'
+              ? '#1B5E20'
+              : '#bbb'
     return {
-      color: isEligible ? '#333' : '#bbb',
-      weight: 1,
-      fillColor: isEligible ? '#e6e6e6' : '#f5f5f5',
-      fillOpacity: isEligible ? 0.5 : 0.25,
+      color: isEligible ? strokeColor : '#bbb',
+      weight: isEligible ? 2 : 1,
+      fillColor: isEligible ? fillColor : '#f5f5f5',
+      fillOpacity: isEligible ? 0.35 : 0.1,
     }
   }
+
+  const overlayStyle = () => ({
+    color: '#1565C0',
+    weight: 2,
+    fillColor: '#1E88E5',
+    fillOpacity: 0.35,
+  })
 
   const wardStyle = (feature: GeoFeature) => {
     const wardCode = feature.properties?.reference
@@ -100,8 +144,26 @@ export default function LocalMap({
             click: event => {
               const feature = (event as any)?.sourceTarget?.feature
               const ladCode = feature?.properties?.reference
-              if (ladCode && eligibleLads.has(ladCode)) {
+              if (
+                ladCode &&
+                (eligibleLads.has(ladCode) || (overlayAreaCodes && overlayAreaCodes.has(ladCode)))
+              ) {
                 onSelectLad(ladCode)
+              }
+            },
+          }}
+        />
+      )}
+      {!selectedLad && overlayAreas && (
+        <GeoJSON
+          data={overlayAreas as GeoJsonObject}
+          style={overlayStyle}
+          eventHandlers={{
+            click: event => {
+              const feature = (event as any)?.sourceTarget?.feature
+              const areaCode = feature?.properties?.reference
+              if (areaCode) {
+                onSelectLad(areaCode)
               }
             },
           }}

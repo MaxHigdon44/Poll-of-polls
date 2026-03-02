@@ -29,14 +29,26 @@ const HOC_SOURCES = [
   },
 ]
 
+const LONDON_WARD_SOURCE = {
+  year: 2022,
+  filename: 'london-2022-wards.xlsx',
+  url: 'https://data.london.gov.uk/download/e16o8/26588a60-df3c-47cd-84e6-bd94f7a7d0c4/London%202022%20Wards.xlsx',
+}
+
 const WARD_GEOJSON_URL =
   'https://opendata.arcgis.com/api/v3/datasets/1ff1b4c40cf344e7afc05d6d09f16315_0/downloads/data?format=geojson&spatialRefId=4326'
 const LAD_GEOJSON_URL =
   'https://opendata.arcgis.com/api/v3/datasets/2e9f5c259fec4e1c9951ecb974253c66_0/downloads/data?format=geojson&spatialRefId=4326'
+const COUNTY_GEOJSON_URL =
+  'https://opendata.arcgis.com/api/v3/datasets/445118cc2e3b495aa81afa3925bfb0d9_0/downloads/data?format=geojson&spatialRefId=4326'
+const CED_GEOJSON_URL =
+  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/fbed6f3bb9ae4cab9f74b3cb331d39ed/geojson?layers=0'
 const MSOA_WD22_LAD22_LOOKUP_URL =
   'https://opendata.arcgis.com/api/v3/datasets/fc3bf6fe8ea949869af0a018205ac952_0/downloads/data?format=csv&spatialRefId=4326'
 const MSOA_WD23_LAD23_LOOKUP_URL =
   'https://opendata.arcgis.com/api/v3/datasets/f9fa90df09024becb455ab3f7f7b4a15_0/downloads/data?format=csv&spatialRefId=4326'
+const LAD_TO_COUNTY_LOOKUP_URL =
+  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/7b21cc353fe940e9b0e05442830939ab/csv?layers=0'
 
 const NATIONAL_PARTIES = [
   'Labour',
@@ -47,6 +59,50 @@ const NATIONAL_PARTIES = [
   'SNP',
   'Plaid Cymru',
 ]
+
+const LONDON_BOROUGHS = new Set(
+  [
+    'Barking and Dagenham',
+    'Barnet',
+    'Bexley',
+    'Brent',
+    'Bromley',
+    'Camden',
+    'City of London',
+    'Croydon',
+    'Ealing',
+    'Enfield',
+    'Greenwich',
+    'Hackney',
+    'Hammersmith and Fulham',
+    'Haringey',
+    'Harrow',
+    'Havering',
+    'Hillingdon',
+    'Hounslow',
+    'Islington',
+    'Kensington and Chelsea',
+    'Kingston upon Thames',
+    'Lambeth',
+    'Lewisham',
+    'Merton',
+    'Newham',
+    'Redbridge',
+    'Richmond upon Thames',
+    'Southwark',
+    'Sutton',
+    'Tower Hamlets',
+    'Waltham Forest',
+    'Wandsworth',
+    'Westminster',
+  ].map(name => normalize(name))
+)
+
+const COUNTY_ELECTIONS_2026 = new Set(
+  ['East Sussex', 'Essex', 'Hampshire', 'Norfolk', 'Suffolk', 'West Sussex'].map(name =>
+    name.toLowerCase()
+  )
+)
 
 function normalize(value) {
   return String(value || '')
@@ -180,6 +236,21 @@ async function buildWardCodeCrosswalk() {
   return result
 }
 
+async function buildLadToCountyLookup() {
+  const lookupPath = path.join(RAW_DIR, 'lad_to_county.csv')
+  await downloadIfMissing(lookupPath, LAD_TO_COUNTY_LOOKUP_URL)
+
+  const { rows } = await loadCsv(lookupPath)
+  const mapping = new Map()
+  rows.forEach(row => {
+    const lad = row.LAD24CD || row['LAD24CD']
+    const county = row.CTY24CD || row['CTY24CD']
+    if (!lad || !county) return
+    mapping.set(lad, county)
+  })
+  return mapping
+}
+
 async function ensureDir(dir) {
   await fsp.mkdir(dir, { recursive: true })
 }
@@ -189,17 +260,45 @@ async function downloadIfMissing(filePath, url) {
   await downloadWithRetry(filePath, url)
 }
 
+async function ensureGeojson(filePath, url, fallbackPath) {
+  if (fs.existsSync(filePath)) {
+    const existing = await fsp.readFile(filePath, 'utf8')
+    if (existing.includes('"type":"FeatureCollection"')) {
+      return
+    }
+    await fsp.unlink(filePath)
+  }
+  try {
+    await downloadWithRetry(filePath, url)
+  } catch (err) {
+    if (fallbackPath && fs.existsSync(fallbackPath)) {
+      const fallback = await fsp.readFile(fallbackPath, 'utf8')
+      if (fallback.includes('"type":"FeatureCollection"')) {
+        await fsp.writeFile(filePath, fallback)
+        return
+      }
+    }
+    throw err
+  }
+}
+
 async function downloadWithRetry(filePath, url) {
-  for (let attempt = 0; attempt < 5; attempt++) {
+  for (let attempt = 0; attempt < 12; attempt++) {
     const res = await fetch(url)
     if (!res.ok) {
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      await new Promise(resolve => setTimeout(resolve, 5000))
       continue
     }
     const buffer = Buffer.from(await res.arrayBuffer())
     const text = buffer.toString('utf8')
-    if (text.includes('"status":"ExportingData"') || text.includes('"status":"InProgress"')) {
-      await new Promise(resolve => setTimeout(resolve, 2000))
+    if (
+      text.includes('"status":"ExportingData"') ||
+      text.includes('"status":"InProgress"') ||
+      text.includes('"status":"Pending"') ||
+      text.includes('download file is being generated') ||
+      !text.includes('"type":"FeatureCollection"')
+    ) {
+      await new Promise(resolve => setTimeout(resolve, 5000))
       continue
     }
     await fsp.writeFile(filePath, buffer)
@@ -277,22 +376,87 @@ function parseWardResults(filePath) {
   return dataRows
 }
 
+function parseLondonWardResults(filePath) {
+  const workbook = xlsx.readFile(filePath, { cellDates: false })
+  const sheet =
+    workbook.Sheets['Ward votes summary'] || workbook.Sheets[workbook.SheetNames[0]]
+  const rows = xlsx.utils.sheet_to_json(sheet, { defval: null, header: 1 })
+  if (!rows.length) return []
+
+  const header = rows[0].map(cell => String(cell || '').trim())
+  const indexOf = name =>
+    header.findIndex(cell => cell.toLowerCase() === name.toLowerCase())
+
+  const indices = {
+    wardCode: indexOf('WD22CD'),
+    wardName: indexOf('Ward name'),
+    ladCode: indexOf('LAD11CD'),
+    ladName: indexOf('Borough'),
+  }
+
+  const partyColumns = header
+    .map((cell, index) => ({ index, name: cell }))
+    .filter(entry => entry.index > indices.ladName && entry.name)
+
+  const dataRows = []
+  for (let i = 1; i < rows.length; i++) {
+    const row = rows[i]
+    if (!row || !row.length) continue
+    const wardCode = row[indices.wardCode]
+    const wardName = row[indices.wardName]
+    const ladCode = row[indices.ladCode]
+    const ladName = row[indices.ladName]
+    if (!wardCode || !wardName || !ladCode || !ladName) continue
+    if (!LONDON_BOROUGHS.has(normalize(ladName))) continue
+
+    const partyVotes = partyColumns.reduce((acc, col) => {
+      acc[col.name] = row[col.index]
+      return acc
+    }, {})
+    const totalVotes = Object.values(partyVotes).reduce((acc, value) => {
+      const votes = Number(String(value || '').replace(/[^0-9]/g, ''))
+      return acc + (votes || 0)
+    }, 0)
+
+    dataRows.push({
+      ladName,
+      ladCode,
+      wardName,
+      wardCode,
+      totalVotes,
+      partyVotes,
+    })
+  }
+
+  return dataRows
+}
+
 async function buildBaseline() {
   await ensureDir(RAW_DIR)
   await ensureDir(OUT_DIR)
 
-  const wardPath = path.join(RAW_DIR, 'ward.geojson')
-  if (fs.existsSync(wardPath)) {
-    await fsp.unlink(wardPath)
+  await downloadIfMissing(path.join(RAW_DIR, LONDON_WARD_SOURCE.filename), LONDON_WARD_SOURCE.url)
+
+  const skipGeo = process.env.SKIP_GEO === '1'
+  const wardPath = skipGeo
+    ? path.join(OUT_DIR, 'wards.geojson')
+    : path.join(RAW_DIR, 'ward.geojson')
+  if (!skipGeo) {
+    await ensureGeojson(wardPath, WARD_GEOJSON_URL, path.join(OUT_DIR, 'wards.geojson'))
   }
-  await downloadIfMissing(wardPath, WARD_GEOJSON_URL)
   const ladPath = path.join(RAW_DIR, 'lad.geojson')
-  if (fs.existsSync(ladPath)) {
-    await fsp.unlink(ladPath)
+  const countyPath = path.join(RAW_DIR, 'county.geojson')
+  const cedPath = path.join(RAW_DIR, 'ced.geojson')
+  if (!skipGeo) {
+    await ensureGeojson(ladPath, LAD_GEOJSON_URL)
+    await ensureGeojson(countyPath, COUNTY_GEOJSON_URL)
+    await ensureGeojson(cedPath, CED_GEOJSON_URL)
   }
-  await downloadIfMissing(ladPath, LAD_GEOJSON_URL)
   const wardData = new Map()
   const wardGeo = JSON.parse(await fsp.readFile(wardPath, 'utf8'))
+  const countyGeo = skipGeo ? null : JSON.parse(await fsp.readFile(countyPath, 'utf8'))
+  const cedGeo = skipGeo ? null : JSON.parse(await fsp.readFile(cedPath, 'utf8'))
+  const ladToCounty = await buildLadToCountyLookup()
   wardGeo.features = wardGeo.features.map(feature => {
     const props = feature.properties || {}
     if (!props.reference && props.WD23CD) {
@@ -304,6 +468,38 @@ async function buildBaseline() {
     feature.properties = props
     return feature
   })
+
+  if (!skipGeo && countyGeo && cedGeo) {
+    countyGeo.features = countyGeo.features.map(feature => {
+      const props = feature.properties || {}
+      if (!props.reference && (props.CTYUA23CD || props.CTYUA24CD)) {
+        props.reference = props.CTYUA23CD || props.CTYUA24CD
+      }
+      if (!props.name && (props.CTYUA23NM || props.CTYUA24NM)) {
+        props.name = props.CTYUA23NM || props.CTYUA24NM
+      }
+      feature.properties = props
+      return feature
+    })
+
+    cedGeo.features = cedGeo.features.map(feature => {
+      const props = feature.properties || {}
+      if (!props.reference && (props.CED23CD || props.CED24CD)) {
+        props.reference = props.CED23CD || props.CED24CD
+      }
+      if (!props.name && (props.CED23NM || props.CED24NM)) {
+        props.name = props.CED23NM || props.CED24NM
+      }
+      if (!props.county && (props.CTYUA23CD || props.CTYUA24CD)) {
+        props.county = props.CTYUA23CD || props.CTYUA24CD
+      }
+      if (!props.county && props.LAD24CD) {
+        props.county = ladToCounty.get(props.LAD24CD) || null
+      }
+      feature.properties = props
+      return feature
+    })
+  }
   const wardGeoCodes = new Set(wardGeo.features.map(feature => feature.properties?.reference))
   const wardCodeCrosswalk = await buildWardCodeCrosswalk()
 
@@ -320,53 +516,73 @@ async function buildBaseline() {
     )
   }
 
+  const londonRows = parseLondonWardResults(path.join(RAW_DIR, LONDON_WARD_SOURCE.filename))
+
+  function upsertWardRow(row, year, allowOverwrite = false) {
+    let wardCode = row.wardCode
+    const wardName = row.wardName
+    const ladCode = row.ladCode
+    const ladName = row.ladName
+    if (!wardCode || !ladCode || !wardName || !ladName) return
+
+    if (!wardGeoCodes.has(wardCode)) {
+      const mapped = wardCodeCrosswalk.get(wardCode)
+      if (mapped) wardCode = mapped
+    }
+
+    const key = wardCode
+    const existing = wardData.get(key)
+    if (existing && existing.lastYear > year) return
+    if (existing && !allowOverwrite && existing.totalVotes > 0) return
+
+    if (!existing || existing.lastYear !== year || allowOverwrite) {
+      wardData.set(key, {
+        wardCode,
+        wardName,
+        ladCode,
+        ladName,
+        lastYear: year,
+        totalVotes: 0,
+        nationalVotes: {},
+        localVotes: {},
+      })
+    }
+
+    const record = wardData.get(key)
+    if (!record || record.lastYear !== year) return
+
+    const totalVotes = Number(String(row.totalVotes || '').replace(/[^0-9]/g, '')) || 0
+    record.totalVotes += totalVotes
+
+    Object.entries(row.partyVotes || {}).forEach(([partyName, voteValue]) => {
+      const votes = Number(String(voteValue || '').replace(/[^0-9]/g, ''))
+      if (!votes) return
+      const mapped = mapParty(partyName)
+      if (mapped.bucket === 'national') {
+        record.nationalVotes[mapped.name] = (record.nationalVotes[mapped.name] || 0) + votes
+      } else {
+        record.localVotes[mapped.name] = (record.localVotes[mapped.name] || 0) + votes
+      }
+    })
+  }
+
   for (const source of sortedSources) {
     const filePath = path.join(RAW_DIR, source.filename)
     const rows = parseWardResults(filePath)
     rows.forEach(row => {
-      let wardCode = row.wardCode
-      const wardName = row.wardName
-      const ladCode = row.ladCode
-      const ladName = row.ladName
-      if (!wardCode || !ladCode || !wardName || !ladName) return
-
-      if (!wardGeoCodes.has(wardCode)) {
-        const mapped = wardCodeCrosswalk.get(wardCode)
-        if (mapped) wardCode = mapped
-      }
-
-      const key = wardCode
-      if (!wardData.has(key)) {
-        wardData.set(key, {
-          wardCode,
-          wardName,
-          ladCode,
-          ladName,
-          lastYear: source.year,
-          totalVotes: 0,
-          nationalVotes: {},
-          localVotes: {},
-        })
-      }
-
-      const record = wardData.get(key)
-      if (record.lastYear !== source.year) return
-
-      const totalVotes = Number(String(row.totalVotes || '').replace(/[^0-9]/g, '')) || 0
-      record.totalVotes += totalVotes
-
-      Object.entries(row.partyVotes || {}).forEach(([partyName, voteValue]) => {
-        const votes = Number(String(voteValue || '').replace(/[^0-9]/g, ''))
-        if (!votes) return
-        const mapped = mapParty(partyName)
-        if (mapped.bucket === 'national') {
-          record.nationalVotes[mapped.name] = (record.nationalVotes[mapped.name] || 0) + votes
-        } else {
-          record.localVotes[mapped.name] = (record.localVotes[mapped.name] || 0) + votes
-        }
-      })
+      upsertWardRow(row, source.year, false)
     })
   }
+
+  // Fill missing/zero London wards from London 2022 dataset
+  let londonFilled = 0
+  londonRows.forEach(row => {
+    const existing = wardData.get(row.wardCode)
+    const hadData = existing && (existing.totalVotes || 0) > 0
+    upsertWardRow(row, LONDON_WARD_SOURCE.year, true)
+    if (!hadData) londonFilled += 1
+  })
+  console.log(`London wards filled from GLA 2022 dataset: ${londonFilled}`)
 
   const baseline = []
   const baselineTotals = {}
@@ -421,7 +637,9 @@ async function buildBaseline() {
     JSON.stringify(output)
   )
 
-  const ladGeo = JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'lad.geojson'), 'utf8'))
+  const ladGeo = skipGeo
+    ? JSON.parse(await fsp.readFile(path.join(OUT_DIR, 'lads.geojson'), 'utf8'))
+    : JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'lad.geojson'), 'utf8'))
 
   ladGeo.features = ladGeo.features.map(feature => {
     const props = feature.properties || {}
@@ -435,6 +653,19 @@ async function buildBaseline() {
     return feature
   })
 
+  if (!skipGeo && countyGeo && cedGeo) {
+    const countyGeoCodes = new Set(countyGeo.features.map(feature => feature.properties?.reference))
+    countyGeo.features = countyGeo.features.filter(feature => {
+      const name = String(feature.properties?.name || '').toLowerCase()
+      return countyGeoCodes.has(feature.properties?.reference) && COUNTY_ELECTIONS_2026.has(name)
+    })
+
+    const countyCodes = new Set(countyGeo.features.map(feature => feature.properties?.reference))
+    cedGeo.features = cedGeo.features.filter(feature =>
+      countyCodes.has(feature.properties?.county)
+    )
+  }
+
   const wardCodes = new Set(baseline.map(entry => entry.wardCode))
   wardGeo.features = wardGeo.features.filter(feature =>
     wardCodes.has(feature.properties?.reference)
@@ -446,8 +677,12 @@ async function buildBaseline() {
     ladCodes.has(feature.properties?.reference)
   )
 
-  await fsp.writeFile(path.join(OUT_DIR, 'wards.geojson'), JSON.stringify(wardGeo))
-  await fsp.writeFile(path.join(OUT_DIR, 'lads.geojson'), JSON.stringify(ladGeo))
+  if (!skipGeo) {
+    await fsp.writeFile(path.join(OUT_DIR, 'wards.geojson'), JSON.stringify(wardGeo))
+    await fsp.writeFile(path.join(OUT_DIR, 'lads.geojson'), JSON.stringify(ladGeo))
+    await fsp.writeFile(path.join(OUT_DIR, 'counties.geojson'), JSON.stringify(countyGeo))
+    await fsp.writeFile(path.join(OUT_DIR, 'ced.geojson'), JSON.stringify(cedGeo))
+  }
 
   await fsp.writeFile(
     path.join(OUT_DIR, 'baseline-national.json'),
@@ -462,6 +697,8 @@ async function buildBaseline() {
     ladsInBaseline: ladCodes.size,
     ladsInGeo: ladGeoCodes.size,
     ladsMatched: ladGeo.features.length,
+    countiesIncluded: countyGeo ? countyGeo.features.length : 0,
+    cedIncluded: cedGeo ? cedGeo.features.length : 0,
   }
 
   await fsp.writeFile(path.join(OUT_DIR, 'audit.json'), JSON.stringify(audit))
