@@ -2,6 +2,7 @@ const fs = require('fs')
 const fsp = require('fs/promises')
 const path = require('path')
 const xlsx = require('xlsx')
+const cheerio = require('cheerio')
 
 const RAW_DIR = path.join(__dirname, '..', 'data', 'raw')
 const OUT_DIR = path.join(__dirname, '..', 'public', 'data')
@@ -35,12 +36,109 @@ const LONDON_WARD_SOURCE = {
   url: 'https://data.london.gov.uk/download/e16o8/26588a60-df3c-47cd-84e6-bd94f7a7d0c4/London%202022%20Wards.xlsx',
 }
 
+const WIKIPEDIA_WARD_PAGES = [
+  {
+    ladName: 'Basildon',
+    urls: ['https://en.wikipedia.org/wiki/2023_Basildon_Borough_Council_election'],
+  },
+  {
+    ladName: 'Brentwood',
+    urls: [
+      'https://en.wikipedia.org/wiki/2024_Brentwood_Borough_Council_election',
+      'https://en.wikipedia.org/wiki/2023_Brentwood_Borough_Council_election',
+    ],
+  },
+  {
+    ladName: 'Cannock Chase',
+    urls: ['https://en.wikipedia.org/wiki/2023_Cannock_Chase_District_Council_election'],
+  },
+  {
+    ladName: 'Epping Forest',
+    urls: ['https://en.wikipedia.org/wiki/2023_Epping_Forest_District_Council_election'],
+  },
+  {
+    ladName: 'Epsom and Ewell',
+    urls: ['https://en.wikipedia.org/wiki/2023_Epsom_and_Ewell_Borough_Council_election'],
+  },
+  {
+    ladName: 'Guildford',
+    urls: ['https://en.wikipedia.org/wiki/2023_Guildford_Borough_Council_election'],
+  },
+  {
+    ladName: 'Huntingdonshire',
+    urls: ['https://en.wikipedia.org/wiki/2022_Huntingdonshire_District_Council_election'],
+  },
+  {
+    ladName: 'Isle of Wight',
+    urls: ['https://en.wikipedia.org/wiki/2021_Isle_of_Wight_Council_election'],
+  },
+  {
+    ladName: 'Newcastle-under-Lyme',
+    urls: ['https://en.wikipedia.org/wiki/2022_Newcastle-under-Lyme_Borough_Council_election'],
+  },
+  {
+    ladName: 'Redditch',
+    urls: [
+      'https://en.wikipedia.org/wiki/2024_Redditch_Borough_Council_election',
+      'https://en.wikipedia.org/wiki/2023_Redditch_Borough_Council_election',
+    ],
+  },
+  {
+    ladName: 'Rugby',
+    urls: [
+      'https://en.wikipedia.org/wiki/2024_Rugby_Borough_Council_election',
+      'https://en.wikipedia.org/wiki/2023_Rugby_Borough_Council_election',
+    ],
+  },
+  {
+    ladName: 'South Cambridgeshire',
+    urls: ['https://en.wikipedia.org/wiki/2022_South_Cambridgeshire_District_Council_election'],
+  },
+  {
+    ladName: 'Spelthorne',
+    urls: ['https://en.wikipedia.org/wiki/2023_Spelthorne_Borough_Council_election'],
+  },
+  {
+    ladName: 'Surrey Heath',
+    urls: ['https://en.wikipedia.org/wiki/2023_Surrey_Heath_Borough_Council_election'],
+  },
+  {
+    ladName: 'Tandridge',
+    urls: [
+      'https://en.wikipedia.org/wiki/2024_Tandridge_District_Council_election',
+      'https://en.wikipedia.org/wiki/2023_Tandridge_District_Council_election',
+    ],
+  },
+  {
+    ladName: 'Tunbridge Wells',
+    urls: [
+      'https://en.wikipedia.org/wiki/2024_Tunbridge_Wells_Borough_Council_election',
+      'https://en.wikipedia.org/wiki/2023_Tunbridge_Wells_Borough_Council_election',
+    ],
+  },
+  {
+    ladName: 'Waverley',
+    urls: ['https://en.wikipedia.org/wiki/2023_Waverley_Borough_Council_election'],
+  },
+  {
+    ladName: 'West Oxfordshire',
+    urls: [
+      'https://en.wikipedia.org/wiki/2024_West_Oxfordshire_District_Council_election',
+      'https://en.wikipedia.org/wiki/2023_West_Oxfordshire_District_Council_election',
+    ],
+  },
+  {
+    ladName: 'Wokingham',
+    urls: ['https://en.wikipedia.org/wiki/2023_Wokingham_Borough_Council_election'],
+  },
+]
+
 const LEAVE_WARD_FILE = 'leave_ward.csv'
 const LEAVE_WARD_XLSX = 'leave_ward.xlsx'
 const LEAVE_LAD_FILE = 'leave_lad.csv'
 
 const WARD_GEOJSON_URL =
-  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/5cc0a7e3aa194a1080026eb13ce48dbe/geojson?layers=0'
+  'https://opendata.arcgis.com/api/v3/datasets/1ff1b4c40cf344e7afc05d6d09f16315_0/downloads/data?format=geojson&spatialRefId=4326'
 const LAD_GEOJSON_URL =
   'https://opendata.arcgis.com/api/v3/datasets/2e9f5c259fec4e1c9951ecb974253c66_0/downloads/data?format=geojson&spatialRefId=4326'
 const COUNTY_GEOJSON_URL =
@@ -51,6 +149,8 @@ const MSOA_WD22_LAD22_LOOKUP_URL =
   'https://opendata.arcgis.com/api/v3/datasets/fc3bf6fe8ea949869af0a018205ac952_0/downloads/data?format=csv&spatialRefId=4326'
 const MSOA_WD23_LAD23_LOOKUP_URL =
   'https://opendata.arcgis.com/api/v3/datasets/f9fa90df09024becb455ab3f7f7b4a15_0/downloads/data?format=csv&spatialRefId=4326'
+const WARD_LAD_2023_LOOKUP_URL =
+  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/c333296ade704facb64fcb2f0e4f36f4/csv?layers=0'
 const LAD_TO_COUNTY_LOOKUP_URL =
   'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/7b21cc353fe940e9b0e05442830939ab/csv?layers=0'
 
@@ -130,9 +230,9 @@ function mapParty(name) {
   if (['lab', 'labour'].includes(lowered)) return { bucket: 'national', name: 'Labour' }
   if (['con', 'conservative'].includes(lowered)) return { bucket: 'national', name: 'Conservative' }
   if (['ref', 'reform'].includes(lowered)) return { bucket: 'national', name: 'Reform' }
-  if (['ld', 'lib dem', 'liberal democrat'].includes(lowered))
+  if (['ld', 'lib dem', 'liberal democrat', 'libdem'].includes(lowered))
     return { bucket: 'national', name: 'Liberal Democrat' }
-  if (['green'].includes(lowered)) return { bucket: 'national', name: 'Green' }
+  if (['green', 'grn'].includes(lowered)) return { bucket: 'national', name: 'Green' }
   if (['snp'].includes(lowered)) return { bucket: 'national', name: 'SNP' }
   if (['pc', 'plaid cymru'].includes(lowered)) return { bucket: 'national', name: 'Plaid Cymru' }
   if (['other', 'others'].includes(lowered)) return { bucket: 'local', name: 'Other' }
@@ -240,6 +340,32 @@ async function buildWardCodeCrosswalk() {
   return result
 }
 
+async function buildWardToLadLookup() {
+  const lookupPath = path.join(RAW_DIR, 'ward_lad_2023_lookup.csv')
+  await downloadIfMissing(lookupPath, WARD_LAD_2023_LOOKUP_URL)
+  const { rows } = await loadCsv(lookupPath)
+  const map = new Map()
+  const byName = new Map()
+  rows.forEach(row => {
+    const ward =
+      row.WD23CD || row['WD23CD'] || row['\uFEFFWD23CD']
+    const lad =
+      row.LAD23CD || row['LAD23CD'] || row['\uFEFFLAD23CD']
+    const ladName =
+      row.LAD23NM || row['LAD23NM'] || row['\uFEFFLAD23NM']
+    const wardName =
+      row.WD23NM || row['WD23NM'] || row['\uFEFFWD23NM']
+    if (!ward || !lad) return
+    map.set(ward, { lad, ladName })
+    if (wardName && ladName) {
+      const key = `${normalize(ladName)}|${normalize(wardName)}`
+      byName.set(key, { ward, lad, ladName, wardName })
+    }
+  })
+  map.byName = byName
+  return map
+}
+
 async function buildLadToCountyLookup() {
   const lookupPath = path.join(RAW_DIR, 'lad_to_county.csv')
   await downloadIfMissing(lookupPath, LAD_TO_COUNTY_LOOKUP_URL)
@@ -324,6 +450,25 @@ function parseWardResults(filePath) {
       .toLowerCase()
       .replace(/\s+/g, ' ')
       .trim()
+  const normalizePartyHeader = value => {
+    const raw = String(value || '').trim()
+    const upper = raw.toUpperCase()
+    const map = {
+      CON: 'Conservative',
+      LAB: 'Labour',
+      LD: 'Liberal Democrat',
+      LIBDEM: 'Liberal Democrat',
+      LIB: 'Liberal Democrat',
+      GRN: 'Green',
+      GREEN: 'Green',
+      REF: 'Reform',
+      REFORM: 'Reform',
+      SNP: 'SNP',
+      PC: 'Plaid Cymru',
+    }
+    if (map[upper]) return map[upper]
+    return raw
+  }
 
   let headerRowIndex = -1
   let headerRow = []
@@ -345,12 +490,32 @@ function parseWardResults(filePath) {
     wardCode: headerRow.findIndex(cell => headerNormalize(cell).includes('ward code')),
     wardName: headerRow.findIndex(cell => headerNormalize(cell).includes('ward name')),
     totalVotes: headerRow.findIndex(cell => headerNormalize(cell).includes('total votes')),
+    turnout: headerRow.findIndex(cell => headerNormalize(cell).includes('turnout')),
   }
 
-  const partyStartIndex = Math.max(indices.totalVotes + 1, 0)
-  const skipHeaders = ['turnout', 'electorate', 'vacancies', 'local authority type', 'election type']
+  let partyStartIndex = 0
+  if (indices.turnout >= 0 && (indices.totalVotes === -1 || indices.turnout < indices.totalVotes)) {
+    partyStartIndex = indices.turnout + 1
+  } else if (indices.totalVotes >= 0) {
+    partyStartIndex = indices.totalVotes + 1
+  }
+  const skipHeaders = [
+    'turnout',
+    'electorate',
+    'total votes',
+    'vacancies',
+    'local authority type',
+    'election type',
+    'county name',
+    'county code',
+    'local authority name',
+    'local authority code',
+    'ward name',
+    'ward code',
+    'type',
+  ]
   const partyColumns = headerRow
-    .map((cell, index) => ({ index, name: String(cell || '').trim() }))
+    .map((cell, index) => ({ index, name: normalizePartyHeader(cell) }))
     .filter(entry => entry.index >= partyStartIndex && entry.name)
     .filter(entry => {
       const header = headerNormalize(entry.name)
@@ -364,46 +529,85 @@ function parseWardResults(filePath) {
     const ladName = row[indices.ladName]
     const wardName = row[indices.wardName]
     if (!ladName || !wardName) continue
+    const partyVotes = partyColumns.reduce((acc, col) => {
+      const value = row[col.index]
+      if (acc[col.name] == null) {
+        acc[col.name] = value
+        return acc
+      }
+      const current = Number(String(acc[col.name] || '').replace(/[^0-9]/g, '')) || 0
+      const add = Number(String(value || '').replace(/[^0-9]/g, '')) || 0
+      acc[col.name] = current + add
+      return acc
+    }, {})
+    let totalVotes = row[indices.totalVotes]
+    if (indices.totalVotes === -1) {
+      totalVotes = Object.values(partyVotes).reduce((sum, value) => {
+        const numeric = Number(String(value || '').replace(/[^0-9]/g, '')) || 0
+        return sum + numeric
+      }, 0)
+    }
     dataRows.push({
       ladName,
       ladCode: row[indices.ladCode],
       wardName,
       wardCode: row[indices.wardCode],
-      totalVotes: row[indices.totalVotes],
-      partyVotes: partyColumns.reduce((acc, col) => {
-        acc[col.name] = row[col.index]
-        return acc
-      }, {}),
+      totalVotes,
+      partyVotes,
     })
   }
 
   return dataRows
 }
 
-function parseLeaveShareCsv(rows, type) {
+function parseLeaveShareCsv(rows, type, nameFieldCandidates = []) {
   if (!rows || !rows.length) return new Map()
   const header = Object.keys(rows[0] || {})
-  const pick = candidates => candidates.find(name => header.includes(name)) || null
+  const cleaned = header.map(name =>
+    String(name || '')
+      .replace(/^\uFEFF/, '')
+      .trim()
+  )
+  const headerMap = new Map(cleaned.map((name, i) => [name, header[i]]))
+  const pick = candidates => {
+    const match = candidates.find(name => headerMap.has(name))
+    return match ? headerMap.get(match) : null
+  }
 
   const codeField =
     type === 'ward'
       ? pick(['WD25CD', 'WD23CD', 'WD22CD', 'WardCode', 'ward_code'])
-      : pick(['LAD24CD', 'LAD23CD', 'LAD22CD', 'LAD21CD', 'lad_code', 'LADCD'])
+      : pick([
+          'LAD24CD',
+          'LAD23CD',
+          'LAD22CD',
+          'LAD21CD',
+          'lad_code',
+          'LADCD',
+          'Area_Code',
+          'AREA_CODE',
+        ])
 
   const leaveField =
     pick([
+      'Pct_Leave',
+      'Pct Leave',
+      'Leave%',
       'LeaveShare',
       'leave_share',
       'LeaveSharePct',
       'Leave %',
+      'LeavePct',
       'Leave',
       'leave',
-      'LeavePct',
     ]) || null
+  const nameField =
+    nameFieldCandidates.length > 0 ? pick(nameFieldCandidates) : null
 
   if (!codeField || !leaveField) return new Map()
 
   const map = new Map()
+  const nameMap = new Map()
   rows.forEach(row => {
     const code = row[codeField]
     if (!code) return
@@ -413,7 +617,16 @@ function parseLeaveShareCsv(rows, type) {
     const share = value > 1 ? value / 100 : value
     if (share < 0 || share > 1) return
     map.set(String(code), share)
+    if (nameField && row[nameField]) {
+      const nameKey = String(row[nameField])
+        .toLowerCase()
+        .replace(/&/g, 'and')
+        .replace(/\s+/g, ' ')
+        .trim()
+      nameMap.set(nameKey, share)
+    }
   })
+  map.nameMap = nameMap
   return map
 }
 
@@ -436,13 +649,19 @@ async function buildLeaveShare(wardGeoCodes) {
     ? loadLeaveWardXlsx(wardXlsxPath)
     : await loadCsv(wardPath)
   const ladCsv = await loadCsv(ladPath)
-  const wardMap = parseLeaveShareCsv(wardCsv.rows, 'ward')
+  const wardMap = parseLeaveShareCsv(wardCsv.rows, 'ward', ['WardName', 'ward_name'])
   const ladMap = parseLeaveShareCsv(ladCsv.rows, 'lad')
 
   const wardEntries = {}
   wardMap.forEach((leaveShare, code) => {
     wardEntries[code] = { leaveShare }
   })
+  const wardNameEntries = {}
+  if (wardMap.nameMap) {
+    wardMap.nameMap.forEach((leaveShare, key) => {
+      wardNameEntries[key] = { leaveShare }
+    })
+  }
 
   const ladEntries = {}
   ladMap.forEach((leaveShare, code) => {
@@ -455,6 +674,7 @@ async function buildLeaveShare(wardGeoCodes) {
 
   return {
     wards: wardEntries,
+    wardNames: wardNameEntries,
     lads: ladEntries,
     meta: {
       wardCoverage: coverage,
@@ -519,6 +739,489 @@ function parseLondonWardResults(filePath) {
   return dataRows
 }
 
+async function fetchHtml(url) {
+  const res = await fetch(url)
+  if (!res.ok) {
+    throw new Error(`Failed to fetch ${url}: ${res.status}`)
+  }
+  return await res.text()
+}
+
+function extractResultsTable($) {
+  const tables = $('table').toArray()
+  for (const table of tables) {
+    const headers = $(table)
+      .find('tr')
+      .first()
+      .find('th')
+      .toArray()
+      .map(th => $(th).text().toLowerCase())
+    const hasCandidate = headers.some(h => h.includes('candidate'))
+    const hasParty = headers.some(h => h.includes('party'))
+    const hasVotes = headers.some(h => h.includes('votes') || h.includes('results'))
+    if (hasCandidate && hasParty && hasVotes) {
+      return { table, headers }
+    }
+  }
+  return null
+}
+
+function parseWardResultsTable(html) {
+  const $ = cheerio.load(html)
+  const tableInfo = extractResultsTable($)
+  if (!tableInfo) return null
+  const { table, headers } = tableInfo
+
+  const partyIndex = headers.findIndex(h => h.includes('party'))
+  const votesIndex = headers.findIndex(h => h.includes('votes') || h.includes('results'))
+  if (partyIndex === -1 || votesIndex === -1) return null
+
+  const rows = $(table).find('tr').slice(1).toArray()
+  const partyVotes = {}
+  let totalVotes = 0
+  rows.forEach(row => {
+    const cells = $(row).find('td').toArray().map(td => $(td).text().trim())
+    if (cells.length <= Math.max(partyIndex, votesIndex)) return
+    const party = cells[partyIndex]
+    const votes = Number(String(cells[votesIndex] || '').replace(/[^0-9]/g, ''))
+    if (!party || !votes) return
+    if (party.toLowerCase().includes('rejected')) return
+    partyVotes[party] = (partyVotes[party] || 0) + votes
+    totalVotes += votes
+  })
+  return totalVotes ? { partyVotes, totalVotes } : null
+}
+
+function parseTealeWardTable(html) {
+  const $ = cheerio.load(html)
+  const tables = $('table').toArray()
+  let target = null
+
+  for (const table of tables) {
+    const headers = $(table)
+      .find('tr')
+      .first()
+      .find('th')
+      .toArray()
+      .map(th => $(th).text().trim())
+    if (!headers.length) continue
+    const hasWard = headers.some(h => /ward/i.test(h))
+    const hasParty = headers.some(h =>
+      /(lab|con|ld|lib|dem|green|grn|reform|snp|plaid|ind|ukip)/i.test(h)
+    )
+    if (hasWard && hasParty) {
+      target = { table, headers }
+      break
+    }
+  }
+
+  if (!target) return []
+  const { table, headers } = target
+  const wardIndex = headers.findIndex(h => /ward/i.test(h))
+  if (wardIndex === -1) return []
+
+  const rows = []
+  $(table)
+    .find('tr')
+    .slice(1)
+    .each((_, row) => {
+      const cells = $(row)
+        .find('td')
+        .toArray()
+        .map(td => $(td).text().trim())
+      if (!cells.length || cells.length <= wardIndex) return
+      const wardName = cells[wardIndex]
+      if (!wardName) return
+
+      const partyVotes = {}
+      let totalVotes = 0
+      for (let i = 0; i < cells.length && i < headers.length; i++) {
+        if (i === wardIndex) continue
+        const header = headers[i]
+        if (!header) continue
+        if (/turnout|electorate|majority|%|percent/i.test(header)) continue
+        const votes = Number(String(cells[i] || '').replace(/[^0-9]/g, ''))
+        if (!votes) continue
+        partyVotes[header] = (partyVotes[header] || 0) + votes
+        totalVotes += votes
+      }
+
+      if (totalVotes > 0) {
+        rows.push({ wardName, partyVotes, totalVotes })
+      }
+    })
+
+  return rows
+}
+
+async function fetchTealeWardResults(councilId, ladName) {
+  const url = `https://www.andrewteale.me.uk/leap/results/2022/${councilId}/`
+  const cachePath = path.join(RAW_DIR, `teale_${councilId}.html`)
+  const cacheMhtmlPath = path.join(RAW_DIR, `teale_${councilId}.mhtml`)
+  let html
+  if (fs.existsSync(cachePath)) {
+    const content = await fsp.readFile(cachePath, 'utf8')
+    if (content && content.length > 1000) {
+      html = content
+    }
+  }
+  if (!html && fs.existsSync(cacheMhtmlPath)) {
+    const mhtml = await fsp.readFile(cacheMhtmlPath, 'utf8')
+    html = extractHtmlFromMhtml(mhtml)
+  }
+  if (!html) {
+    html = await fetchHtml(url)
+    await fsp.writeFile(cachePath, html)
+  }
+  const rows = parseTealeWardTable(html)
+  return rows.map(row => ({
+    ladName,
+    wardName: row.wardName,
+    totalVotes: row.totalVotes,
+    partyVotes: row.partyVotes,
+  }))
+}
+
+function extractHtmlFromMhtml(mhtml) {
+  const boundaryMatch = mhtml.match(/boundary=\"?([^\"\\r\\n;]+)\"?/i)
+  if (!boundaryMatch) return mhtml
+  const boundary = boundaryMatch[1]
+  const parts = mhtml.split(`--${boundary}`)
+  for (const part of parts) {
+    if (/Content-Type:\s*text\/html/i.test(part)) {
+      const split = part.split(/\r?\n\r?\n/)
+      if (split.length > 1) {
+        const body = split.slice(1).join('\n')
+        return decodeQuotedPrintable(body)
+      }
+    }
+  }
+  return mhtml
+}
+
+function decodeQuotedPrintable(input) {
+  if (!input) return input
+  // Remove soft line breaks
+  let text = input.replace(/=\r?\n/g, '')
+  // Decode =XX hex codes
+  text = text.replace(/=([A-Fa-f0-9]{2})/g, (_, hex) =>
+    String.fromCharCode(parseInt(hex, 16))
+  )
+  return text
+}
+
+async function fetchBirminghamWardResults() {
+  const base = 'https://www.birmingham.gov.uk/directory/69/a_to_z'
+  const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('')
+  const wardUrls = new Set()
+
+  for (const letter of letters) {
+    const url = `${base}/${letter}`
+    const html = await fetchHtml(url)
+    const $ = cheerio.load(html)
+    $('a').each((_, el) => {
+      const href = $(el).attr('href')
+      if (!href) return
+      if (href.includes('/directory_record/') && href.toLowerCase().includes('ward_results')) {
+        const full = href.startsWith('http') ? href : `https://www.birmingham.gov.uk${href}`
+        wardUrls.add(full)
+      }
+    })
+  }
+
+  const results = []
+  for (const url of wardUrls) {
+    const html = await fetchHtml(url)
+    const $ = cheerio.load(html)
+    const heading = $('h1').first().text().replace(/ward results/i, '').trim()
+    const wardName = heading || $('h1').first().text().trim()
+    const parsed = parseWardResultsTable(html)
+    if (!parsed || !wardName) continue
+    results.push({ wardName, ladName: 'Birmingham', ...parsed })
+  }
+
+  return results
+}
+
+async function fetchHuntingdonshireWardResults() {
+  const base = 'https://www.huntingdonshire.gov.uk/election-2022/may-2022-election-results/'
+  const html = await fetchHtml(base)
+  const $ = cheerio.load(html)
+  const wardUrls = new Set()
+  $('a').each((_, el) => {
+    const href = $(el).attr('href')
+    if (!href) return
+    if (href.includes('/election-2022/may-2022-election-results/') && href.includes('-ward')) {
+      const full = href.startsWith('http') ? href : `https://www.huntingdonshire.gov.uk${href}`
+      wardUrls.add(full)
+    }
+  })
+
+  const results = []
+  for (const url of wardUrls) {
+    const page = await fetchHtml(url)
+    const $page = cheerio.load(page)
+    const heading = $page('h1').first().text().replace(/ward$/i, '').trim()
+    const wardName = heading || $page('h1').first().text().trim()
+    const parsed = parseWardResultsTable(page)
+    if (!parsed || !wardName) continue
+    results.push({ wardName, ladName: 'Huntingdonshire', ...parsed })
+  }
+
+  return results
+}
+
+async function fetchSouthCambridgeshireWardResults() {
+  const base = 'https://www.scambs.gov.uk/our-district-election-results-2022/'
+  let html
+  try {
+    html = await fetchHtml(base)
+  } catch (err) {
+    console.warn(`South Cambs results page unavailable: ${err.message}`)
+    return []
+  }
+  const $ = cheerio.load(html)
+  const wardUrls = new Set()
+  $('a').each((_, el) => {
+    const href = $(el).attr('href')
+    if (!href) return
+    if (href.includes('/our-district-election-results-2022/') && href.includes('-ward')) {
+      const full = href.startsWith('http') ? href : `https://www.scambs.gov.uk${href}`
+      wardUrls.add(full)
+    }
+  })
+
+  const results = []
+  for (const url of wardUrls) {
+    const page = await fetchHtml(url)
+    const $page = cheerio.load(page)
+    const heading = $page('h1').first().text().replace(/ward$/i, '').trim()
+    const wardName = heading || $page('h1').first().text().trim()
+    const parsed = parseWardResultsTable(page)
+    if (!parsed || !wardName) continue
+    results.push({ wardName, ladName: 'South Cambridgeshire', ...parsed })
+  }
+
+  return results
+}
+
+function parseWikipediaWardTable($, $table) {
+  const partyLabels = [
+    'Liberal Democrats',
+    'Liberal Democrat',
+    'Lib Dem',
+    'Conservative',
+    'Labour',
+    'Green',
+    'Independent',
+    'Reform UK',
+    'Reform',
+    'UKIP',
+    'TUSC',
+    'Trade Unionist and Socialist Coalition',
+    'Workers Party of Britain',
+    'Workers Party',
+    'Plaid Cymru',
+    'SNP',
+  ]
+
+  const partyVotes = {}
+  let totalVotes = 0
+
+  if (!$table || !$table.length) return null
+
+  $table.find('tr').each((_, row) => {
+    const cells = []
+    const $cells = $(row).find('th, td')
+    $cells.each((__, cell) => {
+      const text = $(cell)
+        .text()
+        .replace(/\[[0-9]+\]/g, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+      cells.push(text)
+    })
+    if (!cells.length) return
+    const joined = cells.join(' ')
+    if (/^(majority|turnout)\b/i.test(joined)) return
+    if (/party\s+candidate\s+votes/i.test(joined)) return
+
+    let partyCell = cells[0] || ''
+    const votesCell =
+      cells.find(cell => /^[0-9][0-9,]*$/.test(cell.replace(/,/g, ''))) || ''
+    if (!votesCell) return
+
+    if (!partyLabels.some(label => partyCell.toLowerCase().startsWith(label.toLowerCase()))) {
+      // Some tables include party in second column (after candidate)
+      const possibleParty = cells.find(cell =>
+        partyLabels.some(label => cell.toLowerCase().startsWith(label.toLowerCase()))
+      )
+      if (possibleParty) partyCell = possibleParty
+    }
+
+    const partyLabel = partyLabels.find(label =>
+      partyCell.toLowerCase().startsWith(label.toLowerCase())
+    )
+    if (!partyLabel) return
+
+    const votes = Number(votesCell.replace(/,/g, ''))
+    if (!votes) return
+    partyVotes[partyLabel] = (partyVotes[partyLabel] || 0) + votes
+    totalVotes += votes
+  })
+
+  return totalVotes ? { partyVotes, totalVotes } : null
+}
+
+function parseWikipediaWardText(text) {
+  const partyLabels = [
+    'Liberal Democrats',
+    'Liberal Democrat',
+    'Lib Dem',
+    'Conservative',
+    'Labour',
+    'Green',
+    'Independent',
+    'Reform UK',
+    'Reform',
+    'UKIP',
+    'TUSC',
+    'Trade Unionist and Socialist Coalition',
+    'Workers Party of Britain',
+    'Workers Party',
+    'Plaid Cymru',
+    'SNP',
+  ]
+
+  const partyVotes = {}
+  let totalVotes = 0
+
+  const lines = text
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .filter(Boolean)
+
+  if (lines.length) {
+    for (const line of lines) {
+      if (/^(majority|turnout)\b/i.test(line)) continue
+      if (/party\s+candidate\s+votes/i.test(line)) continue
+      const matchLabel = partyLabels.find(label =>
+        line.toLowerCase().startsWith(label.toLowerCase())
+      )
+      if (!matchLabel) continue
+      const numberMatch = line.match(/([0-9][0-9,]*)/)
+      if (!numberMatch) continue
+      const votes = Number(numberMatch[1].replace(/,/g, ''))
+      if (!votes) continue
+      partyVotes[matchLabel] = (partyVotes[matchLabel] || 0) + votes
+      totalVotes += votes
+    }
+  }
+
+  if (!totalVotes) {
+    const labels = partyLabels.map(label => label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+    const regex = new RegExp(`(${labels.join('|')})[^0-9]*([0-9][0-9,]*)`, 'gi')
+    let match
+    while ((match = regex.exec(text))) {
+      const label = match[1]
+      const votes = Number(match[2].replace(/,/g, ''))
+      if (!votes) continue
+      partyVotes[label] = (partyVotes[label] || 0) + votes
+      totalVotes += votes
+    }
+  }
+
+  return totalVotes ? { partyVotes, totalVotes } : null
+}
+
+async function fetchWikipediaWardResults(url, ladName) {
+  const html = await fetchHtml(url)
+  const $ = cheerio.load(html)
+  const content = $('#mw-content-text')
+  const rows = []
+
+  const headings = content.find('h3, h4')
+  headings.each((_, heading) => {
+    const headline = $(heading).find('.mw-headline')
+    const wardName = headline.text().replace(/\(.*\)/, '').trim()
+    if (!wardName) return
+    const section = $(heading).nextUntil('h3, h4, h2')
+    let table = section.find('table.wikitable').first()
+    if (!table.length) {
+      table = section.find('table').first()
+    }
+    let parsed = parseWikipediaWardTable($, table)
+    if (!parsed) {
+      parsed = parseWikipediaWardText(section.text())
+    }
+    if (!parsed) return
+    rows.push({ wardName, ladName, ...parsed })
+  })
+
+  if (rows.length) return rows
+
+  const output = content.find('.mw-parser-output').first()
+  const children = output.children().toArray()
+  let currentWard = null
+  let buffer = []
+  const flush = () => {
+    if (!currentWard || !buffer.length) return
+    const sectionText = buffer.map(el => $(el).text()).join('\n')
+    let table = null
+    for (const el of buffer) {
+      const found = $(el).find('table').first()
+      if (found.length) {
+        table = found
+        break
+      }
+    }
+    let parsed = table ? parseWikipediaWardTable($, table) : null
+    if (!parsed) parsed = parseWikipediaWardText(sectionText)
+    if (parsed) rows.push({ wardName: currentWard, ladName, ...parsed })
+  }
+  children.forEach(el => {
+    const $el = $(el)
+    const text = $el.text().trim()
+    const bold = $el.find('b, strong').first()
+    const boldText = bold.text().trim()
+    const looksLikeWard =
+      boldText &&
+      text.length < 120 &&
+      /\bseat\b|\bseats\b/i.test(text)
+    if (looksLikeWard) {
+      flush()
+      currentWard = boldText.replace(/\(.*\)/, '').trim()
+      buffer = []
+    }
+    if (currentWard) buffer.push(el)
+  })
+  flush()
+
+  // Fallback: scan all ward tables by caption or nearby label
+  content.find('table').each((_, tableEl) => {
+    const table = $(tableEl)
+    const parsed = parseWikipediaWardTable($, table)
+    if (!parsed) return
+
+    let wardName = table.find('caption').first().text().replace(/\(.*\)/, '').trim()
+    if (!wardName) {
+      // look at preceding siblings for a bold/strong label
+      const prev = table.prevAll('p').first()
+      const strong = prev.find('b, strong').first().text().replace(/\(.*\)/, '').trim()
+      if (strong) wardName = strong
+    }
+    if (!wardName) {
+      // look for nearest heading above
+      const head = table.prevAll('h4, h3').first().find('.mw-headline')
+      wardName = head.text().replace(/\(.*\)/, '').trim()
+    }
+    if (!wardName) return
+    rows.push({ wardName, ladName, ...parsed })
+  })
+
+  return rows
+}
+
 async function buildBaseline() {
   await ensureDir(RAW_DIR)
   await ensureDir(OUT_DIR)
@@ -542,7 +1245,11 @@ async function buildBaseline() {
   }
   const wardData = new Map()
   let wardGeo = null
-  if (!skipGeo) {
+  const countyGeo = skipGeo ? null : JSON.parse(await fsp.readFile(countyPath, 'utf8'))
+  const cedGeo = skipGeo ? null : JSON.parse(await fsp.readFile(cedPath, 'utf8'))
+  const ladToCounty = await buildLadToCountyLookup()
+  const wardToLad = await buildWardToLadLookup()
+  if (fs.existsSync(wardPath)) {
     wardGeo = JSON.parse(await fsp.readFile(wardPath, 'utf8'))
     if (!wardGeo || wardGeo.type !== 'FeatureCollection' || !Array.isArray(wardGeo.features)) {
       throw new Error(
@@ -550,9 +1257,6 @@ async function buildBaseline() {
       )
     }
   }
-  const countyGeo = skipGeo ? null : JSON.parse(await fsp.readFile(countyPath, 'utf8'))
-  const cedGeo = skipGeo ? null : JSON.parse(await fsp.readFile(cedPath, 'utf8'))
-  const ladToCounty = await buildLadToCountyLookup()
   if (wardGeo) {
     wardGeo.features = wardGeo.features.map(feature => {
       const props = feature.properties || {}
@@ -562,9 +1266,19 @@ async function buildBaseline() {
       if (!props.name && (props.WD25NM || props.WD23NM)) {
         props.name = props.WD25NM || props.WD23NM
       }
+      if (!props.LAD23CD && props.WD23CD && wardToLad?.has(props.WD23CD)) {
+        const entry = wardToLad.get(props.WD23CD)
+        props.LAD23CD = entry.lad
+        if (!props.LAD23NM && entry.ladName) props.LAD23NM = entry.ladName
+      }
+      if (!props.ladCode && props.LAD23CD) props.ladCode = props.LAD23CD
+      if (!props.ladName && props.LAD23NM) props.ladName = props.LAD23NM
       feature.properties = props
       return feature
     })
+    if (skipGeo) {
+      await fsp.writeFile(path.join(OUT_DIR, 'wards.geojson'), JSON.stringify(wardGeo))
+    }
   }
 
   if (!skipGeo && countyGeo && cedGeo) {
@@ -630,6 +1344,14 @@ async function buildBaseline() {
       if (mapped) wardCode = mapped
     }
 
+    if (!wardGeoCodes.has(wardCode) && wardToLad?.byName) {
+      const key = `${normalize(ladName)}|${normalize(wardName)}`
+      const match = wardToLad.byName.get(key)
+      if (match && match.ward) {
+        wardCode = match.ward
+      }
+    }
+
     const key = wardCode
     const existing = wardData.get(key)
     if (existing && existing.lastYear > year) return
@@ -672,6 +1394,78 @@ async function buildBaseline() {
     rows.forEach(row => {
       upsertWardRow(row, source.year, false)
     })
+  }
+
+  if (wardToLad?.byName) {
+    const byName = wardToLad.byName
+    const wardIndexCache = new Map()
+    const getWardNameIndex = ladName => {
+      const key = normalize(ladName)
+      if (wardIndexCache.has(key)) return wardIndexCache.get(key)
+      const index = new Map()
+      byName.forEach(value => {
+        if (normalize(value.ladName) === key) {
+          index.set(normalize(value.wardName), value)
+        }
+      })
+      wardIndexCache.set(key, index)
+      return index
+    }
+    const applyWardRows = (rows, year, allowOverwrite = true) => {
+      rows.forEach(row => {
+        const key = `${normalize(row.ladName)}|${normalize(row.wardName)}`
+        const index = getWardNameIndex(row.ladName)
+        const match = byName.get(key) || index.get(normalize(row.wardName))
+        if (!match) return
+        upsertWardRow(
+          {
+            ladName: match.ladName,
+            ladCode: match.lad,
+            wardName: match.wardName,
+            wardCode: match.ward,
+            totalVotes: row.totalVotes,
+            partyVotes: row.partyVotes,
+          },
+          year,
+          allowOverwrite
+        )
+      })
+    }
+    const birminghamRows = await fetchBirminghamWardResults()
+    applyWardRows(birminghamRows, 2022)
+
+    const huntingdonshireRows = await fetchHuntingdonshireWardResults()
+    applyWardRows(huntingdonshireRows, 2022)
+
+    const wikipediaCovered = new Set()
+    for (const page of WIKIPEDIA_WARD_PAGES) {
+      let wikiRows = []
+      for (const url of page.urls) {
+        wikiRows = await fetchWikipediaWardResults(url, page.ladName)
+        if (wikiRows.length) break
+      }
+      if (wikiRows.length) {
+        applyWardRows(wikiRows, 2022, false)
+        wikipediaCovered.add(normalize(page.ladName))
+      } else {
+        console.warn(`Wikipedia ward results empty for ${page.ladName}`)
+      }
+    }
+
+    if (!wikipediaCovered.has(normalize('South Cambridgeshire'))) {
+      const southCambsRows = await fetchSouthCambridgeshireWardResults()
+      applyWardRows(southCambsRows, 2022)
+    }
+
+    if (!wikipediaCovered.has(normalize('Newcastle-under-Lyme'))) {
+      const tealeNewcastle = await fetchTealeWardResults(326, 'Newcastle-under-Lyme')
+      applyWardRows(tealeNewcastle, 2022)
+    }
+
+    if (!wikipediaCovered.has(normalize('South Cambridgeshire'))) {
+      const tealeSouthCambs = await fetchTealeWardResults(144, 'South Cambridgeshire')
+      applyWardRows(tealeSouthCambs, 2022)
+    }
   }
 
   // Fill missing/zero London wards from London 2022 dataset

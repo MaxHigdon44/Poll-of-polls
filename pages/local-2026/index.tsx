@@ -39,6 +39,7 @@ type BaselineData = {
 
 type LeaveShareLookup = {
   wards?: Record<string, { leaveShare: number }>
+  wardNames?: Record<string, { leaveShare: number }>
   lads?: Record<string, { leaveShare: number }>
   meta?: Record<string, any>
 }
@@ -506,11 +507,20 @@ export default function Local2026Page() {
 
   const getLeaveShareForWard = (
     wardCode: string,
-    ladCode: string
-  ): { leaveShare: number; source: 'ward' | 'lad' | 'national' } => {
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): { leaveShare: number; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
     const wardShare = leaveLookup?.wards?.[wardCode]?.leaveShare
     if (typeof wardShare === 'number') {
       return { leaveShare: wardShare, source: 'ward' }
+    }
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = leaveLookup?.wardNames?.[key]?.leaveShare
+      if (typeof nameShare === 'number') {
+        return { leaveShare: nameShare, source: 'ward-name' }
+      }
     }
     const ladShare = leaveLookup?.lads?.[ladCode]?.leaveShare
     if (typeof ladShare === 'number') {
@@ -571,20 +581,167 @@ export default function Local2026Page() {
           }
         }
       }
-      const { leaveShare } = getLeaveShareForWard(ward.wardCode, ward.ladCode)
+      const { leaveShare, source } = getLeaveShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
       const projection = computeWardProjection(
         adjustedWard,
         baseline.baselineNational,
         aggregate,
         leaveShare
       )
+      const previousShares: Record<string, number> = {
+        ...adjustedWard.nationalShares,
+        ...adjustedWard.localShares,
+      }
+      let prevWinner: string | null = null
+      let prevTop = -1
+      Object.entries(previousShares).forEach(([party, value]) => {
+        const numericValue = Number(value)
+        if (!Number.isFinite(numericValue)) return
+        if (numericValue > prevTop) {
+          prevTop = numericValue
+          prevWinner = party
+        }
+      })
       map.set(ward.wardCode, {
         ...projection,
         color: PARTY_COLORS[projection.winner] || '#ccc',
+        leaveSource: source,
+        prevWinner,
       })
     })
     return map
-  }, [baseline, aggregate])
+  }, [baseline, aggregate, leaveLookup])
+
+  const wardMapByName = useMemo(() => {
+    if (!baseline || !aggregate) return new Map<string, any>()
+    const map = new Map<string, any>()
+    baseline.wards.forEach(ward => {
+      const key = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+      if (!map.has(key)) {
+        const { leaveShare, source } = getLeaveShareForWard(
+          ward.wardCode,
+          ward.ladCode,
+          ward.wardName,
+          ward.ladName
+        )
+        const projection = computeWardProjection(
+          ward,
+          baseline.baselineNational,
+          aggregate,
+          leaveShare
+        )
+        const previousShares: Record<string, number> = {
+          ...ward.nationalShares,
+          ...ward.localShares,
+        }
+        let prevWinner: string | null = null
+        let prevTop = -1
+        Object.entries(previousShares).forEach(([party, value]) => {
+          const numericValue = Number(value)
+          if (!Number.isFinite(numericValue)) return
+          if (numericValue > prevTop) {
+            prevTop = numericValue
+            prevWinner = party
+          }
+        })
+        map.set(key, {
+          ...projection,
+          color: PARTY_COLORS[projection.winner] || '#ccc',
+          leaveSource: source,
+          prevWinner,
+        })
+      }
+    })
+    return map
+  }, [baseline, aggregate, leaveLookup])
+
+  const wardMapByWardName = useMemo(() => {
+    if (!baseline || !aggregate || !selectedLad) return new Map<string, any>()
+    const map = new Map<string, any>()
+    baseline.wards
+      .filter(ward => ward.ladCode === selectedLad)
+      .forEach(ward => {
+        const key = normalizeName(ward.wardName)
+        if (!map.has(key)) {
+          const { leaveShare, source } = getLeaveShareForWard(
+            ward.wardCode,
+            ward.ladCode,
+            ward.wardName,
+            ward.ladName
+          )
+          const projection = computeWardProjection(
+            ward,
+            baseline.baselineNational,
+            aggregate,
+            leaveShare
+          )
+          const previousShares: Record<string, number> = {
+            ...ward.nationalShares,
+            ...ward.localShares,
+          }
+          let prevWinner: string | null = null
+          let prevTop = -1
+          Object.entries(previousShares).forEach(([party, value]) => {
+            const numericValue = Number(value)
+            if (!Number.isFinite(numericValue)) return
+            if (numericValue > prevTop) {
+              prevTop = numericValue
+              prevWinner = party
+            }
+          })
+          map.set(key, {
+            ...projection,
+            color: PARTY_COLORS[projection.winner] || '#ccc',
+            leaveSource: source,
+            prevWinner,
+          })
+        }
+      })
+    return map
+  }, [baseline, aggregate, leaveLookup, selectedLad])
+
+  const ladFallbackProjection = useMemo(() => {
+    if (!baseline || !aggregate || !selectedLad) return null
+    const wards = baseline.wards.filter(ward => ward.ladCode === selectedLad)
+    if (!wards.length) return null
+    const totals: Record<string, number> = {}
+    let weightSum = 0
+    wards.forEach(ward => {
+      const projection =
+        wardMap.get(ward.wardCode) || wardMapByWardName.get(normalizeName(ward.wardName))
+      if (!projection) return
+      const weight = ward.totalVotes || 0
+      if (!weight) return
+      weightSum += weight
+      Object.entries(projection.shares).forEach(([party, value]) => {
+        totals[party] = (totals[party] || 0) + value * weight
+      })
+    })
+    if (!weightSum) return null
+    const shares: Record<string, number> = {}
+    Object.entries(totals).forEach(([party, value]) => {
+      shares[party] = value / weightSum
+    })
+    let winner = 'Other'
+    let topValue = -1
+    Object.entries(shares).forEach(([party, value]) => {
+      if (value > topValue) {
+        topValue = value
+        winner = party
+      }
+    })
+    return {
+      winner,
+      shares,
+      color: PARTY_COLORS[winner] || '#ccc',
+      prevWinner: null,
+    }
+  }, [baseline, aggregate, selectedLad, wardMap, wardMapByWardName])
 
   const eligibleLads = useMemo(() => {
     if (!ladGeo) return new Set<string>()
@@ -734,7 +891,7 @@ export default function Local2026Page() {
   }, [selectedLadFeature])
 
   const wardFeatures = useMemo(() => {
-    if (!wardGeo) return []
+    if (!wardGeo || !Array.isArray(wardGeo.features)) return []
     if (!selectedLad || !baseline) return []
     let wardCodes: Set<string>
     if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
@@ -742,13 +899,43 @@ export default function Local2026Page() {
       wardCodes = new Set(
         baseline.wards.filter(ward => allowedCodes.has(ward.ladCode)).map(ward => ward.wardCode)
       )
-    } else {
+      return wardGeo.features.filter(feature => {
+        const props: any = feature.properties || {}
+        const code = props.reference || props.WD25CD || props.WD23CD || props.WD22CD
+        return wardCodes.has(code)
+      })
+    }
+
+    const selectedName = selectedLadFeature?.properties?.name
+    if (selectedName) {
+      const normalized = normalizeName(selectedName)
+      const nameMatches = wardGeo.features.filter(feature => {
+        const props: any = feature.properties || {}
+        return normalizeName(props.LAD25NM || props.LAD23NM || props.LAD22NM) === normalized
+      })
+      if (nameMatches.length) {
+        return nameMatches
+      }
+    }
+
+    {
       wardCodes = new Set(
         baseline.wards.filter(ward => ward.ladCode === selectedLad).map(ward => ward.wardCode)
       )
     }
-    return wardGeo.features.filter(feature => wardCodes.has(feature.properties?.reference))
-  }, [wardGeo, selectedLad, baseline])
+    const wardNameSet = new Set(
+      baseline.wards
+        .filter(ward => ward.ladCode === selectedLad)
+        .map(ward => normalizeName(ward.wardName))
+    )
+    return wardGeo.features.filter(feature => {
+      const props: any = feature.properties || {}
+      const code = props.reference || props.WD25CD || props.WD23CD || props.WD22CD
+      if (wardCodes.has(code)) return true
+      const name = normalizeName(props.WD25NM || props.WD23NM || props.WD22NM || props.name)
+      return wardNameSet.has(name)
+    })
+  }, [wardGeo, selectedLad, baseline, selectedLadFeature, surreyEastCodes, surreyWestCodes])
 
   return (
     <div style={{ padding: '2rem' }}>
@@ -804,19 +991,22 @@ export default function Local2026Page() {
         <div>
           <div style={{ height: '70vh', border: '1px solid #eee' }}>
             {ladGeo ? (
-              <LocalMap
-                ladGeo={ladGeo}
-                overlayAreas={surreyOverlay}
-                overlayAreaCodes={new Set(['surrey-east', 'surrey-west'])}
-                hiddenLadCodes={surreyLadCodes}
-                wardFeatures={wardFeatures}
-                wardMap={wardMap}
-                selectedLad={selectedLad}
-                selectedLadFeature={selectedLadFeature}
-                onSelectLad={setSelectedLad}
-                eligibleLads={eligibleLads}
-                ladCategoryByCode={ladCategoryByCode}
-              />
+            <LocalMap
+              ladGeo={ladGeo}
+              overlayAreas={surreyOverlay}
+              overlayAreaCodes={new Set(['surrey-east', 'surrey-west'])}
+              hiddenLadCodes={surreyLadCodes}
+              wardFeatures={wardFeatures}
+              wardMap={wardMap}
+              wardMapByName={wardMapByName}
+              wardMapByWardName={wardMapByWardName}
+              fallbackProjection={ladFallbackProjection}
+              selectedLad={selectedLad}
+              selectedLadFeature={selectedLadFeature}
+              onSelectLad={setSelectedLad}
+              eligibleLads={eligibleLads}
+              ladCategoryByCode={ladCategoryByCode}
+            />
             ) : (
               <div style={{ padding: '1rem' }}>Loading map data...</div>
             )}
@@ -847,6 +1037,9 @@ export default function Local2026Page() {
               <span style={{ width: '14px', height: '14px', background: '#1E88E5' }} />
               <span>Unitary Authorities</span>
             </div>
+          </div>
+          <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#666' }}>
+            Ward results include Wikipedia data (CC BY-SA 4.0).
           </div>
         </div>
       </div>

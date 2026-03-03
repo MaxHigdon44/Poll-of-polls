@@ -14,7 +14,24 @@ type LocalMapProps = {
   overlayAreaCodes?: Set<string>
   hiddenLadCodes?: Set<string>
   wardFeatures: GeoFeature[]
-  wardMap: Map<string, { winner: string; shares: Record<string, number>; color: string }>
+  wardMap: Map<
+    string,
+    { winner: string; shares: Record<string, number>; color: string; prevWinner?: string | null }
+  >
+  wardMapByName: Map<
+    string,
+    { winner: string; shares: Record<string, number>; color: string; prevWinner?: string | null }
+  >
+  wardMapByWardName?: Map<
+    string,
+    { winner: string; shares: Record<string, number>; color: string; prevWinner?: string | null }
+  >
+  fallbackProjection?: {
+    winner: string
+    shares: Record<string, number>
+    color: string
+    prevWinner?: string | null
+  } | null
   selectedLad: string | null
   selectedLadFeature: GeoFeature | null
   onSelectLad: (lad: string | null) => void
@@ -35,6 +52,32 @@ function FitBounds({ feature }: { feature: GeoFeature | null }) {
   return null
 }
 
+function getWardCode(feature: GeoFeature) {
+  const props: any = feature.properties || {}
+  return props.reference || props.WD25CD || props.WD23CD || props.WD22CD || null
+}
+
+function getWardNameKey(feature: GeoFeature) {
+  const props: any = feature.properties || {}
+  const wardName = String(props.WD25NM || props.WD23NM || props.WD22NM || props.name || '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/\s+/g, ' ')
+    .trim()
+  const ladName = String(props.LAD25NM || props.LAD23NM || props.LAD22NM || '')
+    .toLowerCase()
+    .replace(/&/g, 'and')
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (!wardName || !ladName) return null
+  return `${ladName}|${wardName}`
+}
+
+function getWardDisplayName(feature: GeoFeature) {
+  const props: any = feature.properties || {}
+  return props.WD25NM || props.WD23NM || props.WD22NM || props.name || 'Ward'
+}
+
 export default function LocalMap({
   ladGeo,
   overlayAreas,
@@ -42,6 +85,9 @@ export default function LocalMap({
   hiddenLadCodes,
   wardFeatures,
   wardMap,
+  wardMapByName,
+  wardMapByWardName,
+  fallbackProjection,
   selectedLad,
   selectedLadFeature,
   onSelectLad,
@@ -112,8 +158,12 @@ export default function LocalMap({
         fillOpacity: 0.7,
       }
     }
-    const wardCode = feature.properties?.reference
-    const projection = wardMap.get(wardCode)
+    const wardCode = getWardCode(feature)
+    const projection =
+      wardMap.get(wardCode) ||
+      wardMapByName.get(getWardNameKey(feature) || '') ||
+      wardMapByWardName?.get(String(getWardDisplayName(feature)).toLowerCase()) ||
+      fallbackProjection
     const color = projection ? projection.color || '#ccc' : '#ccc'
     return {
       color: '#333',
@@ -124,9 +174,14 @@ export default function LocalMap({
   }
 
   const wardOnEachFeature = (feature: GeoFeature, layer: Layer) => {
-    const wardCode = feature.properties?.reference
-    const wardName = feature.properties?.name
-    const projection = wardMap.get(wardCode)
+    if (process.env.NODE_ENV === 'production') return
+    const wardCode = getWardCode(feature)
+    const wardName = getWardDisplayName(feature)
+    const projection =
+      wardMap.get(wardCode) ||
+      wardMapByName.get(getWardNameKey(feature) || '') ||
+      wardMapByWardName?.get(String(getWardDisplayName(feature)).toLowerCase()) ||
+      fallbackProjection
     if (!projection) return
 
     let topParty = projection.winner
@@ -140,9 +195,17 @@ export default function LocalMap({
       }
     })
 
-    layer.bindTooltip(
-      `<strong>${wardName}</strong><br/>${topParty}: ${topValue.toFixed(1)}%`,
-      { sticky: true }
+    const sorted = Object.entries(projection.shares)
+      .map(([party, value]) => ({ party, value: Number(value) }))
+      .filter(entry => Number.isFinite(entry.value))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3)
+    const popupLines = sorted
+      .map(entry => `${entry.party}: ${entry.value.toFixed(1)}%`)
+      .join('<br/>')
+    const prev = projection.prevWinner ? `Previous winner: ${projection.prevWinner}` : null
+    layer.bindPopup(
+      `<strong>${wardName}</strong><br/>${popupLines}${prev ? `<br/>${prev}` : ''}`
     )
   }
 
