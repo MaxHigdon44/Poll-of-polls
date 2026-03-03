@@ -1,5 +1,11 @@
 import { useEffect, useMemo, useState } from 'react'
 import dynamic from 'next/dynamic'
+import {
+  LEAVE_EFFECT_STRENGTH,
+  NATIONAL_LEAVE_SHARE,
+  clampLeaveShare,
+  getCenteredPartyLeaveAdjustment,
+} from '@/lib/local2026/leaveRemain'
 
 const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
 
@@ -29,6 +35,12 @@ type BaselineData = {
   generatedAt: string
   baselineNational: Record<string, number>
   wards: WardBaseline[]
+}
+
+type LeaveShareLookup = {
+  wards?: Record<string, { leaveShare: number }>
+  lads?: Record<string, { leaveShare: number }>
+  meta?: Record<string, any>
 }
 
 type AggregateRow = {
@@ -379,7 +391,8 @@ function normalizeName(value: string | undefined | null) {
 function computeWardProjection(
   ward: WardBaseline,
   baselineNational: Record<string, number>,
-  aggregate: AggregateRow
+  aggregate: AggregateRow,
+  leaveShare: number
 ) {
   const nationalParties = [
     'Labour',
@@ -403,10 +416,12 @@ function computeWardProjection(
 
   const adjustedNational: Record<string, number> = {}
   let sumNational = 0
+  const adjustedLeaveShare = clampLeaveShare(leaveShare)
   nationalParties.forEach(party => {
     const base = ward.nationalShares[party] ?? 0
     const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
-    const value = Math.max(0, base + delta)
+    const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
+    const value = Math.max(0, base + delta + LEAVE_EFFECT_STRENGTH * leaveAdj)
     adjustedNational[party] = value
     sumNational += value
   })
@@ -457,6 +472,7 @@ export default function Local2026Page() {
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
   const [baseline, setBaseline] = useState<BaselineData | null>(null)
   const [aggregate, setAggregate] = useState<AggregateRow | null>(null)
+  const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
   const [selectedLad, setSelectedLad] = useState<string | null>(null)
 
   useEffect(() => {
@@ -475,6 +491,11 @@ export default function Local2026Page() {
       .then(setBaseline)
       .catch(() => setBaseline(null))
 
+    fetch('/data/leave-share.json')
+      .then(res => res.json())
+      .then(setLeaveLookup)
+      .catch(() => setLeaveLookup(null))
+
     fetch('/api/aggregate')
       .then(res => res.json())
       .then((data: AggregateResponse) => {
@@ -482,6 +503,21 @@ export default function Local2026Page() {
       })
       .catch(() => setAggregate(null))
   }, [])
+
+  const getLeaveShareForWard = (
+    wardCode: string,
+    ladCode: string
+  ): { leaveShare: number; source: 'ward' | 'lad' | 'national' } => {
+    const wardShare = leaveLookup?.wards?.[wardCode]?.leaveShare
+    if (typeof wardShare === 'number') {
+      return { leaveShare: wardShare, source: 'ward' }
+    }
+    const ladShare = leaveLookup?.lads?.[ladCode]?.leaveShare
+    if (typeof ladShare === 'number') {
+      return { leaveShare: ladShare, source: 'lad' }
+    }
+    return { leaveShare: NATIONAL_LEAVE_SHARE, source: 'national' }
+  }
 
   const wardMap = useMemo(() => {
     if (!baseline || !aggregate) return new Map<string, any>()
@@ -535,7 +571,13 @@ export default function Local2026Page() {
           }
         }
       }
-      const projection = computeWardProjection(adjustedWard, baseline.baselineNational, aggregate)
+      const { leaveShare } = getLeaveShareForWard(ward.wardCode, ward.ladCode)
+      const projection = computeWardProjection(
+        adjustedWard,
+        baseline.baselineNational,
+        aggregate,
+        leaveShare
+      )
       map.set(ward.wardCode, {
         ...projection,
         color: PARTY_COLORS[projection.winner] || '#ccc',
