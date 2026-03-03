@@ -719,7 +719,9 @@ export default function Local2026Page() {
       if (!weight) return
       weightSum += weight
       Object.entries(projection.shares).forEach(([party, value]) => {
-        totals[party] = (totals[party] || 0) + value * weight
+        const numericValue = Number(value)
+        if (!Number.isFinite(numericValue)) return
+        totals[party] = (totals[party] || 0) + numericValue * weight
       })
     })
     if (!weightSum) return null
