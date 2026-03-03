@@ -174,7 +174,6 @@ export default function LocalMap({
   }
 
   const wardOnEachFeature = (feature: GeoFeature, layer: Layer) => {
-    if (process.env.NODE_ENV === 'production') return
     const wardCode = getWardCode(feature)
     const wardName = getWardDisplayName(feature)
     const projection =
