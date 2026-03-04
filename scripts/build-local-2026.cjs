@@ -136,6 +136,9 @@ const WIKIPEDIA_WARD_PAGES = [
 const LEAVE_WARD_FILE = 'leave_ward.csv'
 const LEAVE_WARD_XLSX = 'leave_ward.xlsx'
 const LEAVE_LAD_FILE = 'leave_lad.csv'
+const SEATS_UP_FILE = '2026_seats_up.xlsx'
+const WIKIPEDIA_API =
+  'https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch='
 
 const WARD_GEOJSON_URL =
   'https://opendata.arcgis.com/api/v3/datasets/1ff1b4c40cf344e7afc05d6d09f16315_0/downloads/data?format=geojson&spatialRefId=4326'
@@ -381,6 +384,25 @@ async function buildLadToCountyLookup() {
   return mapping
 }
 
+async function buildCouncilSeatsLookup() {
+  const filePath = path.join(RAW_DIR, SEATS_UP_FILE)
+  if (!fs.existsSync(filePath)) {
+    throw new Error(`Missing seats file: ${SEATS_UP_FILE} (place it in data/raw)`)
+  }
+  const workbook = xlsx.readFile(filePath)
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const rows = xlsx.utils.sheet_to_json(sheet, { defval: '' })
+  const entries = rows
+    .map(row => ({
+      council: String(row['Council name'] || '').trim(),
+      seatsUp: Number(String(row['Seats up'] || '').replace(/[^0-9]/g, '')) || 0,
+      totalSeats: Number(String(row['Total seats'] || '').replace(/[^0-9]/g, '')) || 0,
+      control: String(row['Control'] || '').trim() || null,
+    }))
+    .filter(row => row.council && row.totalSeats)
+  return entries
+}
+
 async function ensureDir(dir) {
   await fsp.mkdir(dir, { recursive: true })
 }
@@ -491,6 +513,7 @@ function parseWardResults(filePath) {
     wardName: headerRow.findIndex(cell => headerNormalize(cell).includes('ward name')),
     totalVotes: headerRow.findIndex(cell => headerNormalize(cell).includes('total votes')),
     turnout: headerRow.findIndex(cell => headerNormalize(cell).includes('turnout')),
+    vacancies: headerRow.findIndex(cell => headerNormalize(cell).includes('vacancies')),
   }
 
   let partyStartIndex = 0
@@ -552,6 +575,7 @@ function parseWardResults(filePath) {
       ladCode: row[indices.ladCode],
       wardName,
       wardCode: row[indices.wardCode],
+      vacancies: indices.vacancies >= 0 ? row[indices.vacancies] : null,
       totalVotes,
       partyVotes,
     })
@@ -739,13 +763,45 @@ function parseLondonWardResults(filePath) {
   return dataRows
 }
 
-async function fetchHtml(url) {
-  const res = await fetch(url)
-  if (!res.ok) {
-    throw new Error(`Failed to fetch ${url}: ${res.status}`)
+async function fetchHtml(url, attempts = 4) {
+  for (let i = 0; i < attempts; i++) {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Poll-of-Polls/1.0 (local build)',
+      },
+    })
+    if (res.status === 429) {
+      await sleep(1500 * (i + 1))
+      continue
+    }
+    if (!res.ok) {
+      throw new Error(`Failed to fetch ${url}: ${res.status}`)
+    }
+    return await res.text()
   }
-  return await res.text()
+  throw new Error(`Failed to fetch ${url}: 429`)
 }
+
+async function fetchJson(url, attempts = 4) {
+  for (let i = 0; i < attempts; i++) {
+    const res = await fetch(url, {
+      headers: {
+        'User-Agent': 'Poll-of-Polls/1.0 (local build)',
+      },
+    })
+    if (res.status === 429) {
+      await sleep(1500 * (i + 1))
+      continue
+    }
+    if (!res.ok) {
+      throw new Error(`Failed to fetch ${url}: ${res.status}`)
+    }
+    return await res.json()
+  }
+  throw new Error(`Failed to fetch ${url}: 429`)
+}
+
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms))
 
 function extractResultsTable($) {
   const tables = $('table').toArray()
@@ -1134,6 +1190,185 @@ function parseWikipediaWardText(text) {
   return totalVotes ? { partyVotes, totalVotes } : null
 }
 
+function normalizeCouncilNameLite(name) {
+  return normalize(name)
+    .replace(/\bcouncil\b/g, '')
+    .replace(/\bdistrict\b/g, '')
+    .replace(/\bborough\b/g, '')
+    .replace(/\bcity\b/g, '')
+    .replace(/\bmetropolitan\b/g, '')
+    .replace(/\bunitary\b/g, '')
+    .replace(/\blondon\b/g, '')
+    .replace(/\bthe\b/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function parseWikipediaCouncilSeats(html) {
+  const $ = cheerio.load(html)
+  const infobox = $('table.infobox').first()
+  if (!infobox.length) return null
+
+  const normalizeCellText = text =>
+    String(text || '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  const parseSeatNumber = text => {
+    const match = String(text || '').match(/(\d+)/)
+    return match ? Number(match[1]) : 0
+  }
+
+  const lastElection = {}
+  const seatsBefore = {}
+  let parties = []
+  infobox.find('tr').each((_, row) => {
+    const headerText = normalizeCellText($(row).find('th').first().text()).toLowerCase()
+    if (headerText === 'party') {
+      parties = $(row)
+        .find('td')
+        .map((__, td) => normalizeCellText($(td).text()))
+        .get()
+        .filter(Boolean)
+      return
+    }
+    if (!parties.length) return
+    if (headerText.includes('last election')) {
+      const cells = $(row)
+        .find('td')
+        .map((__, td) => normalizeCellText($(td).text()))
+        .get()
+      parties.forEach((partyName, index) => {
+        const lastSeats = parseSeatNumber(cells[index])
+        if (!lastSeats) return
+        const mapped = mapParty(partyName)
+        const label = mapped.bucket === 'national' ? mapped.name : partyName
+        lastElection[label] = (lastElection[label] || 0) + lastSeats
+      })
+      return
+    }
+    if (headerText.includes('current seats') || headerText.includes('seats before')) {
+      const cells = $(row)
+        .find('td')
+        .map((__, td) => normalizeCellText($(td).text()))
+        .get()
+      parties.forEach((partyName, index) => {
+        const beforeSeats = parseSeatNumber(cells[index])
+        if (!beforeSeats) return
+        const mapped = mapParty(partyName)
+        const label = mapped.bucket === 'national' ? mapped.name : partyName
+        seatsBefore[label] = (seatsBefore[label] || 0) + beforeSeats
+      })
+    }
+  })
+
+  // Fallback / override: try the "Council composition" table (Before 2026 election)
+  const compositionHeader = $('h2[id*="council_composition" i]').first()
+  const compositionHeaderAlt = compositionHeader.length
+    ? compositionHeader
+    : $('h2').filter((_, el) => /council composition/i.test($(el).text())).first()
+  if (compositionHeaderAlt.length) {
+    const table = compositionHeaderAlt.parent().nextAll('table.wikitable').first()
+    if (table.length) {
+      const compositionSeatsBefore = {}
+      const rows = table.find('tr')
+      rows.each((_, row) => {
+        const cells = $(row).find('td').toArray()
+        if (cells.length < 6) return
+        const beforeCells = cells.slice(-3)
+        const partyCell = beforeCells[1]
+        const seatCell = beforeCells[2]
+          const partyName = normalizeCellText($(partyCell).text()).replace(/\[[0-9]+\]/g, '')
+          const seatValue = parseSeatNumber($(seatCell).text())
+          if (!partyName || !seatValue) return
+          const mapped = mapParty(partyName)
+          const label = mapped.bucket === 'national' ? mapped.name : partyName
+          compositionSeatsBefore[label] = (compositionSeatsBefore[label] || 0) + seatValue
+      })
+      if (Object.keys(compositionSeatsBefore).length) {
+        Object.keys(seatsBefore).forEach(key => delete seatsBefore[key])
+        Object.entries(compositionSeatsBefore).forEach(([key, value]) => {
+          seatsBefore[key] = value
+        })
+      }
+    }
+  }
+
+  if (Object.keys(lastElection).length || Object.keys(seatsBefore).length) {
+    return { lastElection, seatsBefore }
+  }
+
+  return null
+}
+
+async function findWikipediaElectionPage(councilName) {
+  const query = encodeURIComponent(`2026 ${councilName} council election`)
+  const cachePath = path.join(RAW_DIR, `wiki_search_${normalize(councilName)}.json`)
+  let data = null
+  if (fs.existsSync(cachePath)) {
+    data = JSON.parse(await fsp.readFile(cachePath, 'utf8'))
+  } else {
+    data = await fetchJson(`${WIKIPEDIA_API}${query}`)
+    await fsp.writeFile(cachePath, JSON.stringify(data))
+  }
+  const results = data?.query?.search || []
+  const normalizedTarget = normalizeCouncilNameLite(councilName)
+  for (const result of results) {
+    const title = result.title || ''
+    if (!title.includes('2026')) continue
+    const normalizedTitle = normalizeCouncilNameLite(title)
+    if (!normalizedTitle.includes(normalizedTarget)) continue
+    const url = `https://en.wikipedia.org/wiki/${encodeURIComponent(title.replace(/ /g, '_'))}`
+    return { title, url }
+  }
+  return null
+}
+
+async function buildCouncilPreviousSeats(councilSeats) {
+  const results = []
+  for (const council of councilSeats) {
+    if (normalizeCouncilNameLite(council.council) === 'city of london') continue
+    try {
+      const cachePath = path.join(RAW_DIR, `wiki_prev_${normalize(council.council)}.json`)
+      const cached = fs.existsSync(cachePath)
+        ? JSON.parse(await fsp.readFile(cachePath, 'utf8'))
+        : null
+
+      const match = await findWikipediaElectionPage(council.council)
+      if (!match) {
+        if (cached) results.push(cached)
+        continue
+      }
+      await sleep(2000)
+      const pageCachePath = path.join(RAW_DIR, `wiki_page_${normalize(match.title)}.html`)
+      let html = null
+      if (fs.existsSync(pageCachePath)) {
+        html = await fsp.readFile(pageCachePath, 'utf8')
+      } else {
+        html = await fetchHtml(match.url)
+        await fsp.writeFile(pageCachePath, html)
+      }
+      const parsed = parseWikipediaCouncilSeats(html)
+      if (!parsed) {
+        if (cached) results.push(cached)
+        continue
+      }
+      const record = {
+        council: council.council,
+        url: match.url,
+        lastElection: parsed.lastElection,
+        seatsBefore: parsed.seatsBefore,
+      }
+      await fsp.writeFile(cachePath, JSON.stringify(record, null, 2))
+      results.push(record)
+    } catch (err) {
+      console.warn(`Failed to parse Wikipedia for ${council.council}: ${err.message}`)
+    }
+  }
+  return results
+}
+
 async function fetchWikipediaWardResults(url, ladName) {
   const html = await fetchHtml(url)
   const $ = cheerio.load(html)
@@ -1249,6 +1484,7 @@ async function buildBaseline() {
   const cedGeo = skipGeo ? null : JSON.parse(await fsp.readFile(cedPath, 'utf8'))
   const ladToCounty = await buildLadToCountyLookup()
   const wardToLad = await buildWardToLadLookup()
+  const councilSeats = await buildCouncilSeatsLookup()
   if (fs.existsSync(wardPath)) {
     wardGeo = JSON.parse(await fsp.readFile(wardPath, 'utf8'))
     if (!wardGeo || wardGeo.type !== 'FeatureCollection' || !Array.isArray(wardGeo.features)) {
@@ -1367,6 +1603,7 @@ async function buildBaseline() {
         totalVotes: 0,
         nationalVotes: {},
         localVotes: {},
+        vacancies: 0,
       })
     }
 
@@ -1375,6 +1612,8 @@ async function buildBaseline() {
 
     const totalVotes = Number(String(row.totalVotes || '').replace(/[^0-9]/g, '')) || 0
     record.totalVotes += totalVotes
+    const vacancies = Number(String(row.vacancies || '').replace(/[^0-9]/g, '')) || 0
+    if (vacancies > record.vacancies) record.vacancies = vacancies
 
     Object.entries(row.partyVotes || {}).forEach(([partyName, voteValue]) => {
       const votes = Number(String(voteValue || '').replace(/[^0-9]/g, ''))
@@ -1505,6 +1744,7 @@ async function buildBaseline() {
       ladCode: record.ladCode,
       ladName: record.ladName,
       lastYear: record.lastYear,
+      vacancies: record.vacancies || 0,
       totalVotes,
       nationalShares,
       localShares,
@@ -1529,6 +1769,15 @@ async function buildBaseline() {
   await fsp.writeFile(
     path.join(OUT_DIR, 'ward-baseline.json'),
     JSON.stringify(output)
+  )
+  await fsp.writeFile(
+    path.join(OUT_DIR, 'council-seats.json'),
+    JSON.stringify({ generatedAt: new Date().toISOString(), councils: councilSeats })
+  )
+  const councilPrevious = await buildCouncilPreviousSeats(councilSeats)
+  await fsp.writeFile(
+    path.join(OUT_DIR, 'council-previous.json'),
+    JSON.stringify({ generatedAt: new Date().toISOString(), councils: councilPrevious })
   )
 
   const leaveShare = await buildLeaveShare(wardGeoCodes)

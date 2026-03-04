@@ -14,6 +14,8 @@ type LocalMapProps = {
   overlayAreaCodes?: Set<string>
   hiddenLadCodes?: Set<string>
   wardFeatures: GeoFeature[]
+  wardVacancies?: Map<string, number>
+  wardVacanciesByName?: Map<string, number>
   wardMap: Map<
     string,
     { winner: string; shares: Record<string, number>; color: string; prevWinner?: string | null }
@@ -84,6 +86,8 @@ export default function LocalMap({
   overlayAreaCodes,
   hiddenLadCodes,
   wardFeatures,
+  wardVacancies,
+  wardVacanciesByName,
   wardMap,
   wardMapByName,
   wardMapByWardName,
@@ -176,6 +180,7 @@ export default function LocalMap({
   const wardOnEachFeature = (feature: GeoFeature, layer: Layer) => {
     const wardCode = getWardCode(feature)
     const wardName = getWardDisplayName(feature)
+    const wardNameKey = getWardNameKey(feature)
     const projection =
       wardMap.get(wardCode) ||
       wardMapByName.get(getWardNameKey(feature) || '') ||
@@ -199,12 +204,18 @@ export default function LocalMap({
       .filter(entry => Number.isFinite(entry.value))
       .sort((a, b) => b.value - a.value)
       .slice(0, 3)
+    const vacancies =
+      (wardCode ? wardVacancies?.get(wardCode) : 0) ||
+      (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
+      1
     const popupLines = sorted
       .map(entry => `${entry.party}: ${entry.value.toFixed(1)}%`)
       .join('<br/>')
     const prev = projection.prevWinner ? `Previous winner: ${projection.prevWinner}` : null
     layer.bindPopup(
-      `<strong>${wardName}</strong><br/>${popupLines}${prev ? `<br/>${prev}` : ''}`
+      `<strong>${wardName}</strong><br/>${popupLines}<br/>Seats up: ${vacancies}${
+        prev ? `<br/>${prev}` : ''
+      }`
     )
   }
 

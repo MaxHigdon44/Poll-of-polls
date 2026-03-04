@@ -120,6 +120,7 @@ export default function PollsPage() {
         <a href="/aggregate">UK National Polling Average</a>
         <a href="/polls">Recent UK Polls</a>
         <a href="/local-2026">May 2026 Local Elections Projections</a>
+        <a href="/council-projections">Council Projections</a>
       </div>
       <div style={{ marginBottom: '1rem', color: '#555' }}>
         UK National Poll Results from the Past Two Months

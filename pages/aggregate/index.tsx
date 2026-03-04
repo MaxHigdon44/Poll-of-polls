@@ -181,6 +181,7 @@ export default function AggregatePage() {
         <a href="/aggregate">National Polling Average</a>
         <a href="/polls">Recent UK Polls</a>
         <a href="/local-2026">May 2026 Local Elections Projections</a>
+        <a href="/council-projections">Council Projections</a>
       </div>
       <div style={{ marginTop: '0.9rem', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
         UK National Polling Average
