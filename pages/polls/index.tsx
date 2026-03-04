@@ -117,10 +117,18 @@ export default function PollsPage() {
         }}
       >
         <h1 style={{ margin: 0 }}>Poll of Polls</h1>
-        <a href="/aggregate">UK National Polling Average</a>
-        <a href="/polls">Recent UK Polls</a>
-        <a href="/local-2026">May 2026 Local Elections Projections</a>
-        <a href="/council-projections">Council Projections</a>
+        <a href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          UK National Polling Average
+        </a>
+        <a href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          Recent UK Polls
+        </a>
+        <a href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          May 2026 Local Elections Projections
+        </a>
+        <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          Council Projections
+        </a>
       </div>
       <div style={{ marginBottom: '1rem', color: '#555' }}>
         UK National Poll Results from the Past Two Months

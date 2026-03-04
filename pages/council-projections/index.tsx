@@ -125,6 +125,22 @@ function normalizeCouncilName(name: string) {
     .trim()
 }
 
+function mapControlToParty(label: string | null) {
+  if (!label) return null
+  const normalized = normalizeName(label)
+  if (normalized.includes('no overall control')) return null
+  if (normalized.includes('labour')) return 'Labour'
+  if (normalized.includes('conservative')) return 'Conservative'
+  if (normalized.includes('liberal democrat') || normalized.includes('lib dem')) {
+    return 'Liberal Democrat'
+  }
+  if (normalized.includes('reform')) return 'Reform'
+  if (normalized.includes('green')) return 'Green'
+  if (normalized.includes('snp')) return 'SNP'
+  if (normalized.includes('plaid')) return 'Plaid Cymru'
+  return label
+}
+
 function sumShares(shares: Record<string, number>) {
   return Object.values(shares).reduce((acc, value) => acc + (value || 0), 0)
 }
@@ -438,6 +454,28 @@ export default function CouncilProjectionsPage() {
     return projections.sort((a, b) => a.council.localeCompare(b.council))
   }, [baseline, aggregate, councilSeats, councilPrevious, ladGeo, leaveLookup])
 
+  const summary = useMemo(() => {
+    const previousTotals: Record<string, number> = {}
+    const projectedTotals: Record<string, number> = {}
+    rows.forEach(row => {
+      const prevKey = mapControlToParty(row.previousControl || 'No overall control') || 'No overall control'
+      const projKey = mapControlToParty(row.projectedControl) || 'No overall control'
+      previousTotals[prevKey] = (previousTotals[prevKey] || 0) + 1
+      projectedTotals[projKey] = (projectedTotals[projKey] || 0) + 1
+    })
+    const parties = new Set<string>([
+      ...Object.keys(previousTotals),
+      ...Object.keys(projectedTotals),
+    ])
+    return Array.from(parties)
+      .map(party => {
+        const projected = projectedTotals[party] || 0
+        const previous = previousTotals[party] || 0
+        return { party, projected, delta: projected - previous }
+      })
+      .sort((a, b) => b.projected - a.projected)
+  }, [rows])
+
   return (
     <div style={{ padding: '2rem', maxWidth: 1100, margin: '0 auto' }}>
       <header style={{ marginBottom: '1.5rem' }}>
@@ -451,15 +489,64 @@ export default function CouncilProjectionsPage() {
           }}
         >
           <h1 style={{ margin: 0 }}>Council Projections</h1>
-          <a href="/aggregate">National Polling Average</a>
-          <a href="/polls">Recent UK Polls</a>
-          <a href="/local-2026">May 2026 Local Elections Projections</a>
-          <a href="/council-projections">Council Projections</a>
+          <a href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+            National Polling Average
+          </a>
+          <a href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+            Recent UK Polls
+          </a>
+          <a href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+            May 2026 Local Elections Projections
+          </a>
+          <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+            Council Projections
+          </a>
         </div>
         <p style={{ margin: '0.35rem 0 0', color: '#555' }}>
           Councils up for election in 2026 with previous and projected control.
         </p>
       </header>
+
+      {summary.length > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.75rem',
+            marginBottom: '1rem',
+          }}
+        >
+          {summary.map(item => {
+            const isNoc = item.party === 'No overall control'
+            const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
+            const deltaLabel =
+              item.delta === 0
+                ? '-'
+                : item.delta > 0
+                  ? `↑ ${item.delta}`
+                  : `↓ ${Math.abs(item.delta)}`
+            const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+            return (
+              <div
+                key={item.party}
+                style={{
+                  border: '1px solid #eee',
+                  borderRadius: 999,
+                  padding: '0.4rem 0.75rem',
+                  display: 'flex',
+                  gap: '0.5rem',
+                  alignItems: 'center',
+                  background: '#fafafa',
+                }}
+              >
+                <span style={{ fontWeight: 600, color }}>{item.party}</span>
+                <span style={{ color }}>{item.projected}</span>
+                <span style={{ color: deltaColor }}>({deltaLabel})</span>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {!rows.length ? (
         <div style={{ color: '#777' }}>Loading council projections…</div>
@@ -478,28 +565,23 @@ export default function CouncilProjectionsPage() {
             <span>Previous Control</span>
             <span>Projected Control</span>
           </div>
-              {rows.map(row => {
+          {rows.map(row => {
                 const projectedLabel = row.projectedControl.replace(' majority', '')
-                const projectedParty =
-                  projectedLabel === 'No overall control' ? null : projectedLabel
+                const projectedParty = mapControlToParty(projectedLabel)
                 const previousLabel = row.previousControl || 'Unknown'
-                const previousParty =
-                  previousLabel === 'Unknown' || previousLabel === 'No overall control'
-                    ? null
-                    : previousLabel
+                const previousParty = mapControlToParty(previousLabel)
                 const projectedColor =
                   projectedLabel === 'No overall control'
                     ? '#111'
                     : PARTY_COLORS[projectedParty || 'Other'] || '#333'
+                const previousIsNoc = normalizeName(previousLabel).includes('no overall control')
                 const previousColor =
-                  previousLabel === 'No overall control'
-                    ? '#111'
-                    : PARTY_COLORS[previousParty || 'Other'] || '#333'
+                  previousIsNoc ? '#111' : PARTY_COLORS[previousParty || 'Other'] || '#333'
                 return (
-            <Link
+            <a
               key={row.ladCode}
               href={`/local-2026?council=${encodeURIComponent(row.ladCode)}`}
-              style={{ textDecoration: 'none', color: 'inherit' }}
+              style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
             >
               <div
                 style={{
@@ -507,6 +589,7 @@ export default function CouncilProjectionsPage() {
                   gridTemplateColumns: '2fr 1fr 1fr',
                   padding: '0.75rem 1rem',
                   borderTop: '1px solid #eee',
+                  cursor: 'pointer',
                 }}
               >
                 <span style={{ fontWeight: 500 }}>{row.council}</span>
@@ -522,7 +605,7 @@ export default function CouncilProjectionsPage() {
                   {projectedLabel}
                 </span>
               </div>
-            </Link>
+            </a>
           )})}
         </div>
       )}
