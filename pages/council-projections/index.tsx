@@ -87,6 +87,8 @@ type CouncilProjectionRow = {
   ladCode: string
   previousControl: string | null
   projectedControl: string
+  projectedSeatsUp: Record<string, number>
+  previousSeatsUp: Record<string, number>
 }
 
 const PARTY_COLORS: Record<string, string> = {
@@ -139,6 +141,23 @@ function mapControlToParty(label: string | null) {
   if (normalized.includes('snp')) return 'SNP'
   if (normalized.includes('plaid')) return 'Plaid Cymru'
   return label
+}
+
+function normalizeSeatsParty(party: string) {
+  const mapped = mapControlToParty(party)
+  if (!mapped) return 'No overall control'
+  if (mapped === 'Independent' || mapped === 'Independents') return 'Independent'
+  const known = new Set([
+    'Labour',
+    'Conservative',
+    'Reform',
+    'Liberal Democrat',
+    'Green',
+    'SNP',
+    'Plaid Cymru',
+    'Independent',
+  ])
+  return known.has(mapped) ? mapped : 'Other'
 }
 
 function sumShares(shares: Record<string, number>) {
@@ -448,6 +467,8 @@ export default function CouncilProjectionsPage() {
         ladCode,
         previousControl: seatRow.control,
         projectedControl: controlLabel,
+        projectedSeatsUp: adjustedContestedTotals,
+        previousSeatsUp: adjustedContestedPreviousTotals,
       })
     })
 
@@ -474,6 +495,28 @@ export default function CouncilProjectionsPage() {
         return { party, projected, delta: projected - previous }
       })
       .sort((a, b) => b.projected - a.projected)
+  }, [rows])
+
+  const seatsUpSummary = useMemo(() => {
+    const totals: Record<string, number> = {}
+    const previousTotals: Record<string, number> = {}
+    rows.forEach(row => {
+      Object.entries(row.projectedSeatsUp || {}).forEach(([party, seats]) => {
+        const key = normalizeSeatsParty(party)
+        totals[key] = (totals[key] || 0) + (seats || 0)
+      })
+      Object.entries(row.previousSeatsUp || {}).forEach(([party, seats]) => {
+        const key = normalizeSeatsParty(party)
+        previousTotals[key] = (previousTotals[key] || 0) + (seats || 0)
+      })
+    })
+    return Object.entries(totals)
+      .map(([party, seats]) => ({
+        party,
+        seats,
+        delta: seats - (previousTotals[party] || 0),
+      }))
+      .sort((a, b) => b.seats - a.seats)
   }, [rows])
 
   return (
@@ -508,44 +551,93 @@ export default function CouncilProjectionsPage() {
       </header>
 
       {summary.length > 0 && (
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '0.75rem',
-            marginBottom: '1rem',
-          }}
-        >
-          {summary.map(item => {
-            const isNoc = item.party === 'No overall control'
-            const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
-            const deltaLabel =
-              item.delta === 0
-                ? '-'
-                : item.delta > 0
-                  ? `↑ ${item.delta}`
-                  : `↓ ${Math.abs(item.delta)}`
-            const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
-            return (
-              <div
-                key={item.party}
-                style={{
-                  border: '1px solid #eee',
-                  borderRadius: 999,
-                  padding: '0.4rem 0.75rem',
-                  display: 'flex',
-                  gap: '0.5rem',
-                  alignItems: 'center',
-                  background: '#fafafa',
-                }}
-              >
-                <span style={{ fontWeight: 600, color }}>{item.party}</span>
-                <span style={{ color }}>{item.projected}</span>
-                <span style={{ color: deltaColor }}>({deltaLabel})</span>
-              </div>
-            )
-          })}
-        </div>
+        <>
+          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Council Projections</div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              marginBottom: '1rem',
+            }}
+          >
+            {summary.map(item => {
+              const isNoc = item.party === 'No overall control'
+              const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
+              const deltaLabel =
+                item.delta === 0
+                  ? '-'
+                  : item.delta > 0
+                    ? `↑ ${item.delta}`
+                    : `↓ ${Math.abs(item.delta)}`
+              const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+              return (
+                <div
+                  key={item.party}
+                  style={{
+                    border: '1px solid #eee',
+                    borderRadius: 999,
+                    padding: '0.4rem 0.75rem',
+                    display: 'flex',
+                    gap: '0.5rem',
+                    alignItems: 'center',
+                    background: '#fafafa',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color }}>{item.party}</span>
+                  <span style={{ color }}>{item.projected}</span>
+                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {seatsUpSummary.length > 0 && (
+        <>
+          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>
+            Seat Change from the previous election wards were contested
+          </div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              marginBottom: '1.5rem',
+            }}
+          >
+            {seatsUpSummary.map(item => {
+              const isNoc = item.party === 'No overall control'
+              const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
+              const deltaLabel =
+                item.delta === 0
+                  ? '-'
+                  : item.delta > 0
+                    ? `↑ ${item.delta}`
+                    : `↓ ${Math.abs(item.delta)}`
+              const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+              return (
+                <div
+                  key={`seats-up-${item.party}`}
+                  style={{
+                    border: '1px solid #eee',
+                    borderRadius: 999,
+                    padding: '0.4rem 0.75rem',
+                    display: 'flex',
+                    gap: '0.5rem',
+                    alignItems: 'center',
+                    background: '#fafafa',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color }}>{item.party}</span>
+                  <span style={{ color }}>{item.seats}</span>
+                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
       )}
 
       {!rows.length ? (
