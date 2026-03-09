@@ -137,6 +137,7 @@ const LEAVE_WARD_FILE = 'leave_ward.csv'
 const LEAVE_WARD_XLSX = 'leave_ward.xlsx'
 const LEAVE_LAD_FILE = 'leave_lad.csv'
 const AGE_WARD_FILE = 'age_ward.csv'
+const LAD_REGION_FILE = 'lad_region_2023.csv'
 const SEATS_UP_FILE = '2026_seats_up.xlsx'
 const WIKIPEDIA_API =
   'https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch='
@@ -386,6 +387,55 @@ async function buildAgeShare(baseline) {
     wardNamesAggressive: wardNameAggressiveEntries,
     lads: ladEntries,
   }
+}
+
+async function buildLadRegionMap(baseline) {
+  const csvPath = path.join(RAW_DIR, LAD_REGION_FILE)
+  if (!fs.existsSync(csvPath)) return null
+
+  const { headers, rows } = await loadCsv(csvPath)
+  if (!headers || !rows) return null
+
+  const normHeaders = headers.map(value =>
+    String(value || '')
+      .replace(/^\uFEFF/, '')
+      .toLowerCase()
+      .trim()
+  )
+  const ladCodeIdx = normHeaders.findIndex(col => col.includes('lad23cd'))
+  const ladNameIdx = normHeaders.findIndex(col => col.includes('lad23nm'))
+  const regionCodeIdx = normHeaders.findIndex(col => col.includes('rgn23cd'))
+  const regionNameIdx = normHeaders.findIndex(col => col.includes('rgn23nm'))
+  if ([ladCodeIdx, ladNameIdx, regionCodeIdx, regionNameIdx].some(idx => idx === -1)) {
+    return null
+  }
+
+  const ladMap = {}
+  const regionMap = {}
+  rows.forEach(row => {
+    const ladCode = String(row[ladCodeIdx] || '').trim()
+    if (!ladCode) return
+    const ladName = String(row[ladNameIdx] || '').trim()
+    const regionCode = String(row[regionCodeIdx] || '').trim()
+    const regionName = String(row[regionNameIdx] || '').trim()
+    ladMap[ladCode] = { ladCode, ladName, regionCode, regionName }
+    if (regionName) {
+      if (!regionMap[regionName]) regionMap[regionName] = []
+      regionMap[regionName].push(ladCode)
+    }
+  })
+
+  Object.keys(regionMap).forEach(region => {
+    regionMap[region] = regionMap[region].sort()
+  })
+
+  const missing = []
+  const ladCodes = new Set(baseline.map(ward => ward.ladCode))
+  ladCodes.forEach(ladCode => {
+    if (!ladMap[ladCode]) missing.push(ladCode)
+  })
+
+  return { lads: ladMap, regions: regionMap, missing }
 }
 
 function parseCsvLine(line) {
@@ -2006,6 +2056,25 @@ async function buildBaseline() {
     await fsp.writeFile(
       path.join(OUT_DIR, 'age-missing.json'),
       JSON.stringify({ generatedAt: new Date().toISOString(), missingByLad: sorted })
+    )
+  }
+
+  const ladRegion = await buildLadRegionMap(baseline)
+  if (ladRegion) {
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'lad-region.json'),
+      JSON.stringify({
+        generatedAt: new Date().toISOString(),
+        lads: ladRegion.lads,
+        regions: ladRegion.regions,
+      })
+    )
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'lad-region-missing.json'),
+      JSON.stringify({
+        generatedAt: new Date().toISOString(),
+        missing: ladRegion.missing,
+      })
     )
   }
 
