@@ -860,12 +860,18 @@ export default function Local2026Page() {
             ward.wardName,
             ward.ladName
           )
-        const projection = computeWardProjection(
-          ward,
-          baseline.baselineNational,
-          aggregate,
-          leaveShare,
-          ageShare,
+          const ageShare = getAgeShareForWard(
+            ward.wardCode,
+            ward.ladCode,
+            ward.wardName,
+            ward.ladName
+          )
+          const projection = computeWardProjection(
+            ward,
+            baseline.baselineNational,
+            aggregate,
+            leaveShare,
+            ageShare,
           leaveStrength,
           ageStrength
         )
