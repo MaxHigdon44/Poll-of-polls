@@ -136,6 +136,7 @@ const WIKIPEDIA_WARD_PAGES = [
 const LEAVE_WARD_FILE = 'leave_ward.csv'
 const LEAVE_WARD_XLSX = 'leave_ward.xlsx'
 const LEAVE_LAD_FILE = 'leave_lad.csv'
+const AGE_WARD_FILE = 'age_ward.csv'
 const SEATS_UP_FILE = '2026_seats_up.xlsx'
 const WIKIPEDIA_API =
   'https://en.wikipedia.org/w/api.php?action=query&list=search&format=json&srsearch='
@@ -254,6 +255,137 @@ function mapParty(name) {
 
 function sumObject(obj) {
   return Object.values(obj).reduce((acc, value) => acc + (value || 0), 0)
+}
+
+async function buildAgeShare(baseline) {
+  const csvPath = path.join(RAW_DIR, AGE_WARD_FILE)
+  if (!fs.existsSync(csvPath)) return null
+
+  const workbook = xlsx.readFile(csvPath)
+  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const rows = xlsx.utils.sheet_to_json(sheet, { header: 1 })
+  if (!rows.length) return null
+  const header = rows[0].map(value => String(value || '').toLowerCase())
+  const wardCodeIdx = header.findIndex(col => col.includes('wards and divisions code'))
+  const wardNameIdx = header.findIndex(
+    col => col.includes('wards and divisions') && !col.includes('code')
+  )
+  const ageCodeIdx = header.findIndex(col => col.includes('age') && col.includes('code'))
+  const obsIdx = header.findIndex(col => col.includes('observation'))
+  if ([wardCodeIdx, wardNameIdx, ageCodeIdx, obsIdx].some(idx => idx === -1)) return null
+
+  const wardTotals = new Map()
+  const wardNameMap = new Map()
+  const wardNameOnlyMap = new Map()
+  const wardNameAggressiveMap = new Map()
+  const wardNameCounts = new Map()
+  for (let i = 1; i < rows.length; i += 1) {
+    const row = rows[i]
+    if (!row || row.length === 0) continue
+    const wardCode = String(row[wardCodeIdx] || '').trim()
+    if (!wardCode) continue
+    const wardNameRaw = String(row[wardNameIdx] || '').trim()
+    const wardName = wardNameRaw.replace(/\s*\(([^)]+)\)\s*$/, '').trim()
+    const wardLadMatch = wardNameRaw.match(/\(([^)]+)\)\s*$/)
+    const wardLad = wardLadMatch ? wardLadMatch[1].trim() : null
+    const ageCode = Number(row[ageCodeIdx])
+    const obs = Number(row[obsIdx])
+    if (!Number.isFinite(ageCode) || !Number.isFinite(obs)) continue
+
+    const entry = wardTotals.get(wardCode) || {
+      wardName,
+      total: 0,
+      age18_35: 0,
+      age35_55: 0,
+      age55_plus: 0,
+    }
+    entry.total += obs
+    if (ageCode >= 18 && ageCode <= 34) {
+      entry.age18_35 += obs
+    } else if (ageCode >= 35 && ageCode <= 54) {
+      entry.age35_55 += obs
+    } else if (ageCode >= 56) {
+      entry.age55_plus += obs
+    }
+    wardTotals.set(wardCode, entry)
+
+    if (wardLad) {
+      const key = `${normalize(wardLad)}|${normalize(wardName)}`
+      wardNameMap.set(key, wardCode)
+    }
+    const nameKey = normalize(wardName)
+    wardNameCounts.set(nameKey, (wardNameCounts.get(nameKey) || 0) + 1)
+    if (!wardNameOnlyMap.has(nameKey)) {
+      wardNameOnlyMap.set(nameKey, wardCode)
+    }
+    if (!wardNameAggressiveMap.has(nameKey)) {
+      wardNameAggressiveMap.set(nameKey, wardCode)
+    }
+  }
+
+  const wardEntries = {}
+  wardTotals.forEach((value, code) => {
+    if (!value.total) return
+    wardEntries[code] = {
+      wardCode: code,
+      age18_35: value.age18_35 / value.total,
+      age35_55: value.age35_55 / value.total,
+      age55_plus: value.age55_plus / value.total,
+      totalPop: value.total,
+      wardName: value.wardName,
+    }
+  })
+
+  const wardNameEntries = {}
+  wardNameMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameEntries[key] = entry
+  })
+  const wardNameOnlyEntries = {}
+  wardNameOnlyMap.forEach((code, key) => {
+    if (wardNameCounts.get(key) !== 1) return
+    const entry = wardEntries[code]
+    if (entry) wardNameOnlyEntries[key] = entry
+  })
+  const wardNameAggressiveEntries = {}
+  wardNameAggressiveMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameAggressiveEntries[key] = entry
+  })
+
+  const ladEntries = {}
+  const ladTotals = new Map()
+  baseline.forEach(ward => {
+    const age = wardEntries[ward.wardCode]
+    if (!age || !age.totalPop) return
+    const entry = ladTotals.get(ward.ladCode) || {
+      total: 0,
+      age18_35: 0,
+      age35_55: 0,
+      age55_plus: 0,
+    }
+    entry.total += age.totalPop
+    entry.age18_35 += age.age18_35 * age.totalPop
+    entry.age35_55 += age.age35_55 * age.totalPop
+    entry.age55_plus += age.age55_plus * age.totalPop
+    ladTotals.set(ward.ladCode, entry)
+  })
+  ladTotals.forEach((value, code) => {
+    if (!value.total) return
+    ladEntries[code] = {
+      age18_35: value.age18_35 / value.total,
+      age35_55: value.age35_55 / value.total,
+      age55_plus: value.age55_plus / value.total,
+    }
+  })
+
+  return {
+    wards: wardEntries,
+    wardNames: wardNameEntries,
+    wardNamesOnly: wardNameOnlyEntries,
+    wardNamesAggressive: wardNameAggressiveEntries,
+    lads: ladEntries,
+  }
 }
 
 function parseCsvLine(line) {
@@ -1785,6 +1917,95 @@ async function buildBaseline() {
     await fsp.writeFile(
       path.join(OUT_DIR, 'leave-share.json'),
       JSON.stringify(leaveShare)
+    )
+  }
+
+  const ageShare = await buildAgeShare(baseline)
+  if (ageShare) {
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'age-share.json'),
+      JSON.stringify(ageShare)
+    )
+    const nameMatched = []
+    baseline.forEach(ward => {
+      if (ageShare.wards?.[ward.wardCode]) return
+      const nameKey = `${normalize(ward.ladName)}|${normalize(ward.wardName)}`
+      if (ageShare.wardNames?.[nameKey]) {
+        const match = ageShare.wardNames[nameKey]
+        nameMatched.push({
+          wardCode: ward.wardCode,
+          wardName: ward.wardName,
+          ladCode: ward.ladCode,
+          ladName: ward.ladName,
+          matchedWardCode: match.wardCode,
+          matchedWardName: match.wardName,
+          matchMethod: 'lad+ward',
+        })
+        return
+      }
+      const nameOnlyKey = normalize(ward.wardName)
+      if (ageShare.wardNamesOnly?.[nameOnlyKey]) {
+        const match = ageShare.wardNamesOnly[nameOnlyKey]
+        nameMatched.push({
+          wardCode: ward.wardCode,
+          wardName: ward.wardName,
+          ladCode: ward.ladCode,
+          ladName: ward.ladName,
+          matchedWardCode: match.wardCode,
+          matchedWardName: match.wardName,
+          matchMethod: 'name-only',
+        })
+        return
+      }
+      if (ageShare.wardNamesAggressive?.[nameOnlyKey]) {
+        const match = ageShare.wardNamesAggressive[nameOnlyKey]
+        nameMatched.push({
+          wardCode: ward.wardCode,
+          wardName: ward.wardName,
+          ladCode: ward.ladCode,
+          ladName: ward.ladName,
+          matchedWardCode: match.wardCode,
+          matchedWardName: match.wardName,
+          matchMethod: 'name-aggressive',
+        })
+      }
+    })
+    const sortedMatches = nameMatched.sort((a, b) => {
+      const ladCompare = a.ladName.localeCompare(b.ladName)
+      if (ladCompare) return ladCompare
+      return a.wardName.localeCompare(b.wardName)
+    })
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'age-name-matches.json'),
+      JSON.stringify({ generatedAt: new Date().toISOString(), matches: sortedMatches })
+    )
+    const missingByLad = {}
+    baseline.forEach(ward => {
+      if (ageShare.wards?.[ward.wardCode]) return
+      const nameKey = `${normalize(ward.ladName)}|${normalize(ward.wardName)}`
+      if (ageShare.wardNames?.[nameKey]) return
+      const nameOnlyKey = normalize(ward.wardName)
+      if (ageShare.wardNamesOnly?.[nameOnlyKey]) return
+      if (ageShare.wardNamesAggressive?.[nameOnlyKey]) return
+      const ladName = ward.ladName || 'Unknown'
+      if (!missingByLad[ladName]) missingByLad[ladName] = []
+      missingByLad[ladName].push({
+        wardCode: ward.wardCode,
+        wardName: ward.wardName,
+        ladCode: ward.ladCode,
+      })
+    })
+    const sorted = Object.fromEntries(
+      Object.entries(missingByLad)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([ladName, wards]) => [
+          ladName,
+          wards.sort((a, b) => a.wardName.localeCompare(b.wardName)),
+        ])
+    )
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'age-missing.json'),
+      JSON.stringify({ generatedAt: new Date().toISOString(), missingByLad: sorted })
     )
   }
 

@@ -6,6 +6,7 @@ import {
   clampLeaveShare,
   getCenteredPartyLeaveAdjustment,
 } from '@/lib/local2026/leaveRemain'
+import { AGE_BASELINE, AGE_EFFECT_STRENGTH, getAgeAdjustment } from '@/lib/local2026/age'
 
 type WardBaseline = {
   wardCode: string
@@ -54,6 +55,14 @@ type LeaveShareLookup = {
   wardNames?: Record<string, { leaveShare: number }>
   lads?: Record<string, { leaveShare: number }>
   meta?: Record<string, any>
+}
+
+type AgeShareLookup = {
+  wards?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
+  wardNames?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
+  wardNamesOnly?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
+  wardNamesAggressive?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
+  lads?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
 }
 
 type AggregateRow = {
@@ -168,7 +177,10 @@ function computeWardProjection(
   ward: WardBaseline,
   baselineNational: Record<string, number>,
   aggregate: AggregateRow,
-  leaveShare: number
+  leaveShare: number,
+  ageShare: { age18_35: number; age35_55: number; age55_plus: number },
+  leaveStrength: number,
+  ageStrength: number
 ) {
   const nationalParties = [
     'Labour',
@@ -197,7 +209,11 @@ function computeWardProjection(
     const base = ward.nationalShares[party] ?? 0
     const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
-    const value = Math.max(0, base + delta + LEAVE_EFFECT_STRENGTH * leaveAdj)
+    const ageAdj = getAgeAdjustment(party, ageShare)
+    const value = Math.max(
+      0,
+      base + delta + leaveStrength * leaveAdj + ageStrength * ageAdj
+    )
     adjustedNational[party] = value
     sumNational += value
   })
@@ -268,9 +284,12 @@ export default function CouncilProjectionsPage() {
   const [baseline, setBaseline] = useState<BaselineData | null>(null)
   const [aggregate, setAggregate] = useState<AggregateRow | null>(null)
   const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
+  const [ageLookup, setAgeLookup] = useState<AgeShareLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
+  const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
+  const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
 
   useEffect(() => {
     fetch('/data/ward-baseline.json')
@@ -281,6 +300,10 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setLeaveLookup)
       .catch(() => setLeaveLookup(null))
+    fetch('/data/age-share.json')
+      .then(res => res.json())
+      .then(setAgeLookup)
+      .catch(() => setAgeLookup(null))
     fetch('/data/council-seats.json')
       .then(res => res.json())
       .then(setCouncilSeats)
@@ -315,6 +338,31 @@ export default function CouncilProjectionsPage() {
     const ladShare = leaveLookup?.lads?.[ladCode]?.leaveShare
     if (typeof ladShare === 'number') return ladShare
     return NATIONAL_LEAVE_SHARE
+  }
+
+  const getAgeShareForWard = (
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ) => {
+    const wardShare = ageLookup?.wards?.[wardCode]
+    if (wardShare) return wardShare
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = ageLookup?.wardNames?.[key]
+      if (nameShare) return nameShare
+    }
+    if (wardName) {
+      const nameKey = normalizeName(wardName)
+      const nameShare = ageLookup?.wardNamesOnly?.[nameKey]
+      if (nameShare) return nameShare
+      const aggressiveShare = ageLookup?.wardNamesAggressive?.[nameKey]
+      if (aggressiveShare) return aggressiveShare
+    }
+    const ladShare = ageLookup?.lads?.[ladCode]
+    if (ladShare) return ladShare
+    return AGE_BASELINE
   }
 
   const rows = useMemo<CouncilProjectionRow[]>(() => {
@@ -384,7 +432,21 @@ export default function CouncilProjectionsPage() {
           ward.wardName,
           ward.ladName
         )
-        const projection = computeWardProjection(ward, baseline.baselineNational, aggregate, leaveShare)
+        const ageShare = getAgeShareForWard(
+          ward.wardCode,
+          ward.ladCode,
+          ward.wardName,
+          ward.ladName
+        )
+        const projection = computeWardProjection(
+          ward,
+          baseline.baselineNational,
+          aggregate,
+          leaveShare,
+          ageShare,
+          leaveStrength,
+          ageStrength
+        )
         const previousShares: Record<string, number> = {
           ...ward.nationalShares,
           ...ward.localShares,
@@ -473,7 +535,7 @@ export default function CouncilProjectionsPage() {
     })
 
     return projections.sort((a, b) => a.council.localeCompare(b.council))
-  }, [baseline, aggregate, councilSeats, councilPrevious, ladGeo, leaveLookup])
+  }, [baseline, aggregate, councilSeats, councilPrevious, ladGeo, leaveLookup, ageLookup, leaveStrength, ageStrength])
 
   const summary = useMemo(() => {
     const previousTotals: Record<string, number> = {}
@@ -549,6 +611,44 @@ export default function CouncilProjectionsPage() {
           Councils up for election in 2026 with previous and projected control.
         </p>
       </header>
+
+      {process.env.NODE_ENV !== 'production' && (
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '1.5rem',
+            marginBottom: '1.5rem',
+            padding: '0.75rem 1rem',
+            border: '1px solid #eee',
+            borderRadius: 8,
+            background: '#fafafa',
+          }}
+        >
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            Leave/Remain Strength: {leaveStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={leaveStrength}
+              onChange={event => setLeaveStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            Age Strength: {ageStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={ageStrength}
+              onChange={event => setAgeStrength(Number(event.target.value))}
+            />
+          </label>
+        </div>
+      )}
 
       {summary.length > 0 && (
         <>
