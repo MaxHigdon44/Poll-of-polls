@@ -860,12 +860,15 @@ export default function Local2026Page() {
             ward.wardName,
             ward.ladName
           )
-          const projection = computeWardProjection(
-            ward,
-            baseline.baselineNational,
-            aggregate,
-            leaveShare
-          )
+        const projection = computeWardProjection(
+          ward,
+          baseline.baselineNational,
+          aggregate,
+          leaveShare,
+          ageShare,
+          leaveStrength,
+          ageStrength
+        )
           const previousShares: Record<string, number> = {
             ...ward.nationalShares,
             ...ward.localShares,
@@ -889,7 +892,7 @@ export default function Local2026Page() {
         }
       })
     return map
-  }, [baseline, aggregate, leaveLookup, selectedLad])
+  }, [baseline, aggregate, leaveLookup, ageLookup, leaveStrength, ageStrength, selectedLad])
 
   const ladFallbackProjection = useMemo(() => {
     if (!baseline || !aggregate || !selectedLad) return null
