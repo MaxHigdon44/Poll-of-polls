@@ -7,6 +7,7 @@ import {
   getCenteredPartyLeaveAdjustment,
 } from '@/lib/local2026/leaveRemain'
 import { AGE_BASELINE, AGE_EFFECT_STRENGTH, getAgeAdjustment } from '@/lib/local2026/age'
+import { REGION_EFFECT_STRENGTH, getRegionAdjustment } from '@/lib/local2026/region'
 
 type WardBaseline = {
   wardCode: string
@@ -63,6 +64,13 @@ type AgeShareLookup = {
   wardNamesOnly?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
   wardNamesAggressive?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
   lads?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
+}
+
+type RegionLookup = {
+  lads?: Record<
+    string,
+    { ladCode: string; ladName: string; regionCode: string; regionName: string }
+  >
 }
 
 type AggregateRow = {
@@ -179,8 +187,10 @@ function computeWardProjection(
   aggregate: AggregateRow,
   leaveShare: number,
   ageShare: { age18_35: number; age35_55: number; age55_plus: number },
+  regionName: string | null,
   leaveStrength: number,
-  ageStrength: number
+  ageStrength: number,
+  regionStrength: number
 ) {
   const nationalParties = [
     'Labour',
@@ -210,9 +220,14 @@ function computeWardProjection(
     const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
+    const regionAdj = getRegionAdjustment(party, regionName)
     const value = Math.max(
       0,
-      base + delta + leaveStrength * leaveAdj + ageStrength * ageAdj
+      base +
+        delta +
+        leaveStrength * leaveAdj +
+        ageStrength * ageAdj +
+        regionStrength * regionAdj
     )
     adjustedNational[party] = value
     sumNational += value
@@ -285,11 +300,13 @@ export default function CouncilProjectionsPage() {
   const [aggregate, setAggregate] = useState<AggregateRow | null>(null)
   const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
   const [ageLookup, setAgeLookup] = useState<AgeShareLookup | null>(null)
+  const [regionLookup, setRegionLookup] = useState<RegionLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
+  const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
 
   useEffect(() => {
     fetch('/data/ward-baseline.json')
@@ -304,6 +321,10 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setAgeLookup)
       .catch(() => setAgeLookup(null))
+    fetch('/data/lad-region.json')
+      .then(res => res.json())
+      .then(setRegionLookup)
+      .catch(() => setRegionLookup(null))
     fetch('/data/council-seats.json')
       .then(res => res.json())
       .then(setCouncilSeats)
@@ -363,6 +384,12 @@ export default function CouncilProjectionsPage() {
     const ladShare = ageLookup?.lads?.[ladCode]
     if (ladShare) return ladShare
     return AGE_BASELINE
+  }
+
+  const getRegionForWard = (ladCode: string) => {
+    const entry = regionLookup?.lads?.[ladCode]
+    if (entry?.regionName) return entry.regionName
+    return null
   }
 
   const rows = useMemo<CouncilProjectionRow[]>(() => {
@@ -438,14 +465,17 @@ export default function CouncilProjectionsPage() {
           ward.wardName,
           ward.ladName
         )
+        const regionName = getRegionForWard(ward.ladCode)
         const projection = computeWardProjection(
           ward,
           baseline.baselineNational,
           aggregate,
           leaveShare,
           ageShare,
+          regionName,
           leaveStrength,
-          ageStrength
+          ageStrength,
+          regionStrength
         )
         const previousShares: Record<string, number> = {
           ...ward.nationalShares,
@@ -535,7 +565,19 @@ export default function CouncilProjectionsPage() {
     })
 
     return projections.sort((a, b) => a.council.localeCompare(b.council))
-  }, [baseline, aggregate, councilSeats, councilPrevious, ladGeo, leaveLookup, ageLookup, leaveStrength, ageStrength])
+  }, [
+    baseline,
+    aggregate,
+    councilSeats,
+    councilPrevious,
+    ladGeo,
+    leaveLookup,
+    ageLookup,
+    regionLookup,
+    leaveStrength,
+    ageStrength,
+    regionStrength,
+  ])
 
   const summary = useMemo(() => {
     const previousTotals: Record<string, number> = {}
@@ -645,6 +687,17 @@ export default function CouncilProjectionsPage() {
               step={0.05}
               value={ageStrength}
               onChange={event => setAgeStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            Region Strength: {regionStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={regionStrength}
+              onChange={event => setRegionStrength(Number(event.target.value))}
             />
           </label>
         </div>

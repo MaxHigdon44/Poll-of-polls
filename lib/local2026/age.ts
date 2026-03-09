@@ -18,7 +18,7 @@ export const AGE_DELTAS: Record<
   Other: { age18_35: 0.83, age35_55: 0.16, age55_plus: -0.32 },
 }
 
-export const AGE_EFFECT_STRENGTH = 0.6
+export const AGE_EFFECT_STRENGTH = 0.8
 
 export function getAgeAdjustment(
   party: string,

@@ -425,6 +425,29 @@ async function buildLadRegionMap(baseline) {
     }
   })
 
+  const walesName = 'Wales'
+  const walesCode = 'WLS'
+  const baselineWales = new Set()
+  baseline.forEach(ward => {
+    if (String(ward.ladCode || '').startsWith('W06')) {
+      baselineWales.add(ward.ladCode)
+    }
+  })
+  baselineWales.forEach(ladCode => {
+    if (!ladMap[ladCode]) {
+      ladMap[ladCode] = {
+        ladCode,
+        ladName: '',
+        regionCode: walesCode,
+        regionName: walesName,
+      }
+    }
+    if (!regionMap[walesName]) regionMap[walesName] = []
+    if (!regionMap[walesName].includes(ladCode)) {
+      regionMap[walesName].push(ladCode)
+    }
+  })
+
   Object.keys(regionMap).forEach(region => {
     regionMap[region] = regionMap[region].sort()
   })

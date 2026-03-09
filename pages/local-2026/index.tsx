@@ -8,6 +8,7 @@ import {
   getCenteredPartyLeaveAdjustment,
 } from '@/lib/local2026/leaveRemain'
 import { AGE_BASELINE, AGE_EFFECT_STRENGTH, getAgeAdjustment } from '@/lib/local2026/age'
+import { REGION_EFFECT_STRENGTH, getRegionAdjustment } from '@/lib/local2026/region'
 
 const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
 
@@ -90,6 +91,13 @@ type AgeShareLookup = {
   wardNamesOnly?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
   wardNamesAggressive?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
   lads?: Record<string, { age18_35: number; age35_55: number; age55_plus: number }>
+}
+
+type RegionLookup = {
+  lads?: Record<
+    string,
+    { ladCode: string; ladName: string; regionCode: string; regionName: string }
+  >
 }
 
 type AggregateRow = {
@@ -443,8 +451,10 @@ function computeWardProjection(
   aggregate: AggregateRow,
   leaveShare: number,
   ageShare: { age18_35: number; age35_55: number; age55_plus: number },
+  regionName: string | null,
   leaveStrength: number,
-  ageStrength: number
+  ageStrength: number,
+  regionStrength: number
 ) {
   const nationalParties = [
     'Labour',
@@ -474,9 +484,14 @@ function computeWardProjection(
     const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
+    const regionAdj = getRegionAdjustment(party, regionName)
     const value = Math.max(
       0,
-      base + delta + leaveStrength * leaveAdj + ageStrength * ageAdj
+      base +
+        delta +
+        leaveStrength * leaveAdj +
+        ageStrength * ageAdj +
+        regionStrength * regionAdj
     )
     adjustedNational[party] = value
     sumNational += value
@@ -579,18 +594,15 @@ export default function Local2026Page() {
   const [aggregate, setAggregate] = useState<AggregateRow | null>(null)
   const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
   const [ageLookup, setAgeLookup] = useState<AgeShareLookup | null>(null)
+  const [regionLookup, setRegionLookup] = useState<RegionLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [selectedLad, setSelectedLad] = useState<string | null>(null)
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
+  const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
 
   useEffect(() => {
-    fetch('/data/wards.geojson')
-      .then(res => res.json())
-      .then(setWardGeo)
-      .catch(() => setWardGeo(null))
-
     fetch('/data/lads.geojson')
       .then(res => res.json())
       .then(setLadGeo)
@@ -611,6 +623,11 @@ export default function Local2026Page() {
       .then(setAgeLookup)
       .catch(() => setAgeLookup(null))
 
+    fetch('/data/lad-region.json')
+      .then(res => res.json())
+      .then(setRegionLookup)
+      .catch(() => setRegionLookup(null))
+
     fetch('/data/council-seats.json')
       .then(res => res.json())
       .then(setCouncilSeats)
@@ -628,6 +645,23 @@ export default function Local2026Page() {
       })
       .catch(() => setAggregate(null))
   }, [])
+
+  useEffect(() => {
+    if (!selectedLad) return
+    if (wardGeo) return
+    let cancelled = false
+    fetch('/data/wards.geojson')
+      .then(res => res.json())
+      .then(data => {
+        if (!cancelled) setWardGeo(data)
+      })
+      .catch(() => {
+        if (!cancelled) setWardGeo(null)
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [selectedLad, wardGeo])
 
   useEffect(() => {
     if (!router.isReady) return
@@ -697,6 +731,12 @@ export default function Local2026Page() {
     return AGE_BASELINE
   }
 
+  const getRegionForWard = (ladCode: string) => {
+    const entry = regionLookup?.lads?.[ladCode]
+    if (entry?.regionName) return entry.regionName
+    return null
+  }
+
   const wardMap = useMemo(() => {
     if (!baseline || !aggregate) return new Map<string, any>()
     const ladBaselineMap = new Map<
@@ -761,14 +801,17 @@ export default function Local2026Page() {
         ward.wardName,
         ward.ladName
       )
+      const regionName = getRegionForWard(ward.ladCode)
       const projection = computeWardProjection(
         adjustedWard,
         baseline.baselineNational,
         aggregate,
         leaveShare,
         ageShare,
+        regionName,
         leaveStrength,
-        ageStrength
+        ageStrength,
+        regionStrength
       )
       const previousShares: Record<string, number> = {
         ...adjustedWard.nationalShares,
@@ -792,59 +835,29 @@ export default function Local2026Page() {
       })
     })
     return map
-  }, [baseline, aggregate, leaveLookup, ageLookup, leaveStrength, ageStrength])
+  }, [
+    baseline,
+    aggregate,
+    leaveLookup,
+    ageLookup,
+    regionLookup,
+    leaveStrength,
+    ageStrength,
+    regionStrength,
+  ])
 
   const wardMapByName = useMemo(() => {
     if (!baseline || !aggregate) return new Map<string, any>()
     const map = new Map<string, any>()
     baseline.wards.forEach(ward => {
       const key = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
-      if (!map.has(key)) {
-        const { leaveShare, source } = getLeaveShareForWard(
-          ward.wardCode,
-          ward.ladCode,
-          ward.wardName,
-          ward.ladName
-        )
-        const ageShare = getAgeShareForWard(
-          ward.wardCode,
-          ward.ladCode,
-          ward.wardName,
-          ward.ladName
-        )
-        const projection = computeWardProjection(
-          ward,
-          baseline.baselineNational,
-          aggregate,
-          leaveShare,
-          ageShare,
-          leaveStrength,
-          ageStrength
-        )
-        const previousShares: Record<string, number> = {
-          ...ward.nationalShares,
-          ...ward.localShares,
-        }
-        let prevWinner: string | null = null
-        let prevTop = -1
-        Object.entries(previousShares).forEach(([party, value]) => {
-          const numericValue = Number(value)
-          if (!Number.isFinite(numericValue)) return
-          if (numericValue > prevTop) {
-            prevTop = numericValue
-            prevWinner = party
-          }
-        })
-        map.set(key, {
-          ...projection,
-          color: PARTY_COLORS[projection.winner] || '#ccc',
-          leaveSource: source,
-          prevWinner,
-        })
-      }
+      if (map.has(key)) return
+      const projection = wardMap.get(ward.wardCode)
+      if (!projection) return
+      map.set(key, projection)
     })
     return map
-  }, [baseline, aggregate, leaveLookup, ageLookup, leaveStrength, ageStrength])
+  }, [baseline, aggregate, wardMap])
 
   const wardMapByWardName = useMemo(() => {
     if (!baseline || !aggregate || !selectedLad) return new Map<string, any>()
@@ -853,52 +866,13 @@ export default function Local2026Page() {
       .filter(ward => ward.ladCode === selectedLad)
       .forEach(ward => {
         const key = normalizeName(ward.wardName)
-        if (!map.has(key)) {
-          const { leaveShare, source } = getLeaveShareForWard(
-            ward.wardCode,
-            ward.ladCode,
-            ward.wardName,
-            ward.ladName
-          )
-          const ageShare = getAgeShareForWard(
-            ward.wardCode,
-            ward.ladCode,
-            ward.wardName,
-            ward.ladName
-          )
-          const projection = computeWardProjection(
-            ward,
-            baseline.baselineNational,
-            aggregate,
-            leaveShare,
-            ageShare,
-          leaveStrength,
-          ageStrength
-        )
-          const previousShares: Record<string, number> = {
-            ...ward.nationalShares,
-            ...ward.localShares,
-          }
-          let prevWinner: string | null = null
-          let prevTop = -1
-          Object.entries(previousShares).forEach(([party, value]) => {
-            const numericValue = Number(value)
-            if (!Number.isFinite(numericValue)) return
-            if (numericValue > prevTop) {
-              prevTop = numericValue
-              prevWinner = party
-            }
-          })
-          map.set(key, {
-            ...projection,
-            color: PARTY_COLORS[projection.winner] || '#ccc',
-            leaveSource: source,
-            prevWinner,
-          })
-        }
+        if (map.has(key)) return
+        const projection = wardMap.get(ward.wardCode)
+        if (!projection) return
+        map.set(key, projection)
       })
     return map
-  }, [baseline, aggregate, leaveLookup, ageLookup, leaveStrength, ageStrength, selectedLad])
+  }, [baseline, aggregate, selectedLad, wardMap])
 
   const ladFallbackProjection = useMemo(() => {
     if (!baseline || !aggregate || !selectedLad) return null
@@ -1402,6 +1376,17 @@ export default function Local2026Page() {
               step={0.05}
               value={ageStrength}
               onChange={event => setAgeStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            Region Strength: {regionStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={regionStrength}
+              onChange={event => setRegionStrength(Number(event.target.value))}
             />
           </label>
         </div>

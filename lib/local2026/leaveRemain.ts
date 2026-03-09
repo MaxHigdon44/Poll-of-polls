@@ -12,7 +12,7 @@ export const PARTY_LEAVE_REMAIN_DELTAS: Record<
 }
 
 export const NATIONAL_LEAVE_SHARE = 0.52
-export const LEAVE_EFFECT_STRENGTH = 0.6
+export const LEAVE_EFFECT_STRENGTH = 0.8
 export const LEAVE_EXPOSURE_CLAMP = 0.25
 
 export function clamp(value: number, min: number, max: number) {
