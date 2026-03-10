@@ -10,6 +10,12 @@ import {
 } from '@/lib/local2026/leaveRemain'
 import { AGE_BASELINE, AGE_EFFECT_STRENGTH, getAgeAdjustment } from '@/lib/local2026/age'
 import { REGION_EFFECT_STRENGTH, getRegionAdjustment } from '@/lib/local2026/region'
+import {
+  NSSEC_EFFECT_STRENGTH,
+  getNssecAdjustment,
+  type NssecBaseline,
+  type NssecShare,
+} from '@/lib/local2026/nssec'
 
 const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
 
@@ -99,6 +105,15 @@ type RegionLookup = {
     string,
     { ladCode: string; ladName: string; regionCode: string; regionName: string }
   >
+}
+
+type NssecLookup = {
+  wards?: Record<string, NssecShare & { totalPop?: number; wardName?: string }>
+  wardNames?: Record<string, NssecShare & { totalPop?: number; wardName?: string }>
+  wardNamesOnly?: Record<string, NssecShare & { totalPop?: number; wardName?: string }>
+  wardNamesAggressive?: Record<string, NssecShare & { totalPop?: number; wardName?: string }>
+  lads?: Record<string, NssecShare>
+  meta?: { baseline?: NssecBaseline }
 }
 
 type AggregateRow = {
@@ -453,9 +468,12 @@ function computeWardProjection(
   leaveShare: number,
   ageShare: { age18_35: number; age35_55: number; age55_plus: number },
   regionName: string | null,
+  nssecShare: NssecShare,
+  nssecBaseline: NssecBaseline,
   leaveStrength: number,
   ageStrength: number,
-  regionStrength: number
+  regionStrength: number,
+  nssecStrength: number
 ) {
   const nationalParties = [
     'Labour',
@@ -486,13 +504,15 @@ function computeWardProjection(
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
     const regionAdj = getRegionAdjustment(party, regionName)
+    const nssecAdj = getNssecAdjustment(party, nssecShare, nssecBaseline)
     const value = Math.max(
       0,
       base +
         delta +
         leaveStrength * leaveAdj +
         ageStrength * ageAdj +
-        regionStrength * regionAdj
+        regionStrength * regionAdj +
+        nssecStrength * nssecAdj
     )
     adjustedNational[party] = value
     sumNational += value
@@ -596,12 +616,14 @@ export default function Local2026Page() {
   const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
   const [ageLookup, setAgeLookup] = useState<AgeShareLookup | null>(null)
   const [regionLookup, setRegionLookup] = useState<RegionLookup | null>(null)
+  const [nssecLookup, setNssecLookup] = useState<NssecLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [selectedLad, setSelectedLad] = useState<string | null>(null)
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
+  const [nssecStrength, setNssecStrength] = useState(NSSEC_EFFECT_STRENGTH)
 
   useEffect(() => {
     fetch('/data/lads.geojson')
@@ -628,6 +650,11 @@ export default function Local2026Page() {
       .then(res => res.json())
       .then(setRegionLookup)
       .catch(() => setRegionLookup(null))
+
+    fetch('/data/nssec-share.json')
+      .then(res => res.json())
+      .then(setNssecLookup)
+      .catch(() => setNssecLookup(null))
 
     fetch('/data/council-seats.json')
       .then(res => res.json())
@@ -755,6 +782,37 @@ export default function Local2026Page() {
     return null
   }
 
+  const getNssecBaseline = () => {
+    const baseline = nssecLookup?.meta?.baseline
+    if (baseline) return baseline
+    return { higher: 0.33, intermediate: 0.33, lower: 0.34 }
+  }
+
+  const getNssecShareForWard = (
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): NssecShare => {
+    const wardShare = nssecLookup?.wards?.[wardCode]
+    if (wardShare) return wardShare
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = nssecLookup?.wardNames?.[key]
+      if (nameShare) return nameShare
+    }
+    if (wardName) {
+      const nameKey = normalizeName(wardName)
+      const nameShare = nssecLookup?.wardNamesOnly?.[nameKey]
+      if (nameShare) return nameShare
+      const aggressiveShare = nssecLookup?.wardNamesAggressive?.[nameKey]
+      if (aggressiveShare) return aggressiveShare
+    }
+    const ladShare = nssecLookup?.lads?.[ladCode]
+    if (ladShare) return ladShare
+    return getNssecBaseline()
+  }
+
   const wardMap = useMemo(() => {
     if (!baseline || !aggregate) return new Map<string, any>()
     const ladBaselineMap = new Map<
@@ -820,6 +878,13 @@ export default function Local2026Page() {
         ward.ladName
       )
       const regionName = getRegionForWard(ward.ladCode)
+      const nssecShare = getNssecShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
+      const nssecBaseline = getNssecBaseline()
       const projection = computeWardProjection(
         adjustedWard,
         baseline.baselineNational,
@@ -827,9 +892,12 @@ export default function Local2026Page() {
         leaveShare,
         ageShare,
         regionName,
+        nssecShare,
+        nssecBaseline,
         leaveStrength,
         ageStrength,
-        regionStrength
+        regionStrength,
+        nssecStrength
       )
       const previousShares: Record<string, number> = {
         ...adjustedWard.nationalShares,
@@ -859,9 +927,11 @@ export default function Local2026Page() {
     leaveLookup,
     ageLookup,
     regionLookup,
+    nssecLookup,
     leaveStrength,
     ageStrength,
     regionStrength,
+    nssecStrength,
   ])
 
   const wardMapByName = useMemo(() => {
@@ -1405,6 +1475,17 @@ export default function Local2026Page() {
               step={0.05}
               value={regionStrength}
               onChange={event => setRegionStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            NS-SEC Strength: {nssecStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={nssecStrength}
+              onChange={event => setNssecStrength(Number(event.target.value))}
             />
           </label>
         </div>
