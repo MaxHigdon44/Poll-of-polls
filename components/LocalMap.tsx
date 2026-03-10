@@ -258,13 +258,15 @@ export default function LocalMap({
           }}
         />
       )}
-      {selectedLad && wardFeatures.length > 0 && (
+      {selectedLad && (
         <>
-          <GeoJSON
-            data={{ type: 'FeatureCollection', features: wardFeatures } as GeoJsonObject}
-            style={wardStyle}
-            onEachFeature={wardOnEachFeature}
-          />
+          {wardFeatures.length > 0 && (
+            <GeoJSON
+              data={{ type: 'FeatureCollection', features: wardFeatures } as GeoJsonObject}
+              style={wardStyle}
+              onEachFeature={wardOnEachFeature}
+            />
+          )}
           <FitBounds feature={selectedLadFeature} />
         </>
       )}

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
+import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import {
   LEAVE_EFFECT_STRENGTH,
@@ -672,6 +673,23 @@ export default function Local2026Page() {
   }, [router.isReady, router.query.council])
 
   useEffect(() => {
+    router.prefetch('/council-projections')
+  }, [router])
+
+  useEffect(() => {
+    const handleRouteStart = (url: string) => {
+      if (!url.startsWith('/local-2026')) {
+        setSelectedLad(null)
+        setWardGeo(null)
+      }
+    }
+    router.events.on('routeChangeStart', handleRouteStart)
+    return () => {
+      router.events.off('routeChangeStart', handleRouteStart)
+    }
+  }, [router.events])
+
+  useEffect(() => {
     if (!router.isReady) return
     if (selectedLad) {
       void router.replace(
@@ -1323,18 +1341,18 @@ export default function Local2026Page() {
         }}
       >
         <h1 style={{ margin: 0 }}>Local Elections 2026</h1>
-        <a href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+        <Link href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           National Polling Average
-        </a>
-        <a href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+        </Link>
+        <Link href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           Recent UK Polls
-        </a>
-        <a href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+        </Link>
+        <Link href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           May 2026 Local Elections Projections
-        </a>
-        <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+        </Link>
+        <Link href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           Council Projections
-        </a>
+        </Link>
       </div>
       <div style={{ marginTop: '0.75rem', marginBottom: '1.25rem', color: '#555' }}>
         {selectedCouncilName ? (

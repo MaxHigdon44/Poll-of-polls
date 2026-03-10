@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/router'
 import {
   LEAVE_EFFECT_STRENGTH,
   NATIONAL_LEAVE_SHARE,
@@ -296,6 +297,7 @@ function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, numb
 }
 
 export default function CouncilProjectionsPage() {
+  const router = useRouter()
   const [baseline, setBaseline] = useState<BaselineData | null>(null)
   const [aggregate, setAggregate] = useState<AggregateRow | null>(null)
   const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
@@ -309,6 +311,7 @@ export default function CouncilProjectionsPage() {
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
 
   useEffect(() => {
+    router.prefetch('/local-2026')
     fetch('/data/ward-baseline.json')
       .then(res => res.json())
       .then(setBaseline)
@@ -636,18 +639,18 @@ export default function CouncilProjectionsPage() {
           }}
         >
           <h1 style={{ margin: 0 }}>Council Projections</h1>
-          <a href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          <Link href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
             National Polling Average
-          </a>
-          <a href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          </Link>
+          <Link href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
             Recent UK Polls
-          </a>
-          <a href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          </Link>
+          <Link href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
             May 2026 Local Elections Projections
-          </a>
-          <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          </Link>
+          <Link href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
             Council Projections
-          </a>
+          </Link>
         </div>
         <p style={{ margin: '0.35rem 0 0', color: '#555' }}>
           Councils up for election in 2026 with previous and projected control.
