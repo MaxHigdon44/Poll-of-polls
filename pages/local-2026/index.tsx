@@ -885,20 +885,20 @@ export default function Local2026Page() {
         ward.ladName
       )
       const nssecBaseline = getNssecBaseline()
-      const projection = computeWardProjection(
-        adjustedWard,
-        baseline.baselineNational,
-        aggregate,
-        leaveShare,
-        ageShare,
-        regionName,
-        nssecShare,
-        nssecBaseline,
-        leaveStrength,
-        ageStrength,
-        regionStrength,
-        nssecStrength
-      )
+        const projection = computeWardProjection(
+          adjustedWard,
+          baseline.baselineNational,
+          aggregate,
+          leaveShare,
+          ageShare,
+          regionName,
+          nssecShare,
+          nssecBaseline,
+          leaveStrength,
+          ageStrength,
+          regionStrength,
+          nssecStrength
+        )
       const previousShares: Record<string, number> = {
         ...adjustedWard.nationalShares,
         ...adjustedWard.localShares,
