@@ -138,6 +138,7 @@ const LEAVE_WARD_XLSX = 'leave_ward.xlsx'
 const LEAVE_LAD_FILE = 'leave_lad.csv'
 const AGE_WARD_FILE = 'age_ward.csv'
 const NSSEC_WARD_FILE = 'nssec_ward.csv'
+const DEGREE_WARD_FILE = 'degree_ward.csv'
 const LAD_REGION_FILE = 'lad_region_2023.csv'
 const SEATS_UP_FILE = '2026_seats_up.xlsx'
 const WIKIPEDIA_API =
@@ -555,6 +556,155 @@ async function buildNssecShare(baseline) {
     meta: {
       baseline: baselineShares,
     },
+  }
+}
+
+async function buildDegreeShare(baseline) {
+  const csvPath = path.join(RAW_DIR, DEGREE_WARD_FILE)
+  if (!fs.existsSync(csvPath)) return null
+
+  const { headers, rows } = await loadCsv(csvPath)
+  if (!headers || !rows) return null
+  const normHeaders = headers.map(value =>
+    String(value || '')
+      .replace(/^\uFEFF/, '')
+      .toLowerCase()
+      .trim()
+  )
+  const wardCodeIdx = normHeaders.findIndex(col =>
+    col.includes('electoral wards and divisions code')
+  )
+  const wardNameIdx = normHeaders.findIndex(
+    col => col.includes('electoral wards and divisions') && !col.includes('code')
+  )
+  const levelCodeIdx = normHeaders.findIndex(
+    col => col.includes('highest level of qualification') && col.includes('code')
+  )
+  const obsIdx = normHeaders.findIndex(col => col.includes('observation'))
+  if ([wardCodeIdx, wardNameIdx, levelCodeIdx, obsIdx].some(idx => idx === -1)) {
+    return null
+  }
+
+  const wardTotals = new Map()
+  const wardNameMap = new Map()
+  const wardNameOnlyMap = new Map()
+  const wardNameAggressiveMap = new Map()
+  const wardNameCounts = new Map()
+
+  rows.forEach(row => {
+    const wardCode = String(row[wardCodeIdx] || '').trim()
+    if (!wardCode) return
+    const wardNameRaw = String(row[wardNameIdx] || '').trim()
+    const wardName = wardNameRaw.replace(/\s*\(([^)]+)\)\s*$/, '').trim()
+    const wardLadMatch = wardNameRaw.match(/\(([^)]+)\)\s*$/)
+    const wardLad = wardLadMatch ? wardLadMatch[1].trim() : null
+    const levelCode = Number(row[levelCodeIdx])
+    const obs = Number(row[obsIdx])
+    if (!Number.isFinite(levelCode) || !Number.isFinite(obs)) return
+
+    if (levelCode === -8 || levelCode === 6) return
+
+    const entry = wardTotals.get(wardCode) || {
+      wardName,
+      total: 0,
+      degree: 0,
+      noDegree: 0,
+    }
+
+    if (levelCode === 5) {
+      entry.degree += obs
+    } else if (levelCode >= 0 && levelCode <= 4) {
+      entry.noDegree += obs
+    } else {
+      return
+    }
+    entry.total += obs
+    wardTotals.set(wardCode, entry)
+
+    if (wardLad) {
+      const key = `${normalize(wardLad)}|${normalize(wardName)}`
+      wardNameMap.set(key, wardCode)
+    }
+    const nameKey = normalize(wardName)
+    wardNameCounts.set(nameKey, (wardNameCounts.get(nameKey) || 0) + 1)
+    if (!wardNameOnlyMap.has(nameKey)) wardNameOnlyMap.set(nameKey, wardCode)
+    if (!wardNameAggressiveMap.has(nameKey)) wardNameAggressiveMap.set(nameKey, wardCode)
+  })
+
+  const wardEntries = {}
+  wardTotals.forEach((value, code) => {
+    if (!value.total) return
+    wardEntries[code] = {
+      wardCode: code,
+      degree: value.degree / value.total,
+      noDegree: value.noDegree / value.total,
+      totalPop: value.total,
+      wardName: value.wardName,
+    }
+  })
+
+  const wardNameEntries = {}
+  wardNameMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameEntries[key] = entry
+  })
+  const wardNameOnlyEntries = {}
+  wardNameOnlyMap.forEach((code, key) => {
+    if (wardNameCounts.get(key) !== 1) return
+    const entry = wardEntries[code]
+    if (entry) wardNameOnlyEntries[key] = entry
+  })
+  const wardNameAggressiveEntries = {}
+  wardNameAggressiveMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameAggressiveEntries[key] = entry
+  })
+
+  const ladEntries = {}
+  const ladTotals = new Map()
+  baseline.forEach(ward => {
+    const degree = wardEntries[ward.wardCode]
+    if (!degree || !degree.totalPop) return
+    const entry = ladTotals.get(ward.ladCode) || {
+      total: 0,
+      degree: 0,
+      noDegree: 0,
+    }
+    entry.total += degree.totalPop
+    entry.degree += degree.degree * degree.totalPop
+    entry.noDegree += degree.noDegree * degree.totalPop
+    ladTotals.set(ward.ladCode, entry)
+  })
+  ladTotals.forEach((value, code) => {
+    if (!value.total) return
+    ladEntries[code] = {
+      degree: value.degree / value.total,
+      noDegree: value.noDegree / value.total,
+    }
+  })
+
+  let totalPop = 0
+  let totalDegree = 0
+  let totalNoDegree = 0
+  Object.values(wardEntries).forEach(entry => {
+    totalPop += entry.totalPop
+    totalDegree += entry.degree * entry.totalPop
+    totalNoDegree += entry.noDegree * entry.totalPop
+  })
+  const baselineShares = totalPop
+    ? {
+        degree: totalDegree / totalPop,
+        noDegree: totalNoDegree / totalPop,
+      }
+    : { degree: 0.4, noDegree: 0.6 }
+
+  return {
+    wards: wardEntries,
+    wardNames: wardNameEntries,
+    wardNamesOnly: wardNameOnlyEntries,
+    wardNamesAggressive: wardNameAggressiveEntries,
+    lads: ladEntries,
+    meta: { baseline: baselineShares },
   }
 }
 
@@ -2283,6 +2433,42 @@ async function buildBaseline() {
     )
     await fsp.writeFile(
       path.join(OUT_DIR, 'nssec-missing.json'),
+      JSON.stringify({ generatedAt: new Date().toISOString(), missingByLad: sorted })
+    )
+  }
+
+  const degreeShare = await buildDegreeShare(baseline)
+  if (degreeShare) {
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'degree-share.json'),
+      JSON.stringify(degreeShare)
+    )
+    const missingByLad = {}
+    baseline.forEach(ward => {
+      if (degreeShare.wards?.[ward.wardCode]) return
+      const nameKey = `${normalize(ward.ladName)}|${normalize(ward.wardName)}`
+      if (degreeShare.wardNames?.[nameKey]) return
+      const nameOnlyKey = normalize(ward.wardName)
+      if (degreeShare.wardNamesOnly?.[nameOnlyKey]) return
+      if (degreeShare.wardNamesAggressive?.[nameOnlyKey]) return
+      const ladName = ward.ladName || 'Unknown'
+      if (!missingByLad[ladName]) missingByLad[ladName] = []
+      missingByLad[ladName].push({
+        wardCode: ward.wardCode,
+        wardName: ward.wardName,
+        ladCode: ward.ladCode,
+      })
+    })
+    const sorted = Object.fromEntries(
+      Object.entries(missingByLad)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .map(([ladName, wards]) => [
+          ladName,
+          wards.sort((a, b) => a.wardName.localeCompare(b.wardName)),
+        ])
+    )
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'degree-missing.json'),
       JSON.stringify({ generatedAt: new Date().toISOString(), missingByLad: sorted })
     )
   }

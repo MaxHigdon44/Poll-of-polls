@@ -15,6 +15,12 @@ import {
   type NssecBaseline,
   type NssecShare,
 } from '@/lib/local2026/nssec'
+import {
+  DEGREE_EFFECT_STRENGTH,
+  getDegreeAdjustment,
+  type DegreeBaseline,
+  type DegreeShare,
+} from '@/lib/local2026/degree'
 
 type WardBaseline = {
   wardCode: string
@@ -87,6 +93,15 @@ type NssecLookup = {
   wardNamesAggressive?: Record<string, NssecShare & { totalPop?: number; wardName?: string }>
   lads?: Record<string, NssecShare>
   meta?: { baseline?: NssecBaseline }
+}
+
+type DegreeLookup = {
+  wards?: Record<string, DegreeShare & { totalPop?: number; wardName?: string }>
+  wardNames?: Record<string, DegreeShare & { totalPop?: number; wardName?: string }>
+  wardNamesOnly?: Record<string, DegreeShare & { totalPop?: number; wardName?: string }>
+  wardNamesAggressive?: Record<string, DegreeShare & { totalPop?: number; wardName?: string }>
+  lads?: Record<string, DegreeShare>
+  meta?: { baseline?: DegreeBaseline }
 }
 
 type AggregateRow = {
@@ -206,10 +221,13 @@ function computeWardProjection(
   regionName: string | null,
   nssecShare: NssecShare,
   nssecBaseline: NssecBaseline,
+  degreeShare: DegreeShare,
+  degreeBaseline: DegreeBaseline,
   leaveStrength: number,
   ageStrength: number,
   regionStrength: number,
-  nssecStrength: number
+  nssecStrength: number,
+  degreeStrength: number
 ) {
   const nationalParties = [
     'Labour',
@@ -241,6 +259,7 @@ function computeWardProjection(
     const ageAdj = getAgeAdjustment(party, ageShare)
     const regionAdj = getRegionAdjustment(party, regionName)
     const nssecAdj = getNssecAdjustment(party, nssecShare, nssecBaseline)
+    const degreeAdj = getDegreeAdjustment(party, degreeShare, degreeBaseline)
     const value = Math.max(
       0,
       base +
@@ -248,7 +267,8 @@ function computeWardProjection(
         leaveStrength * leaveAdj +
         ageStrength * ageAdj +
         regionStrength * regionAdj +
-        nssecStrength * nssecAdj
+        nssecStrength * nssecAdj +
+        degreeStrength * degreeAdj
     )
     adjustedNational[party] = value
     sumNational += value
@@ -324,6 +344,7 @@ export default function CouncilProjectionsPage() {
   const [ageLookup, setAgeLookup] = useState<AgeShareLookup | null>(null)
   const [regionLookup, setRegionLookup] = useState<RegionLookup | null>(null)
   const [nssecLookup, setNssecLookup] = useState<NssecLookup | null>(null)
+  const [degreeLookup, setDegreeLookup] = useState<DegreeLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
@@ -331,6 +352,7 @@ export default function CouncilProjectionsPage() {
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
   const [nssecStrength, setNssecStrength] = useState(NSSEC_EFFECT_STRENGTH)
+  const [degreeStrength, setDegreeStrength] = useState(DEGREE_EFFECT_STRENGTH)
 
   useEffect(() => {
     router.prefetch('/local-2026')
@@ -354,6 +376,10 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setNssecLookup)
       .catch(() => setNssecLookup(null))
+    fetch('/data/degree-share.json')
+      .then(res => res.json())
+      .then(setDegreeLookup)
+      .catch(() => setDegreeLookup(null))
     fetch('/data/council-seats.json')
       .then(res => res.json())
       .then(setCouncilSeats)
@@ -419,6 +445,37 @@ export default function CouncilProjectionsPage() {
     const entry = regionLookup?.lads?.[ladCode]
     if (entry?.regionName) return entry.regionName
     return null
+  }
+
+  const getDegreeBaseline = () => {
+    const baseline = degreeLookup?.meta?.baseline
+    if (baseline) return baseline
+    return { degree: 0.4, noDegree: 0.6 }
+  }
+
+  const getDegreeShareForWard = (
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): DegreeShare => {
+    const wardShare = degreeLookup?.wards?.[wardCode]
+    if (wardShare) return wardShare
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = degreeLookup?.wardNames?.[key]
+      if (nameShare) return nameShare
+    }
+    if (wardName) {
+      const nameKey = normalizeName(wardName)
+      const nameShare = degreeLookup?.wardNamesOnly?.[nameKey]
+      if (nameShare) return nameShare
+      const aggressiveShare = degreeLookup?.wardNamesAggressive?.[nameKey]
+      if (aggressiveShare) return aggressiveShare
+    }
+    const ladShare = degreeLookup?.lads?.[ladCode]
+    if (ladShare) return ladShare
+    return getDegreeBaseline()
   }
 
   const getNssecBaseline = () => {
@@ -533,6 +590,13 @@ export default function CouncilProjectionsPage() {
           ward.ladName
         )
         const nssecBaseline = getNssecBaseline()
+        const degreeShare = getDegreeShareForWard(
+          ward.wardCode,
+          ward.ladCode,
+          ward.wardName,
+          ward.ladName
+        )
+        const degreeBaseline = getDegreeBaseline()
         const projection = computeWardProjection(
           ward,
           baseline.baselineNational,
@@ -542,10 +606,13 @@ export default function CouncilProjectionsPage() {
           regionName,
           nssecShare,
           nssecBaseline,
+          degreeShare,
+          degreeBaseline,
           leaveStrength,
           ageStrength,
           regionStrength,
-          nssecStrength
+          nssecStrength,
+          degreeStrength
         )
         const previousShares: Record<string, number> = {
           ...ward.nationalShares,
@@ -645,10 +712,12 @@ export default function CouncilProjectionsPage() {
     ageLookup,
     regionLookup,
     nssecLookup,
+    degreeLookup,
     leaveStrength,
     ageStrength,
     regionStrength,
     nssecStrength,
+    degreeStrength,
   ])
 
   const summary = useMemo(() => {
@@ -781,6 +850,17 @@ export default function CouncilProjectionsPage() {
               step={0.05}
               value={nssecStrength}
               onChange={event => setNssecStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            Degree Strength: {degreeStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={degreeStrength}
+              onChange={event => setDegreeStrength(Number(event.target.value))}
             />
           </label>
         </div>
