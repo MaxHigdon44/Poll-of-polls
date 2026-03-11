@@ -85,7 +85,7 @@ export const REGION_DELTAS: Record<string, Record<string, number>> = {
   },
 }
 
-export const REGION_EFFECT_STRENGTH = 0.8
+export const REGION_EFFECT_STRENGTH = 0.5
 
 const REGION_NAME_MAP: Record<string, string> = {
   'yorkshire and the humber': 'Yorkshire and the Humber',

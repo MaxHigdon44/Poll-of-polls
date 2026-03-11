@@ -290,24 +290,42 @@ function computeWardProjection(
     sumNational += value
   })
 
-  const localSum = Object.values(ward.localShares).reduce((acc, value) => acc + value, 0)
-  const remaining = 100 - sumNational
+  const mergedLocalShares: Record<string, number> = { ...ward.localShares }
+  if (typeof mergedLocalShares['Other'] === 'number') {
+    const otherValue = mergedLocalShares['Other']
+    const hasDuplicate = Object.entries(mergedLocalShares).some(([key, value]) => {
+      if (key === 'Other') return false
+      return Math.abs((value ?? 0) - otherValue) <= 3
+    })
+    if (hasDuplicate) {
+      delete mergedLocalShares['Other']
+    }
+  }
+  const localBaseline = Object.fromEntries(
+    Object.entries(mergedLocalShares).map(([key, value]) => [key, value * 0.9])
+  )
+  const localSum = Object.values(localBaseline).reduce((acc, value) => acc + value, 0)
+  const remaining = 100 - localSum
 
   let scaledLocal: Record<string, number> = {}
-  if (remaining <= 0 || localSum === 0) {
-    scaledLocal = Object.fromEntries(Object.keys(ward.localShares).map(key => [key, 0]))
-    if (remaining < 0 && sumNational > 0) {
-      const scale = 100 / sumNational
+  if (remaining <= 0) {
+    const scaleLocal = localSum > 0 ? 100 / localSum : 0
+    scaledLocal = Object.fromEntries(
+      Object.entries(localBaseline).map(([key, value]) => [key, value * scaleLocal])
+    )
+    nationalParties.forEach(party => {
+      adjustedNational[party] = 0
+    })
+    sumNational = 0
+  } else {
+    scaledLocal = localBaseline
+    if (sumNational > 0) {
+      const scale = remaining / sumNational
       nationalParties.forEach(party => {
         adjustedNational[party] = adjustedNational[party] * scale
       })
-      sumNational = 100
+      sumNational = remaining
     }
-  } else {
-    const scale = remaining / localSum
-    scaledLocal = Object.fromEntries(
-      Object.entries(ward.localShares).map(([key, value]) => [key, value * scale])
-    )
   }
 
   const combined: Record<string, number> = {
@@ -624,6 +642,10 @@ export default function CouncilProjectionsPage() {
             if (!weight) return
             const baseShare = adjustedWard.nationalShares?.[party] ?? 0
             const geShare = geShares?.[party]
+            if (baseShare === 0 && (party === 'Reform' || party === 'Green')) {
+              blendedNational[party] = blendShare(baseShare, geShare, 1)
+              return
+            }
             blendedNational[party] = blendShare(baseShare, geShare, weight)
           })
           adjustedWard = { ...adjustedWard, nationalShares: blendedNational }
