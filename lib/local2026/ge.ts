@@ -24,7 +24,8 @@ export function getGeWeightForParty(party: string, weights: GeWeights) {
 }
 
 export function blendShare(wardShare: number, geShare: number | undefined, weight: number) {
-  if (!Number.isFinite(geShare)) return wardShare
+  const numeric = Number(geShare)
+  if (!Number.isFinite(numeric)) return wardShare
   const w = Math.max(0, Math.min(1, weight))
-  return wardShare * (1 - w) + (geShare as number) * w
+  return wardShare * (1 - w) + numeric * w
 }
