@@ -31,6 +31,8 @@ import {
 } from '@/lib/local2026/ge'
 
 const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
+const WARDS_GEO_URL =
+  'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/627ae9540e3a4e199f4594a727b35724/geojson?layers=0'
 
 type GeoFeature = {
   type: 'Feature'
@@ -561,7 +563,14 @@ function computeWardProjection(
       if (key === 'Other') return false
       return Math.abs((value ?? 0) - otherValue) <= 3
     })
-    if (hasDuplicate) {
+    const namedEntries = Object.entries(mergedLocalShares).filter(([key]) => key !== 'Other')
+    const hasNamed = namedEntries.length > 0
+    const namedMax = namedEntries.reduce(
+      (max, [, value]) => Math.max(max, value ?? 0),
+      0
+    )
+    const otherIsTop = otherValue >= namedMax
+    if (hasDuplicate || (hasNamed && otherIsTop)) {
       delete mergedLocalShares['Other']
     }
   }
@@ -754,14 +763,24 @@ export default function Local2026Page() {
     if (!selectedLad) return
     if (wardGeo) return
     let cancelled = false
-    fetch('/data/wards.geojson')
-      .then(res => res.json())
-      .then(data => {
+    const fetchGeo = async () => {
+      try {
+        const res = await fetch('/data/wards.geojson')
+        if (!res.ok) throw new Error('local not found')
+        const data = await res.json()
         if (!cancelled) setWardGeo(data)
-      })
-      .catch(() => {
-        if (!cancelled) setWardGeo(null)
-      })
+      } catch {
+        try {
+          const res = await fetch(WARDS_GEO_URL)
+          if (!res.ok) throw new Error('remote not found')
+          const data = await res.json()
+          if (!cancelled) setWardGeo(data)
+        } catch {
+          if (!cancelled) setWardGeo(null)
+        }
+      }
+    }
+    void fetchGeo()
     return () => {
       cancelled = true
     }
