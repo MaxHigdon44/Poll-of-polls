@@ -21,6 +21,13 @@ import {
   type DegreeBaseline,
   type DegreeShare,
 } from '@/lib/local2026/degree'
+import {
+  GE_WEIGHT_GREEN,
+  GE_WEIGHT_MAJOR,
+  GE_WEIGHT_REFORM,
+  blendShare,
+  getGeWeightForParty,
+} from '@/lib/local2026/ge'
 
 type WardBaseline = {
   wardCode: string
@@ -102,6 +109,15 @@ type DegreeLookup = {
   wardNamesAggressive?: Record<string, DegreeShare & { totalPop?: number; wardName?: string }>
   lads?: Record<string, DegreeShare>
   meta?: { baseline?: DegreeBaseline }
+}
+
+type WardToPconLookup = {
+  wards?: Record<string, string>
+  wardNames?: Record<string, string>
+}
+
+type GePconLookup = {
+  pcon?: Record<string, Record<string, number>>
 }
 
 type AggregateRow = {
@@ -345,6 +361,8 @@ export default function CouncilProjectionsPage() {
   const [regionLookup, setRegionLookup] = useState<RegionLookup | null>(null)
   const [nssecLookup, setNssecLookup] = useState<NssecLookup | null>(null)
   const [degreeLookup, setDegreeLookup] = useState<DegreeLookup | null>(null)
+  const [wardToPcon, setWardToPcon] = useState<WardToPconLookup | null>(null)
+  const [geLookup, setGeLookup] = useState<GePconLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
@@ -353,6 +371,9 @@ export default function CouncilProjectionsPage() {
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
   const [nssecStrength, setNssecStrength] = useState(NSSEC_EFFECT_STRENGTH)
   const [degreeStrength, setDegreeStrength] = useState(DEGREE_EFFECT_STRENGTH)
+  const [geReformWeight, setGeReformWeight] = useState(GE_WEIGHT_REFORM)
+  const [geGreenWeight, setGeGreenWeight] = useState(GE_WEIGHT_GREEN)
+  const [geMajorWeight, setGeMajorWeight] = useState(GE_WEIGHT_MAJOR)
 
   useEffect(() => {
     router.prefetch('/local-2026')
@@ -380,6 +401,14 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setDegreeLookup)
       .catch(() => setDegreeLookup(null))
+    fetch('/data/ward-to-pcon.json')
+      .then(res => res.json())
+      .then(setWardToPcon)
+      .catch(() => setWardToPcon(null))
+    fetch('/data/ge2024-pcon.json')
+      .then(res => res.json())
+      .then(setGeLookup)
+      .catch(() => setGeLookup(null))
     fetch('/data/council-seats.json')
       .then(res => res.json())
       .then(setCouncilSeats)
@@ -421,24 +450,24 @@ export default function CouncilProjectionsPage() {
     ladCode: string,
     wardName?: string,
     ladName?: string
-  ) => {
+  ): { share: { age18_35: number; age35_55: number; age55_plus: number }; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
     const wardShare = ageLookup?.wards?.[wardCode]
-    if (wardShare) return wardShare
+    if (wardShare) return { share: wardShare, source: 'ward' }
     if (wardName && ladName) {
       const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
       const nameShare = ageLookup?.wardNames?.[key]
-      if (nameShare) return nameShare
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
     }
     if (wardName) {
       const nameKey = normalizeName(wardName)
       const nameShare = ageLookup?.wardNamesOnly?.[nameKey]
-      if (nameShare) return nameShare
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
       const aggressiveShare = ageLookup?.wardNamesAggressive?.[nameKey]
-      if (aggressiveShare) return aggressiveShare
+      if (aggressiveShare) return { share: aggressiveShare, source: 'ward-name' }
     }
     const ladShare = ageLookup?.lads?.[ladCode]
-    if (ladShare) return ladShare
-    return AGE_BASELINE
+    if (ladShare) return { share: ladShare, source: 'lad' }
+    return { share: AGE_BASELINE, source: 'national' }
   }
 
   const getRegionForWard = (ladCode: string) => {
@@ -458,24 +487,24 @@ export default function CouncilProjectionsPage() {
     ladCode: string,
     wardName?: string,
     ladName?: string
-  ): DegreeShare => {
+  ): { share: DegreeShare; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
     const wardShare = degreeLookup?.wards?.[wardCode]
-    if (wardShare) return wardShare
+    if (wardShare) return { share: wardShare, source: 'ward' }
     if (wardName && ladName) {
       const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
       const nameShare = degreeLookup?.wardNames?.[key]
-      if (nameShare) return nameShare
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
     }
     if (wardName) {
       const nameKey = normalizeName(wardName)
       const nameShare = degreeLookup?.wardNamesOnly?.[nameKey]
-      if (nameShare) return nameShare
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
       const aggressiveShare = degreeLookup?.wardNamesAggressive?.[nameKey]
-      if (aggressiveShare) return aggressiveShare
+      if (aggressiveShare) return { share: aggressiveShare, source: 'ward-name' }
     }
     const ladShare = degreeLookup?.lads?.[ladCode]
-    if (ladShare) return ladShare
-    return getDegreeBaseline()
+    if (ladShare) return { share: ladShare, source: 'lad' }
+    return { share: getDegreeBaseline(), source: 'national' }
   }
 
   const getNssecBaseline = () => {
@@ -489,24 +518,24 @@ export default function CouncilProjectionsPage() {
     ladCode: string,
     wardName?: string,
     ladName?: string
-  ): NssecShare => {
+  ): { share: NssecShare; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
     const wardShare = nssecLookup?.wards?.[wardCode]
-    if (wardShare) return wardShare
+    if (wardShare) return { share: wardShare, source: 'ward' }
     if (wardName && ladName) {
       const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
       const nameShare = nssecLookup?.wardNames?.[key]
-      if (nameShare) return nameShare
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
     }
     if (wardName) {
       const nameKey = normalizeName(wardName)
       const nameShare = nssecLookup?.wardNamesOnly?.[nameKey]
-      if (nameShare) return nameShare
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
       const aggressiveShare = nssecLookup?.wardNamesAggressive?.[nameKey]
-      if (aggressiveShare) return aggressiveShare
+      if (aggressiveShare) return { share: aggressiveShare, source: 'ward-name' }
     }
     const ladShare = nssecLookup?.lads?.[ladCode]
-    if (ladShare) return ladShare
-    return getNssecBaseline()
+    if (ladShare) return { share: ladShare, source: 'lad' }
+    return { share: getNssecBaseline(), source: 'national' }
   }
 
   const rows = useMemo<CouncilProjectionRow[]>(() => {
@@ -570,6 +599,35 @@ export default function CouncilProjectionsPage() {
 
       wards.forEach(ward => {
         const seatsUpCount = Math.max(ward.vacancies || 0, 1)
+        let adjustedWard = ward
+        const geWeights = {
+          reform: geReformWeight,
+          green: geGreenWeight,
+          major: geMajorWeight,
+        }
+        const wardNameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+        const pconCode =
+          wardToPcon?.wards?.[ward.wardCode] || wardToPcon?.wardNames?.[wardNameKey]
+        const geShares = pconCode ? geLookup?.pcon?.[pconCode] : null
+        if (geShares) {
+          const blendedNational = { ...adjustedWard.nationalShares }
+          ;[
+            'Labour',
+            'Conservative',
+            'Reform',
+            'Liberal Democrat',
+            'Green',
+            'SNP',
+            'Plaid Cymru',
+          ].forEach(party => {
+            const weight = getGeWeightForParty(party, geWeights)
+            if (!weight) return
+            const baseShare = adjustedWard.nationalShares?.[party] ?? 0
+            const geShare = geShares?.[party]
+            blendedNational[party] = blendShare(baseShare, geShare, weight)
+          })
+          adjustedWard = { ...adjustedWard, nationalShares: blendedNational }
+        }
         const leaveShare = getLeaveShareForWard(
           ward.wardCode,
           ward.ladCode,
@@ -597,22 +655,28 @@ export default function CouncilProjectionsPage() {
           ward.ladName
         )
         const degreeBaseline = getDegreeBaseline()
+        const ageStrengthEffective =
+          ageShare.source === 'lad' ? Math.min(ageStrength, 0.6) : ageStrength
+        const nssecStrengthEffective =
+          nssecShare.source === 'lad' ? Math.min(nssecStrength, 0.6) : nssecStrength
+        const degreeStrengthEffective =
+          degreeShare.source === 'lad' ? Math.min(degreeStrength, 0.6) : degreeStrength
         const projection = computeWardProjection(
-          ward,
+          adjustedWard,
           baseline.baselineNational,
           aggregate,
           leaveShare,
-          ageShare,
+          ageShare.share,
           regionName,
-          nssecShare,
+          nssecShare.share,
           nssecBaseline,
-          degreeShare,
+          degreeShare.share,
           degreeBaseline,
           leaveStrength,
-          ageStrength,
+          ageStrengthEffective,
           regionStrength,
-          nssecStrength,
-          degreeStrength
+          nssecStrengthEffective,
+          degreeStrengthEffective
         )
         const previousShares: Record<string, number> = {
           ...ward.nationalShares,
@@ -713,11 +777,16 @@ export default function CouncilProjectionsPage() {
     regionLookup,
     nssecLookup,
     degreeLookup,
+    wardToPcon,
+    geLookup,
     leaveStrength,
     ageStrength,
     regionStrength,
     nssecStrength,
     degreeStrength,
+    geReformWeight,
+    geGreenWeight,
+    geMajorWeight,
   ])
 
   const summary = useMemo(() => {
@@ -861,6 +930,39 @@ export default function CouncilProjectionsPage() {
               step={0.05}
               value={degreeStrength}
               onChange={event => setDegreeStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            GE Weight (Reform): {geReformWeight.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={geReformWeight}
+              onChange={event => setGeReformWeight(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            GE Weight (Green): {geGreenWeight.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={geGreenWeight}
+              onChange={event => setGeGreenWeight(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            GE Weight (Other Major): {geMajorWeight.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={geMajorWeight}
+              onChange={event => setGeMajorWeight(Number(event.target.value))}
             />
           </label>
         </div>
