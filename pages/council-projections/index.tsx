@@ -297,7 +297,14 @@ function computeWardProjection(
       if (key === 'Other') return false
       return Math.abs((value ?? 0) - otherValue) <= 3
     })
-    if (hasDuplicate) {
+    const namedEntries = Object.entries(mergedLocalShares).filter(([key]) => key !== 'Other')
+    const hasNamed = namedEntries.length > 0
+    const namedMax = namedEntries.reduce(
+      (max, [, value]) => Math.max(max, value ?? 0),
+      0
+    )
+    const otherIsTop = otherValue >= namedMax
+    if (hasDuplicate || (hasNamed && otherIsTop)) {
       delete mergedLocalShares['Other']
     }
   }
