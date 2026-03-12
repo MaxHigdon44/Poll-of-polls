@@ -667,6 +667,28 @@ function canonicalizePartyLabel(party: string | null | undefined) {
   return party || 'Other'
 }
 
+function isNationalOrStandardParty(party: string) {
+  return new Set([
+    'Labour',
+    'Conservative',
+    'Reform',
+    'Liberal Democrat',
+    'Green',
+    'SNP',
+    'Plaid Cymru',
+    'Independent',
+    'Other',
+  ]).has(party)
+}
+
+function resolvePreviousSeatBucket(party: string, currentTotals: Record<string, number>) {
+  if (party in currentTotals) return party
+  if (!isNationalOrStandardParty(party) && 'Independent' in currentTotals) {
+    return 'Independent'
+  }
+  return party
+}
+
 function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, number>) {
   const entries = Object.entries(totals).map(([party, seats]) => ({
     party,
@@ -1443,6 +1465,7 @@ export default function Local2026Page() {
     const previousTotals: Record<string, number> = {}
     const contestedTotals: Record<string, number> = {}
     const contestedPreviousTotals: Record<string, number> = {}
+    const seatChangeEvents: Array<{ prevWinner: string; projectedWinner: string; seats: number }> = []
     const seatMultiplier = cycle === 'thirds' ? 3 : cycle === 'halves' ? 2 : 1
     let useLastYear = !shouldUseWardIncumbents && cycle !== 'all_out'
     if (useLastYear) {
@@ -1556,6 +1579,11 @@ export default function Local2026Page() {
         const contestedPrev = canonicalizePartyLabel(prevWinner || projectedWinner)
         contestedPreviousTotals[contestedPrev] =
           (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
+        seatChangeEvents.push({
+          prevWinner: contestedPrev,
+          projectedWinner: contestedProjected,
+          seats: seatsUpCount,
+        })
       }
     })
     if (useFeatureContested) {
@@ -1582,6 +1610,11 @@ export default function Local2026Page() {
           (contestedPreviousTotals[prevWinner] || 0) + seatsUpCount
         totals[projectedWinner] = (totals[projectedWinner] || 0) + seats
         previousTotals[prevWinner] = (previousTotals[prevWinner] || 0) + seats
+        seatChangeEvents.push({
+          prevWinner,
+          projectedWinner,
+          seats: seatsUpCount,
+        })
       })
     }
 
@@ -1616,19 +1649,29 @@ export default function Local2026Page() {
         currentTotals.Other = (currentTotals.Other || 0) + (totalSeats - currentSum)
       }
       projectedPreviousTotals = currentTotals
-      const projected: Record<string, number> = { ...currentTotals }
-      const parties = new Set<string>([
-        ...Object.keys(adjustedContestedTotals),
-        ...Object.keys(currentTotals),
-      ])
-      parties.forEach(party => {
-        const currentSeats = currentTotals[party] || 0
-        const lastSeats = adjustedContestedPreviousTotals[party] || 0
-        const projectedSeats = adjustedContestedTotals[party] || 0
-        const next = currentSeats + (projectedSeats - lastSeats)
-        projected[party] = Math.max(0, Math.round(next))
-      })
-      projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+      if (seatChangeEvents.length) {
+        const projected: Record<string, number> = { ...currentTotals }
+        seatChangeEvents.forEach(({ prevWinner, projectedWinner, seats }) => {
+          const prevBucket = resolvePreviousSeatBucket(prevWinner, projected)
+          projected[prevBucket] = Math.max(0, (projected[prevBucket] || 0) - seats)
+          projected[projectedWinner] = (projected[projectedWinner] || 0) + seats
+        })
+        projectedTotals = projected
+      } else {
+        const projected: Record<string, number> = { ...currentTotals }
+        const parties = new Set<string>([
+          ...Object.keys(adjustedContestedTotals),
+          ...Object.keys(currentTotals),
+        ])
+        parties.forEach(party => {
+          const currentSeats = currentTotals[party] || 0
+          const lastSeats = adjustedContestedPreviousTotals[party] || 0
+          const projectedSeats = adjustedContestedTotals[party] || 0
+          const next = currentSeats + (projectedSeats - lastSeats)
+          projected[party] = Math.max(0, Math.round(next))
+        })
+        projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+      }
     }
 
     let projectedControl: string | null = null
