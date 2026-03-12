@@ -1324,7 +1324,7 @@ export default function Local2026Page() {
     )
     const shouldUseWardIncumbents =
       incumbentMatchedWards.length > 0 &&
-      Math.abs(incumbentMatchedWards.length - seatsUp) < Math.abs(inferredContestedSeats - seatsUp)
+      Math.abs(incumbentMatchedWards.length - seatsUp) <= Math.abs(inferredContestedSeats - seatsUp)
 
     allWards.forEach(ward => {
       const contested = shouldUseWardIncumbents
@@ -1525,7 +1525,7 @@ export default function Local2026Page() {
     const incumbentMatchedSeats = incumbentMatchedWards.length
     const shouldUseWardIncumbents =
       incumbentMatchedWards.length > 0 &&
-      Math.abs(incumbentMatchedSeats - seatsUp) < Math.abs(inferredContestedSeats - seatsUp)
+      Math.abs(incumbentMatchedSeats - seatsUp) <= Math.abs(inferredContestedSeats - seatsUp)
     const wards = shouldUseWardIncumbents ? incumbentMatchedWards : allWards
     const totals: Record<string, number> = {}
     const previousTotals: Record<string, number> = {}

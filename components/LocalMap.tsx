@@ -56,6 +56,43 @@ function FitBounds({ feature }: { feature: GeoFeature | null }) {
   return null
 }
 
+function PatternDefs() {
+  const map = useMap()
+
+  useEffect(() => {
+    const svg = map.getPanes().overlayPane.querySelector('svg')
+    if (!svg) return
+    let defs = svg.querySelector('defs')
+    if (!defs) {
+      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+      svg.prepend(defs)
+    }
+    if (svg.querySelector('#non-contested-stripes')) return
+    const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern')
+    pattern.setAttribute('id', 'non-contested-stripes')
+    pattern.setAttribute('patternUnits', 'userSpaceOnUse')
+    pattern.setAttribute('width', '8')
+    pattern.setAttribute('height', '8')
+    pattern.setAttribute('patternTransform', 'rotate(45)')
+
+    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    background.setAttribute('width', '8')
+    background.setAttribute('height', '8')
+    background.setAttribute('fill', '#d9d9d9')
+    pattern.appendChild(background)
+
+    const stripe = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+    stripe.setAttribute('width', '4')
+    stripe.setAttribute('height', '8')
+    stripe.setAttribute('fill', '#b3b3b3')
+    pattern.appendChild(stripe)
+
+    defs.appendChild(pattern)
+  }, [map])
+
+  return null
+}
+
 function getWardCode(feature: GeoFeature) {
   const props: any = feature.properties || {}
   return props.reference || props.WD25CD || props.WD23CD || props.WD22CD || null
@@ -182,8 +219,8 @@ export default function LocalMap({
         color: '#777',
         weight: 1,
         dashArray: '4 4',
-        fillColor: '#d9d9d9',
-        fillOpacity: 0.5,
+        fillColor: 'url(#non-contested-stripes)',
+        fillOpacity: 1,
       }
     }
     const projection =
@@ -254,6 +291,7 @@ export default function LocalMap({
 
   return (
     <MapContainer center={[53.7, -1.4]} zoom={6} style={{ height: '100%', width: '100%' }}>
+      <PatternDefs />
       <TileLayer
         attribution='&copy; OpenStreetMap contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
