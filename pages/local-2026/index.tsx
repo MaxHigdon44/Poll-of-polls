@@ -641,6 +641,24 @@ function normalizeCouncilName(name: string) {
     .trim()
 }
 
+function getGeoWardCode(feature: GeoFeature) {
+  const props = feature.properties || {}
+  return props.reference || props.WD25CD || props.WD23CD || props.WD22CD || null
+}
+
+function getGeoWardName(feature: GeoFeature) {
+  const props = feature.properties || {}
+  return String(props.WD25NM || props.WD23NM || props.WD22NM || props.name || '')
+}
+
+function getGeoWardNameKey(feature: GeoFeature) {
+  const props = feature.properties || {}
+  const wardName = getGeoWardName(feature)
+  const ladName = String(props.LAD25NM || props.LAD23NM || props.LAD22NM || props.ladName || '')
+  if (!wardName || !ladName) return null
+  return `${normalizeName(ladName)}|${normalizeName(wardName)}`
+}
+
 function canonicalizePartyLabel(party: string | null | undefined) {
   const normalized = normalizeName(party)
   if (normalized === 'ind' || normalized === 'independent' || normalized === 'independents') {
@@ -1378,6 +1396,12 @@ export default function Local2026Page() {
       row => normalizeCouncilName(row.council) === normalizedTarget
     )
     const wardIncumbents = previousRow?.wardIncumbents || null
+    const normalizedWardIncumbents = new Map<string, string>(
+      Object.entries(wardIncumbents || {}).map(([wardName, party]) => [
+        normalizeName(wardName),
+        canonicalizePartyLabel(party),
+      ])
+    )
 
     const seatsUp = seatRow.seatsUp
     const totalSeats = seatRow.totalSeats
@@ -1408,7 +1432,7 @@ export default function Local2026Page() {
       return acc + Math.max(ward.vacancies || 0, 1)
     }, 0)
     const incumbentMatchedWards = wardIncumbents
-      ? allWards.filter(ward => wardIncumbents[normalizeName(ward.wardName)])
+      ? allWards.filter(ward => normalizedWardIncumbents.has(normalizeName(ward.wardName)))
       : []
     const incumbentMatchedSeats = incumbentMatchedWards.length
     const shouldUseWardIncumbents =
@@ -1437,7 +1461,28 @@ export default function Local2026Page() {
         useLastYear = false
       }
     }
+    const visibleWardFeatures =
+      shouldUseWardIncumbents && wardGeo && Array.isArray(wardGeo.features)
+        ? wardGeo.features.filter(feature => {
+            if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
+              return false
+            }
+            const selectedName = selectedFeature.properties?.name
+            if (selectedName) {
+              const props = feature.properties || {}
+              const ladName = props.LAD25NM || props.LAD23NM || props.LAD22NM || props.ladName
+              if (normalizeName(ladName) !== normalizeName(selectedName)) {
+                return false
+              }
+            }
+            const wardName = normalizeName(getGeoWardName(feature))
+            return normalizedWardIncumbents.has(wardName)
+          })
+        : []
     wards.forEach(ward => {
+      if (shouldUseWardIncumbents && visibleWardFeatures.length) {
+        return
+      }
       const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(ward.vacancies || 0, 1)
       const seats = seatsUpCount * seatMultiplier
       const projection =
@@ -1449,7 +1494,7 @@ export default function Local2026Page() {
       }
       let prevWinner: string | null = null
       const incumbentWinner = shouldUseWardIncumbents
-        ? wardIncumbents?.[normalizeName(ward.wardName)]
+        ? normalizedWardIncumbents.get(normalizeName(ward.wardName))
         : null
       if (incumbentWinner) {
         prevWinner = canonicalizePartyLabel(incumbentWinner)
@@ -1489,6 +1534,22 @@ export default function Local2026Page() {
           (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
       }
     })
+    if (shouldUseWardIncumbents && visibleWardFeatures.length) {
+      visibleWardFeatures.forEach(feature => {
+        const projection =
+          wardMap.get(getGeoWardCode(feature) || '') ||
+          wardMapByName.get(getGeoWardNameKey(feature) || '') ||
+          wardMapByWardName.get(normalizeName(getGeoWardName(feature))) ||
+          ladFallbackProjection
+        if (!projection) return
+        const wardName = normalizeName(getGeoWardName(feature))
+        const prevWinner = normalizedWardIncumbents.get(wardName)
+        if (!prevWinner) return
+        const projectedWinner = canonicalizePartyLabel(projection.winner)
+        contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + 1
+        contestedPreviousTotals[prevWinner] = (contestedPreviousTotals[prevWinner] || 0) + 1
+      })
+    }
 
     let adjustedTotals = totals
     let adjustedPreviousTotals = previousTotals
@@ -1563,6 +1624,7 @@ export default function Local2026Page() {
     wardMapByWardName,
     ladFallbackProjection,
     ladGeo,
+    wardGeo,
     surreyOverlay,
   ])
 
