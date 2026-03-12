@@ -466,6 +466,26 @@ const OFFICIAL_NAMES: Record<string, string> = {
   'worthing': 'Worthing Borough Council',
 }
 
+const WARD_INCUMBENT_OVERRIDES: Record<string, Record<string, string>> = {
+  'west lancashire': {
+    [normalizeName('Aughton & Holborn')]: 'Labour',
+    [normalizeName('Burscough Bridge & Rufford')]: 'Conservative',
+    [normalizeName('Burscough Town')]: 'Labour',
+    [normalizeName('North Meols & Hesketh Bank')]: 'Conservative',
+    [normalizeName('Old Skelmersdale')]: 'Labour',
+    [normalizeName('Ormskirk East')]: 'Labour',
+    [normalizeName('Ormskirk West')]: 'Labour',
+    [normalizeName('Rural North East')]: 'Conservative',
+    [normalizeName('Rural South')]: 'OWL',
+    [normalizeName('Rural West')]: 'Conservative',
+    [normalizeName('Skelmersdale North')]: 'Labour',
+    [normalizeName('Skelmersdale South')]: 'Labour',
+    [normalizeName('Tanhouse & Skelmersdale Town Centre')]: 'Your Party',
+    [normalizeName('Tarleton Village')]: 'Conservative',
+    [normalizeName('Up Holland')]: 'Labour',
+  },
+}
+
 const SURREY_EAST = new Set(
   ['Elmbridge', 'Epsom and Ewell', 'Mole Valley', 'Reigate and Banstead', 'Tandridge'].map(name =>
     name
@@ -1360,6 +1380,7 @@ export default function Local2026Page() {
     const previousRow = councilPrevious?.councils?.find(
       row => normalizeCouncilName(row.council) === normalizedTarget
     )
+    const wardIncumbents = WARD_INCUMBENT_OVERRIDES[normalizedTarget] || null
 
     const seatsUp = seatRow.seatsUp
     const totalSeats = seatRow.totalSeats
@@ -1377,13 +1398,16 @@ export default function Local2026Page() {
       else cycle = 'all_out'
     }
 
-    const wards = baseline.wards.filter(ward => ward.ladCode === selectedLad)
+    let wards = baseline.wards.filter(ward => ward.ladCode === selectedLad)
+    if (wardIncumbents) {
+      wards = wards.filter(ward => wardIncumbents[normalizeName(ward.wardName)])
+    }
     const totals: Record<string, number> = {}
     const previousTotals: Record<string, number> = {}
     const contestedTotals: Record<string, number> = {}
     const contestedPreviousTotals: Record<string, number> = {}
     const seatMultiplier = cycle === 'thirds' ? 3 : cycle === 'halves' ? 2 : 1
-    let useLastYear = cycle !== 'all_out'
+    let useLastYear = !wardIncumbents && cycle !== 'all_out'
     if (useLastYear) {
       const contestedSeats = wards.reduce((acc, ward) => {
         const lastYear = ward.lastYear || 2026
@@ -1411,17 +1435,23 @@ export default function Local2026Page() {
         ...ward.localShares,
       }
       let prevWinner: string | null = null
+      const incumbentWinner = wardIncumbents?.[normalizeName(ward.wardName)]
+      if (incumbentWinner) {
+        prevWinner = canonicalizePartyLabel(incumbentWinner)
+      }
       let prevTop = -1
-      Object.entries(previousShares).forEach(([party, value]) => {
-        const numericValue = Number(value)
-        if (!Number.isFinite(numericValue)) return
-        if (numericValue > prevTop) {
-          prevTop = numericValue
-          prevWinner = party
-        }
-      })
+      if (!prevWinner) {
+        Object.entries(previousShares).forEach(([party, value]) => {
+          const numericValue = Number(value)
+          if (!Number.isFinite(numericValue)) return
+          if (numericValue > prevTop) {
+            prevTop = numericValue
+            prevWinner = party
+          }
+        })
+      }
       const lastYear = ward.lastYear || 2026
-      let contested = true
+      let contested = wardIncumbents ? Boolean(incumbentWinner) : true
       if (useLastYear) {
         if (cycle === 'thirds') {
           contested = (2026 - lastYear) % 3 === 0
