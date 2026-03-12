@@ -170,6 +170,7 @@ const PARTY_COLORS: Record<string, string> = {
 function normalizeName(value: string | undefined | null) {
   return String(value || '')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/'s\b/gi, 's')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[',.]/g, ' ')

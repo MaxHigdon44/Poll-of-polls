@@ -40,7 +40,7 @@ type LocalMapProps = {
   selectedLadFeature: GeoFeature | null
   onSelectLad: (lad: string | null) => void
   eligibleLads: Set<string>
-  ladCategoryByCode: Map<string, 'district' | 'london' | 'metro' | 'unitary'>
+  ladCategoryByCode: Map<string, 'county' | 'district' | 'london' | 'metro' | 'unitary'>
 }
 
 function FitBounds({ feature }: { feature: GeoFeature | null }) {
@@ -60,34 +60,41 @@ function PatternDefs() {
   const map = useMap()
 
   useEffect(() => {
-    const svg = map.getPanes().overlayPane.querySelector('svg')
-    if (!svg) return
-    let defs = svg.querySelector('defs')
-    if (!defs) {
-      defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
-      svg.prepend(defs)
+    const ensurePattern = () => {
+      const svg = map.getPanes().overlayPane.querySelector('svg')
+      if (!svg) return
+      let defs = svg.querySelector('defs')
+      if (!defs) {
+        defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+        svg.prepend(defs)
+      }
+      if (svg.querySelector('#non-contested-stripes')) return
+      const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern')
+      pattern.setAttribute('id', 'non-contested-stripes')
+      pattern.setAttribute('patternUnits', 'userSpaceOnUse')
+      pattern.setAttribute('width', '8')
+      pattern.setAttribute('height', '8')
+      pattern.setAttribute('patternTransform', 'rotate(45)')
+
+      const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      background.setAttribute('width', '8')
+      background.setAttribute('height', '8')
+      background.setAttribute('fill', '#d9d9d9')
+      pattern.appendChild(background)
+
+      const stripe = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+      stripe.setAttribute('width', '4')
+      stripe.setAttribute('height', '8')
+      stripe.setAttribute('fill', '#b3b3b3')
+      pattern.appendChild(stripe)
+
+      defs.appendChild(pattern)
     }
-    if (svg.querySelector('#non-contested-stripes')) return
-    const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern')
-    pattern.setAttribute('id', 'non-contested-stripes')
-    pattern.setAttribute('patternUnits', 'userSpaceOnUse')
-    pattern.setAttribute('width', '8')
-    pattern.setAttribute('height', '8')
-    pattern.setAttribute('patternTransform', 'rotate(45)')
 
-    const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-    background.setAttribute('width', '8')
-    background.setAttribute('height', '8')
-    background.setAttribute('fill', '#d9d9d9')
-    pattern.appendChild(background)
-
-    const stripe = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
-    stripe.setAttribute('width', '4')
-    stripe.setAttribute('height', '8')
-    stripe.setAttribute('fill', '#b3b3b3')
-    pattern.appendChild(stripe)
-
-    defs.appendChild(pattern)
+    ensurePattern()
+    const observer = new MutationObserver(() => ensurePattern())
+    observer.observe(map.getPanes().overlayPane, { childList: true, subtree: true })
+    return () => observer.disconnect()
   }, [map])
 
   return null
@@ -101,6 +108,7 @@ function getWardCode(feature: GeoFeature) {
 function getWardNameKey(feature: GeoFeature) {
   const props: any = feature.properties || {}
   const wardName = String(props.WD25NM || props.WD23NM || props.WD22NM || props.name || '')
+    .replace(/'s\b/gi, 's')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[',.]/g, ' ')
@@ -108,6 +116,7 @@ function getWardNameKey(feature: GeoFeature) {
     .replace(/\s+/g, ' ')
     .trim()
   const ladName = String(props.LAD25NM || props.LAD23NM || props.LAD22NM || '')
+    .replace(/'s\b/gi, 's')
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[',.]/g, ' ')
@@ -142,6 +151,21 @@ export default function LocalMap({
   eligibleLads,
   ladCategoryByCode,
 }: LocalMapProps) {
+  const countyFeatures = ladGeo.features.filter(feature => {
+    const code = feature.properties?.reference
+    return code && ladCategoryByCode.get(code) === 'county'
+  })
+
+  const nonCountyFeatures = ladGeo.features.filter(feature => {
+    const code = feature.properties?.reference
+    return !code || ladCategoryByCode.get(code) !== 'county'
+  })
+
+  const eligibleNonCountyFeatures = nonCountyFeatures.filter(feature => {
+    const code = feature.properties?.reference
+    return Boolean(code && eligibleLads.has(code))
+  })
+
   const ladStyle = (feature?: GeoFeature) => {
     if (!feature) {
       return {
@@ -162,8 +186,18 @@ export default function LocalMap({
     }
     const isEligible = ladCode && eligibleLads.has(ladCode)
     const category = ladCode ? ladCategoryByCode.get(ladCode) : null
+    if (!isEligible) {
+      return {
+        color: 'transparent',
+        weight: 0,
+        fillColor: 'transparent',
+        fillOpacity: 0,
+      }
+    }
     const fillColor =
-      category === 'london'
+      category === 'county'
+        ? '#E75480'
+        : category === 'london'
         ? '#6A1B9A'
         : category === 'metro'
           ? '#FB8C00'
@@ -173,7 +207,9 @@ export default function LocalMap({
               ? '#2E8B57'
               : '#f5f5f5'
     const strokeColor =
-      category === 'london'
+      category === 'county'
+        ? '#B03060'
+        : category === 'london'
         ? '#4A148C'
         : category === 'metro'
           ? '#EF6C00'
@@ -183,12 +219,26 @@ export default function LocalMap({
               ? '#1B5E20'
               : '#bbb'
     return {
-      color: isEligible ? strokeColor : '#bbb',
-      weight: isEligible ? 2 : 1,
-      fillColor: isEligible ? fillColor : '#f5f5f5',
-      fillOpacity: isEligible ? 0.35 : 0.1,
+      color: strokeColor,
+      weight: 2,
+      fillColor,
+      fillOpacity: category === 'county' ? 0.28 : 0.35,
     }
   }
+
+  const countyOutlineStyle = () => ({
+    color: '#B03060',
+    weight: 3,
+    fillColor: 'transparent',
+    fillOpacity: 0,
+  })
+
+  const countyFillStyle = () => ({
+    color: 'transparent',
+    weight: 0,
+    fillColor: '#E75480',
+    fillOpacity: 0.28,
+  })
 
   const overlayStyle = () => ({
     color: '#1565C0',
@@ -219,6 +269,7 @@ export default function LocalMap({
         color: '#777',
         weight: 1,
         dashArray: '4 4',
+        className: 'non-contested-ward',
         fillColor: 'url(#non-contested-stripes)',
         fillOpacity: 1,
       }
@@ -297,22 +348,50 @@ export default function LocalMap({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {!selectedLad && (
-        <GeoJSON
-          data={ladGeo as GeoJsonObject}
-          style={ladStyle}
-          eventHandlers={{
-            click: event => {
-              const feature = (event as any)?.sourceTarget?.feature
-              const ladCode = feature?.properties?.reference
-              if (
-                ladCode &&
-                (eligibleLads.has(ladCode) || (overlayAreaCodes && overlayAreaCodes.has(ladCode)))
-              ) {
-                onSelectLad(ladCode)
-              }
-            },
-          }}
-        />
+        <>
+          {countyFeatures.length > 0 && (
+            <>
+              <GeoJSON
+                data={{ type: 'FeatureCollection', features: countyFeatures } as GeoJsonObject}
+                style={countyFillStyle}
+              />
+              <GeoJSON
+                data={{ type: 'FeatureCollection', features: countyFeatures } as GeoJsonObject}
+                style={countyOutlineStyle}
+                eventHandlers={{
+                  click: event => {
+                    const feature = (event as any)?.sourceTarget?.feature
+                    const ladCode = feature?.properties?.reference
+                    if (
+                      ladCode &&
+                      (eligibleLads.has(ladCode) || (overlayAreaCodes && overlayAreaCodes.has(ladCode)))
+                    ) {
+                      onSelectLad(ladCode)
+                    }
+                  },
+                }}
+              />
+            </>
+          )}
+          {eligibleNonCountyFeatures.length > 0 && (
+            <GeoJSON
+              data={{ type: 'FeatureCollection', features: eligibleNonCountyFeatures } as GeoJsonObject}
+              style={ladStyle}
+              eventHandlers={{
+                click: event => {
+                  const feature = (event as any)?.sourceTarget?.feature
+                  const ladCode = feature?.properties?.reference
+                  if (
+                    ladCode &&
+                    (eligibleLads.has(ladCode) || (overlayAreaCodes && overlayAreaCodes.has(ladCode)))
+                  ) {
+                    onSelectLad(ladCode)
+                  }
+                },
+              }}
+            />
+          )}
+        </>
       )}
       {!selectedLad && overlayAreas && (
         <GeoJSON

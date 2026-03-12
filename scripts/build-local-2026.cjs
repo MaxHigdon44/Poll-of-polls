@@ -131,6 +131,36 @@ const WIKIPEDIA_WARD_PAGES = [
     ladName: 'Wokingham',
     urls: ['https://en.wikipedia.org/wiki/2023_Wokingham_Borough_Council_election'],
   },
+  {
+    ladName: 'East Sussex',
+    year: 2021,
+    urls: ['https://en.wikipedia.org/wiki/2021_East_Sussex_County_Council_election'],
+  },
+  {
+    ladName: 'Essex',
+    year: 2021,
+    urls: ['https://en.wikipedia.org/wiki/2021_Essex_County_Council_election'],
+  },
+  {
+    ladName: 'Hampshire',
+    year: 2021,
+    urls: ['https://en.wikipedia.org/wiki/2021_Hampshire_County_Council_election'],
+  },
+  {
+    ladName: 'Norfolk',
+    year: 2021,
+    urls: ['https://en.wikipedia.org/wiki/2021_Norfolk_County_Council_election'],
+  },
+  {
+    ladName: 'Suffolk',
+    year: 2021,
+    urls: ['https://en.wikipedia.org/wiki/2021_Suffolk_County_Council_election'],
+  },
+  {
+    ladName: 'West Sussex',
+    year: 2021,
+    urls: ['https://en.wikipedia.org/wiki/2021_West_Sussex_County_Council_election'],
+  },
 ]
 
 const LEAVE_WARD_FILE = 'leave_ward.csv'
@@ -900,12 +930,16 @@ async function buildLadToCountyLookup() {
 
   const { rows } = await loadCsv(lookupPath)
   const mapping = new Map()
+  const countyNames = new Map()
   rows.forEach(row => {
     const lad = row.LAD24CD || row['LAD24CD']
     const county = row.CTY24CD || row['CTY24CD']
+    const countyName = row.CTY24NM || row['CTY24NM']
     if (!lad || !county) return
     mapping.set(lad, county)
+    if (county && countyName) countyNames.set(county, countyName)
   })
+  mapping.names = countyNames
   return mapping
 }
 
@@ -915,8 +949,9 @@ async function buildCouncilSeatsLookup() {
     throw new Error(`Missing seats file: ${SEATS_UP_FILE} (place it in data/raw)`)
   }
   const workbook = xlsx.readFile(filePath)
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
-  const rows = xlsx.utils.sheet_to_json(sheet, { defval: '' })
+  const rows = workbook.SheetNames.flatMap(sheetName =>
+    xlsx.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: '' })
+  )
   const entries = rows
     .map(row => ({
       council: String(row['Council name'] || '').trim(),
@@ -1023,7 +1058,10 @@ function parseWardResults(filePath) {
     const row = rows[i]
     if (!row || !row.length) continue
     const joined = row.map(cell => headerNormalize(cell)).join(' ')
-    if (joined.includes('local authority name') && joined.includes('ward name')) {
+    if (
+      joined.includes('local authority name') &&
+      (joined.includes('ward name') || joined.includes('ward/ed name'))
+    ) {
       headerRowIndex = i
       headerRow = row
       break
@@ -1032,10 +1070,18 @@ function parseWardResults(filePath) {
   if (headerRowIndex === -1) return []
 
   const indices = {
+    countyName: headerRow.findIndex(cell => headerNormalize(cell).includes('county name')),
+    countyCode: headerRow.findIndex(cell => headerNormalize(cell).includes('county code')),
     ladName: headerRow.findIndex(cell => headerNormalize(cell).includes('local authority name')),
     ladCode: headerRow.findIndex(cell => headerNormalize(cell).includes('local authority code')),
-    wardCode: headerRow.findIndex(cell => headerNormalize(cell).includes('ward code')),
-    wardName: headerRow.findIndex(cell => headerNormalize(cell).includes('ward name')),
+    wardCode: headerRow.findIndex(cell => {
+      const normalized = headerNormalize(cell)
+      return normalized.includes('ward code') || normalized.includes('ward/ed code')
+    }),
+    wardName: headerRow.findIndex(cell => {
+      const normalized = headerNormalize(cell)
+      return normalized.includes('ward name') || normalized.includes('ward/ed name')
+    }),
     totalVotes: headerRow.findIndex(cell => headerNormalize(cell).includes('total votes')),
     turnout: headerRow.findIndex(cell => headerNormalize(cell).includes('turnout')),
     vacancies: headerRow.findIndex(cell => headerNormalize(cell).includes('vacancies')),
@@ -1074,7 +1120,10 @@ function parseWardResults(filePath) {
   for (let i = headerRowIndex + 1; i < rows.length; i++) {
     const row = rows[i]
     if (!row || !row.length) continue
-    const ladName = row[indices.ladName]
+    const wardCode = row[indices.wardCode]
+    const isCountyDivision = String(wardCode || '').startsWith('E58')
+    const ladName = isCountyDivision && indices.countyName >= 0 ? row[indices.countyName] : row[indices.ladName]
+    const ladCode = isCountyDivision && indices.countyCode >= 0 ? row[indices.countyCode] : row[indices.ladCode]
     const wardName = row[indices.wardName]
     if (!ladName || !wardName) continue
     const partyVotes = partyColumns.reduce((acc, col) => {
@@ -1097,9 +1146,9 @@ function parseWardResults(filePath) {
     }
     dataRows.push({
       ladName,
-      ladCode: row[indices.ladCode],
+      ladCode,
       wardName,
-      wardCode: row[indices.wardCode],
+      wardCode,
       vacancies: indices.vacancies >= 0 ? row[indices.vacancies] : null,
       totalVotes,
       partyVotes,
@@ -2036,16 +2085,75 @@ async function buildBaseline() {
   const cedPath = path.join(RAW_DIR, 'ced.geojson')
   if (!skipGeo) {
     await ensureGeojson(ladPath, LAD_GEOJSON_URL)
-    await ensureGeojson(countyPath, COUNTY_GEOJSON_URL)
     await ensureGeojson(cedPath, CED_GEOJSON_URL)
   }
   const wardData = new Map()
   let wardGeo = null
-  const countyGeo = skipGeo ? null : JSON.parse(await fsp.readFile(countyPath, 'utf8'))
-  const cedGeo = skipGeo ? null : JSON.parse(await fsp.readFile(cedPath, 'utf8'))
   const ladToCounty = await buildLadToCountyLookup()
+  const countyNameLookup = ladToCounty.names || new Map()
   const wardToLad = await buildWardToLadLookup()
   const councilSeats = await buildCouncilSeatsLookup()
+  const ladGeo = skipGeo ? null : JSON.parse(await fsp.readFile(ladPath, 'utf8'))
+  let countyGeo = null
+  if (!skipGeo && fs.existsSync(countyPath)) {
+    try {
+      countyGeo = JSON.parse(await fsp.readFile(countyPath, 'utf8'))
+    } catch (error) {
+      console.warn(`Ignoring invalid county GeoJSON at ${countyPath}: ${error.message}`)
+    }
+  } else if (!skipGeo && ladGeo?.features) {
+    const grouped = new Map()
+    ladGeo.features.forEach(feature => {
+      const ladCode = feature.properties?.reference || feature.properties?.LAD23CD
+      const countyCode = ladToCounty.get(ladCode)
+      const countyName = countyNameLookup.get(countyCode)
+      if (!countyCode || !countyName || !COUNTY_ELECTIONS_2026.has(normalize(countyName))) return
+      const entry =
+        grouped.get(countyCode) ||
+        {
+          type: 'Feature',
+          properties: { reference: countyCode, name: countyName },
+          geometry: { type: 'MultiPolygon', coordinates: [] },
+        }
+      if (feature.geometry?.type === 'Polygon') {
+        entry.geometry.coordinates.push(feature.geometry.coordinates)
+      } else if (feature.geometry?.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach(coords => entry.geometry.coordinates.push(coords))
+      }
+      grouped.set(countyCode, entry)
+    })
+    countyGeo = {
+      type: 'FeatureCollection',
+      features: [...grouped.values()],
+    }
+  }
+  if (!skipGeo && !countyGeo && ladGeo?.features) {
+    const grouped = new Map()
+    ladGeo.features.forEach(feature => {
+      const ladCode = feature.properties?.reference || feature.properties?.LAD23CD
+      const countyCode = ladToCounty.get(ladCode)
+      const countyName = countyNameLookup.get(countyCode)
+      if (!countyCode || !countyName || !COUNTY_ELECTIONS_2026.has(normalize(countyName))) return
+      const entry =
+        grouped.get(countyCode) ||
+        {
+          type: 'Feature',
+          properties: { reference: countyCode, name: countyName },
+          geometry: { type: 'MultiPolygon', coordinates: [] },
+        }
+      if (feature.geometry?.type === 'Polygon') {
+        entry.geometry.coordinates.push(feature.geometry.coordinates)
+      } else if (feature.geometry?.type === 'MultiPolygon') {
+        feature.geometry.coordinates.forEach(coords => entry.geometry.coordinates.push(coords))
+      }
+      grouped.set(countyCode, entry)
+    })
+    countyGeo = {
+      type: 'FeatureCollection',
+      features: [...grouped.values()],
+    }
+  }
+  const cedGeo = skipGeo ? null : JSON.parse(await fsp.readFile(cedPath, 'utf8'))
   if (fs.existsSync(wardPath)) {
     wardGeo = JSON.parse(await fsp.readFile(wardPath, 'utf8'))
     if (!wardGeo || wardGeo.type !== 'FeatureCollection' || !Array.isArray(wardGeo.features)) {
@@ -2093,11 +2201,11 @@ async function buildBaseline() {
 
     cedGeo.features = cedGeo.features.map(feature => {
       const props = feature.properties || {}
-      if (!props.reference && (props.CED23CD || props.CED24CD)) {
-        props.reference = props.CED23CD || props.CED24CD
+      if (!props.reference && (props.CED25CD || props.CED24CD || props.CED23CD)) {
+        props.reference = props.CED25CD || props.CED24CD || props.CED23CD
       }
-      if (!props.name && (props.CED23NM || props.CED24NM)) {
-        props.name = props.CED23NM || props.CED24NM
+      if (!props.name && (props.CED25NM || props.CED24NM || props.CED23NM)) {
+        props.name = props.CED25NM || props.CED24NM || props.CED23NM
       }
       if (!props.county && (props.CTYUA23CD || props.CTYUA24CD)) {
         props.county = props.CTYUA23CD || props.CTYUA24CD
@@ -2109,9 +2217,25 @@ async function buildBaseline() {
       return feature
     })
   }
+  const countyNameByCode = new Map()
+  const countyCodeByName = new Map()
+  if (countyGeo?.features) {
+    countyGeo.features.forEach(feature => {
+      const code = feature.properties?.reference
+      const name = feature.properties?.name
+      if (code && name) {
+        countyNameByCode.set(code, name)
+        countyCodeByName.set(normalize(name), code)
+      }
+    })
+  }
   const wardGeoCodes = wardGeo
     ? new Set(wardGeo.features.map(feature => feature.properties?.reference))
     : new Set()
+  const cedGeoCodes = cedGeo
+    ? new Set(cedGeo.features.map(feature => feature.properties?.reference))
+    : new Set()
+  const areaGeoCodes = new Set([...wardGeoCodes, ...cedGeoCodes])
   const wardCodeCrosswalk = await buildWardCodeCrosswalk()
 
   const sortedSources = [...HOC_SOURCES].sort((a, b) => b.year - a.year)
@@ -2136,12 +2260,12 @@ async function buildBaseline() {
     const ladName = row.ladName
     if (!wardCode || !ladCode || !wardName || !ladName) return
 
-    if (!wardGeoCodes.has(wardCode)) {
+    if (!areaGeoCodes.has(wardCode)) {
       const mapped = wardCodeCrosswalk.get(wardCode)
       if (mapped) wardCode = mapped
     }
 
-    if (!wardGeoCodes.has(wardCode) && wardToLad?.byName) {
+    if (!areaGeoCodes.has(wardCode) && wardToLad?.byName) {
       const key = `${normalize(ladName)}|${normalize(wardName)}`
       const match = wardToLad.byName.get(key)
       if (match && match.ward) {
@@ -2197,7 +2321,38 @@ async function buildBaseline() {
   }
 
   if (wardToLad?.byName) {
-    const byName = wardToLad.byName
+    const byName = new Map(wardToLad.byName)
+    const cedByName = new Map()
+    if (cedGeo?.features) {
+      cedGeo.features.forEach(feature => {
+        const code = feature.properties?.reference
+        const wardName = feature.properties?.name
+        if (!code || !wardName) return
+        const key = normalize(wardName)
+        const matches = cedByName.get(key) || []
+        matches.push({
+          ward: code,
+          wardName,
+        })
+        cedByName.set(key, matches)
+      })
+    }
+    if (cedGeo?.features) {
+      cedGeo.features.forEach(feature => {
+        const code = feature.properties?.reference
+        const wardName = feature.properties?.name
+        const countyCode = feature.properties?.county
+        const countyName = countyNameByCode.get(countyCode)
+        if (!code || !wardName || !countyCode || !countyName) return
+        const key = `${normalize(countyName)}|${normalize(wardName)}`
+        byName.set(key, {
+          ward: code,
+          lad: countyCode,
+          ladName: countyName,
+          wardName,
+        })
+      })
+    }
     const wardIndexCache = new Map()
     const getWardNameIndex = ladName => {
       const key = normalize(ladName)
@@ -2215,7 +2370,19 @@ async function buildBaseline() {
       rows.forEach(row => {
         const key = `${normalize(row.ladName)}|${normalize(row.wardName)}`
         const index = getWardNameIndex(row.ladName)
-        const match = byName.get(key) || index.get(normalize(row.wardName))
+        let match = byName.get(key) || index.get(normalize(row.wardName))
+        if (!match && COUNTY_ELECTIONS_2026.has(normalize(row.ladName))) {
+          const countyCode = countyCodeByName.get(normalize(row.ladName))
+          const cedMatches = cedByName.get(normalize(row.wardName)) || []
+          if (countyCode && cedMatches.length === 1) {
+            match = {
+              ladName: row.ladName,
+              lad: countyCode,
+              wardName: cedMatches[0].wardName,
+              ward: cedMatches[0].ward,
+            }
+          }
+        }
         if (!match) return
         upsertWardRow(
           {
@@ -2245,7 +2412,7 @@ async function buildBaseline() {
         if (wikiRows.length) break
       }
       if (wikiRows.length) {
-        applyWardRows(wikiRows, 2022, false)
+        applyWardRows(wikiRows, page.year || 2022, false)
         wikipediaCovered.add(normalize(page.ladName))
       } else {
         console.warn(`Wikipedia ward results empty for ${page.ladName}`)
@@ -2529,11 +2696,11 @@ async function buildBaseline() {
     )
   }
 
-  const ladGeo = skipGeo
+  const outputLadGeo = skipGeo
     ? JSON.parse(await fsp.readFile(path.join(OUT_DIR, 'lads.geojson'), 'utf8'))
-    : JSON.parse(await fsp.readFile(path.join(RAW_DIR, 'lad.geojson'), 'utf8'))
+    : ladGeo
 
-  ladGeo.features = ladGeo.features.map(feature => {
+  outputLadGeo.features = outputLadGeo.features.map(feature => {
     const props = feature.properties || {}
     if (!props.reference && props.LAD23CD) {
       props.reference = props.LAD23CD
@@ -2551,11 +2718,6 @@ async function buildBaseline() {
       const name = String(feature.properties?.name || '').toLowerCase()
       return countyGeoCodes.has(feature.properties?.reference) && COUNTY_ELECTIONS_2026.has(name)
     })
-
-    const countyCodes = new Set(countyGeo.features.map(feature => feature.properties?.reference))
-    cedGeo.features = cedGeo.features.filter(feature =>
-      countyCodes.has(feature.properties?.county)
-    )
   }
 
   const wardCodes = new Set(baseline.map(entry => entry.wardCode))
@@ -2564,10 +2726,25 @@ async function buildBaseline() {
       wardCodes.has(feature.properties?.reference)
     )
   }
+  if (!skipGeo && cedGeo) {
+    const baselineByCode = new Map(baseline.map(entry => [entry.wardCode, entry]))
+    cedGeo.features = cedGeo.features
+      .filter(feature => wardCodes.has(feature.properties?.reference))
+      .map(feature => {
+        const props = feature.properties || {}
+        const row = baselineByCode.get(props.reference)
+        if (row) {
+          props.ladCode = row.ladCode
+          props.ladName = row.ladName
+        }
+        feature.properties = props
+        return feature
+      })
+  }
 
   const ladCodes = new Set(baseline.map(entry => entry.ladCode))
-  const ladGeoCodes = new Set(ladGeo.features.map(feature => feature.properties?.reference))
-  ladGeo.features = ladGeo.features.filter(feature =>
+  const ladGeoCodes = new Set(outputLadGeo.features.map(feature => feature.properties?.reference))
+  outputLadGeo.features = outputLadGeo.features.filter(feature =>
     ladCodes.has(feature.properties?.reference)
   )
 
@@ -2575,10 +2752,16 @@ async function buildBaseline() {
   if (!skipGeo && wardGeo) {
     await fsp.writeFile(path.join(OUT_DIR, 'wards.geojson'), JSON.stringify(wardGeo))
   }
-    await fsp.writeFile(path.join(OUT_DIR, 'lads.geojson'), JSON.stringify(ladGeo))
+    await fsp.writeFile(path.join(OUT_DIR, 'lads.geojson'), JSON.stringify(outputLadGeo))
     await fsp.writeFile(path.join(OUT_DIR, 'counties.geojson'), JSON.stringify(countyGeo))
     await fsp.writeFile(path.join(OUT_DIR, 'ced.geojson'), JSON.stringify(cedGeo))
   }
+
+  const ladToCountyOutput = Object.fromEntries(ladToCounty.entries())
+  await fsp.writeFile(
+    path.join(OUT_DIR, 'lad-to-county.json'),
+    JSON.stringify({ generatedAt: new Date().toISOString(), lads: ladToCountyOutput })
+  )
 
   await fsp.writeFile(
     path.join(OUT_DIR, 'baseline-national.json'),
@@ -2592,7 +2775,7 @@ async function buildBaseline() {
     wardsMatched: wardGeo ? wardGeo.features.length : 0,
     ladsInBaseline: ladCodes.size,
     ladsInGeo: ladGeoCodes.size,
-    ladsMatched: ladGeo.features.length,
+    ladsMatched: outputLadGeo.features.length,
     countiesIncluded: countyGeo ? countyGeo.features.length : 0,
     cedIncluded: cedGeo ? cedGeo.features.length : 0,
   }
