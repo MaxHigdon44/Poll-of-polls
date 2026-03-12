@@ -1826,6 +1826,41 @@ function parseWikipediaCouncilSeats(html) {
   return null
 }
 
+function parseWikipediaWardIncumbents(html) {
+  const $ = cheerio.load(html)
+  const normalizeCellText = text =>
+    String(text || '')
+      .replace(/\[[0-9a-z]+\]/gi, '')
+      .replace(/\u00a0/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim()
+
+  const incumbentsHeader = $('h2[id*="incumbents" i]').first()
+  const incumbentsHeaderAlt = incumbentsHeader.length
+    ? incumbentsHeader
+    : $('h2').filter((_, el) => /incumbents/i.test($(el).text())).first()
+  if (!incumbentsHeaderAlt.length) return {}
+
+  const table = incumbentsHeaderAlt.parent().nextAll('table.wikitable').first()
+  if (!table.length) return {}
+
+  const wardIncumbents = {}
+  table.find('tr').each((_, row) => {
+    const cells = $(row).find('th, td').toArray()
+    if (cells.length < 4) return
+    const texts = cells.map(cell => normalizeCellText($(cell).text()))
+    const wardName = texts[0]
+    if (!wardName || /^ward$/i.test(wardName)) return
+    const partyText = texts[3] || texts[2] || ''
+    if (!partyText || /^party$/i.test(partyText)) return
+    const mapped = mapParty(partyText)
+    const label = mapped.bucket === 'national' ? mapped.name : partyText
+    wardIncumbents[wardName] = label
+  })
+
+  return wardIncumbents
+}
+
 async function findWikipediaElectionPage(councilName) {
   const query = encodeURIComponent(`2026 ${councilName} council election`)
   const cachePath = path.join(RAW_DIR, `wiki_search_${normalize(councilName)}.json`)
@@ -1883,6 +1918,7 @@ async function buildCouncilPreviousSeats(councilSeats) {
         url: match.url,
         lastElection: parsed.lastElection,
         seatsBefore: parsed.seatsBefore,
+        wardIncumbents: parseWikipediaWardIncumbents(html),
       }
       await fsp.writeFile(cachePath, JSON.stringify(record, null, 2))
       results.push(record)
