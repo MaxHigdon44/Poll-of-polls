@@ -1462,25 +1462,49 @@ export default function Local2026Page() {
       }
     }
     const visibleWardFeatures =
-      shouldUseWardIncumbents && wardGeo && Array.isArray(wardGeo.features)
+      wardGeo && Array.isArray(wardGeo.features)
         ? wardGeo.features.filter(feature => {
             if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
-              return false
+              const allowedCodes = selectedLad === 'surrey-east' ? surreyEastCodes : surreyWestCodes
+              const code = getGeoWardCode(feature)
+              const baselineWard = allWards.find(ward => ward.wardCode === code)
+              return Boolean(baselineWard && allowedCodes.has(baselineWard.ladCode))
             }
             const selectedName = selectedFeature.properties?.name
             if (selectedName) {
               const props = feature.properties || {}
               const ladName = props.LAD25NM || props.LAD23NM || props.LAD22NM || props.ladName
-              if (normalizeName(ladName) !== normalizeName(selectedName)) {
-                return false
-              }
+              return normalizeName(ladName) === normalizeName(selectedName)
             }
-            const wardName = normalizeName(getGeoWardName(feature))
-            return normalizedWardIncumbents.has(wardName)
+            return false
           })
         : []
+    const baselineByCode = new Map(allWards.map(ward => [ward.wardCode, ward]))
+    const baselineByName = new Map(
+      allWards.map(ward => [`${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`, ward])
+    )
+    const contestedWardFeatures = visibleWardFeatures.filter(feature => {
+      const wardName = normalizeName(getGeoWardName(feature))
+      if (shouldUseWardIncumbents) {
+        return normalizedWardIncumbents.has(wardName)
+      }
+      const code = getGeoWardCode(feature)
+      const nameKey = getGeoWardNameKey(feature) || ''
+      const baselineWard = (code ? baselineByCode.get(code) : null) || baselineByName.get(nameKey)
+      if (!baselineWard) return cycle === 'all_out'
+      if (cycle === 'all_out') return true
+      const lastYear = baselineWard.lastYear || 2026
+      if (cycle === 'thirds') {
+        return (2026 - lastYear) % 3 === 0
+      }
+      if (cycle === 'halves') {
+        return (2026 - lastYear) % 2 === 0
+      }
+      return true
+    })
+    const useFeatureContested = contestedWardFeatures.length > 0
     wards.forEach(ward => {
-      if (shouldUseWardIncumbents && visibleWardFeatures.length) {
+      if (useFeatureContested) {
         return
       }
       const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(ward.vacancies || 0, 1)
@@ -1534,20 +1558,30 @@ export default function Local2026Page() {
           (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
       }
     })
-    if (shouldUseWardIncumbents && visibleWardFeatures.length) {
-      visibleWardFeatures.forEach(feature => {
+    if (useFeatureContested) {
+      contestedWardFeatures.forEach(feature => {
         const projection =
           wardMap.get(getGeoWardCode(feature) || '') ||
           wardMapByName.get(getGeoWardNameKey(feature) || '') ||
           wardMapByWardName.get(normalizeName(getGeoWardName(feature))) ||
           ladFallbackProjection
         if (!projection) return
+        const code = getGeoWardCode(feature)
+        const nameKey = getGeoWardNameKey(feature) || ''
+        const baselineWard = (code ? baselineByCode.get(code) : null) || baselineByName.get(nameKey)
+        const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(baselineWard?.vacancies || 0, 1)
+        const seats = seatsUpCount * seatMultiplier
         const wardName = normalizeName(getGeoWardName(feature))
-        const prevWinner = normalizedWardIncumbents.get(wardName)
+        const prevWinner =
+          (shouldUseWardIncumbents ? normalizedWardIncumbents.get(wardName) : null) ||
+          canonicalizePartyLabel(projection.prevWinner || '')
         if (!prevWinner) return
         const projectedWinner = canonicalizePartyLabel(projection.winner)
-        contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + 1
-        contestedPreviousTotals[prevWinner] = (contestedPreviousTotals[prevWinner] || 0) + 1
+        contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + seatsUpCount
+        contestedPreviousTotals[prevWinner] =
+          (contestedPreviousTotals[prevWinner] || 0) + seatsUpCount
+        totals[projectedWinner] = (totals[projectedWinner] || 0) + seats
+        previousTotals[prevWinner] = (previousTotals[prevWinner] || 0) + seats
       })
     }
 
@@ -1564,7 +1598,7 @@ export default function Local2026Page() {
     ) {
       adjustedPreviousTotals = normalizeTotalsToTotal(totalSeats, previousRow.lastElection)
     }
-    const normalizeContested = !useLastYear && !shouldUseWardIncumbents
+    const normalizeContested = !useFeatureContested && !useLastYear && !shouldUseWardIncumbents
     const adjustedContestedTotals = normalizeContested
       ? normalizeTotalsToTotal(seatsUp, contestedTotals)
       : { ...contestedTotals }
@@ -1626,6 +1660,8 @@ export default function Local2026Page() {
     ladGeo,
     wardGeo,
     surreyOverlay,
+    surreyEastCodes,
+    surreyWestCodes,
   ])
 
   const showNoComposition =
