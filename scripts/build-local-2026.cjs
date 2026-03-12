@@ -217,6 +217,7 @@ const COUNTY_ELECTIONS_2026 = new Set(
 
 function normalize(value) {
   return String(value || '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
     .toLowerCase()
     .replace(/&/g, 'and')
     .replace(/[’']/g, '')
