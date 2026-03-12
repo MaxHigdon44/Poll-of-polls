@@ -195,6 +195,9 @@ function mapControlToParty(label: string | null) {
   if (!label) return null
   const normalized = normalizeName(label)
   if (normalized.includes('no overall control')) return null
+  if (normalized === 'ind' || normalized === 'independent' || normalized === 'independents') {
+    return 'Independent'
+  }
   if (normalized.includes('labour')) return 'Labour'
   if (normalized.includes('conservative')) return 'Conservative'
   if (normalized.includes('liberal democrat') || normalized.includes('lib dem')) {
@@ -210,7 +213,6 @@ function mapControlToParty(label: string | null) {
 function normalizeSeatsParty(party: string) {
   const mapped = mapControlToParty(party)
   if (!mapped) return 'No overall control'
-  if (mapped === 'Independent' || mapped === 'Independents') return 'Independent'
   const known = new Set([
     'Labour',
     'Conservative',
@@ -222,6 +224,12 @@ function normalizeSeatsParty(party: string) {
     'Independent',
   ])
   return known.has(mapped) ? mapped : 'Other'
+}
+
+function canonicalizePartyLabel(party: string | null | undefined) {
+  const mapped = mapControlToParty(party || null)
+  if (mapped) return mapped
+  return party || 'Other'
 }
 
 function sumShares(shares: Record<string, number>) {
@@ -731,9 +739,9 @@ export default function CouncilProjectionsPage() {
           }
         }
         if (contested) {
-          contestedTotals[projection.winner] =
-            (contestedTotals[projection.winner] || 0) + seatsUpCount
-          const contestedPrev = prevWinner || projection.winner
+          const projectedKey = canonicalizePartyLabel(projection.winner)
+          contestedTotals[projectedKey] = (contestedTotals[projectedKey] || 0) + seatsUpCount
+          const contestedPrev = canonicalizePartyLabel(prevWinner || projection.winner)
           contestedPreviousTotals[contestedPrev] =
             (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
         }

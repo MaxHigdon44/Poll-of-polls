@@ -639,6 +639,14 @@ function normalizeCouncilName(name: string) {
     .trim()
 }
 
+function canonicalizePartyLabel(party: string | null | undefined) {
+  const normalized = normalizeName(party)
+  if (normalized === 'ind' || normalized === 'independent' || normalized === 'independents') {
+    return 'Independent'
+  }
+  return party || 'Other'
+}
+
 function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, number>) {
   const entries = Object.entries(totals).map(([party, seats]) => ({
     party,
@@ -1421,13 +1429,17 @@ export default function Local2026Page() {
           contested = (2026 - lastYear) % 2 === 0
         }
       }
-      const winner = contested ? projectedWinner : prevWinner || projectedWinner
+      const winner = canonicalizePartyLabel(
+        contested ? projectedWinner : prevWinner || projectedWinner
+      )
       totals[winner] = (totals[winner] || 0) + seats
-      const prev = prevWinner || projectedWinner
+      const prev = canonicalizePartyLabel(prevWinner || projectedWinner)
       previousTotals[prev] = (previousTotals[prev] || 0) + seats
       if (contested) {
-        contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + seatsUpCount
-        const contestedPrev = prevWinner || projectedWinner
+        const contestedProjected = canonicalizePartyLabel(projectedWinner)
+        contestedTotals[contestedProjected] =
+          (contestedTotals[contestedProjected] || 0) + seatsUpCount
+        const contestedPrev = canonicalizePartyLabel(prevWinner || projectedWinner)
         contestedPreviousTotals[contestedPrev] =
           (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
       }
