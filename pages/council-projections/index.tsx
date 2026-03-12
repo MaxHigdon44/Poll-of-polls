@@ -780,7 +780,7 @@ export default function CouncilProjectionsPage() {
         }
       })
 
-      const normalizeContested = !useLastYear
+      const normalizeContested = !useLastYear && !shouldUseWardIncumbents
       const adjustedContestedTotals = normalizeContested
         ? normalizeTotalsToTotal(seatsUp, contestedTotals)
         : { ...contestedTotals }

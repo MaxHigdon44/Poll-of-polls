@@ -1495,10 +1495,14 @@ export default function Local2026Page() {
       adjustedTotals = normalizeTotalsToTotal(totalSeats, totals)
       adjustedPreviousTotals = normalizeTotalsToTotal(totalSeats, previousTotals)
     }
-    if (previousRow?.lastElection && Object.keys(previousRow.lastElection).length) {
+    if (
+      !shouldUseWardIncumbents &&
+      previousRow?.lastElection &&
+      Object.keys(previousRow.lastElection).length
+    ) {
       adjustedPreviousTotals = normalizeTotalsToTotal(totalSeats, previousRow.lastElection)
     }
-    const normalizeContested = !useLastYear
+    const normalizeContested = !useLastYear && !shouldUseWardIncumbents
     const adjustedContestedTotals = normalizeContested
       ? normalizeTotalsToTotal(seatsUp, contestedTotals)
       : { ...contestedTotals }
