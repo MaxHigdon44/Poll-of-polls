@@ -14,6 +14,8 @@ type LocalMapProps = {
   overlayAreaCodes?: Set<string>
   hiddenLadCodes?: Set<string>
   wardFeatures: GeoFeature[]
+  contestedWardCodes?: Set<string>
+  contestedWardNameKeys?: Set<string>
   wardVacancies?: Map<string, number>
   wardVacanciesByName?: Map<string, number>
   wardMap: Map<
@@ -89,6 +91,8 @@ export default function LocalMap({
   overlayAreaCodes,
   hiddenLadCodes,
   wardFeatures,
+  contestedWardCodes,
+  contestedWardNameKeys,
   wardVacancies,
   wardVacanciesByName,
   wardMap,
@@ -166,6 +170,22 @@ export default function LocalMap({
       }
     }
     const wardCode = getWardCode(feature)
+    const wardNameKey = getWardNameKey(feature)
+    const isContested =
+      !selectedLad ||
+      ((!contestedWardCodes || contestedWardCodes.size === 0) &&
+        (!contestedWardNameKeys || contestedWardNameKeys.size === 0)) ||
+      (wardCode ? contestedWardCodes?.has(wardCode) : false) ||
+      (wardNameKey ? contestedWardNameKeys?.has(wardNameKey) : false)
+    if (!isContested) {
+      return {
+        color: '#777',
+        weight: 1,
+        dashArray: '4 4',
+        fillColor: '#d9d9d9',
+        fillOpacity: 0.5,
+      }
+    }
     const projection =
       wardMap.get(wardCode) ||
       wardMapByName.get(getWardNameKey(feature) || '') ||
@@ -184,6 +204,16 @@ export default function LocalMap({
     const wardCode = getWardCode(feature)
     const wardName = getWardDisplayName(feature)
     const wardNameKey = getWardNameKey(feature)
+    const isContested =
+      !selectedLad ||
+      ((!contestedWardCodes || contestedWardCodes.size === 0) &&
+        (!contestedWardNameKeys || contestedWardNameKeys.size === 0)) ||
+      (wardCode ? contestedWardCodes?.has(wardCode) : false) ||
+      (wardNameKey ? contestedWardNameKeys?.has(wardNameKey) : false)
+    if (!isContested) {
+      layer.bindPopup(`<strong>${wardName}</strong><br/>Not contested in 2026`)
+      return
+    }
     const projection =
       wardMap.get(wardCode) ||
       wardMapByName.get(getWardNameKey(feature) || '') ||

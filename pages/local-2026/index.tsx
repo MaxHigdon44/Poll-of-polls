@@ -1270,6 +1270,77 @@ export default function Local2026Page() {
     return map
   }, [baseline, selectedLad, councilSeats])
 
+  const contestedWardKeys = useMemo(() => {
+    const empty = { codes: new Set<string>(), names: new Set<string>() }
+    if (!baseline || !selectedLad || !councilSeats?.councils?.length) return empty
+    const allWards = baseline.wards.filter(ward => ward.ladCode === selectedLad)
+    if (!allWards.length) return empty
+    const councilName = allWards[0]?.ladName || ''
+    const seatRow = councilSeats.councils.find(
+      row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
+    )
+    if (!seatRow) return empty
+    const previousRow = councilPrevious?.councils?.find(
+      row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
+    )
+    const seatsUp = seatRow.seatsUp
+    const totalSeats = seatRow.totalSeats
+    let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
+    if (seatsUp === totalSeats) {
+      cycle = 'all_out'
+    } else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) {
+      cycle = 'thirds'
+    } else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) {
+      cycle = 'halves'
+    } else {
+      const ratio = totalSeats ? seatsUp / totalSeats : 1
+      if (ratio >= 0.28 && ratio <= 0.38) cycle = 'thirds'
+      else if (ratio >= 0.45 && ratio <= 0.55) cycle = 'halves'
+      else cycle = 'all_out'
+    }
+    if (cycle === 'all_out') {
+      allWards.forEach(ward => {
+        empty.codes.add(ward.wardCode)
+        empty.names.add(`${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`)
+      })
+      return empty
+    }
+    const wardIncumbents = previousRow?.wardIncumbents || null
+    const normalizedWardIncumbents = new Set(
+      Object.keys(wardIncumbents || {}).map(wardName => normalizeName(wardName))
+    )
+    const inferredContestedSeats = allWards.reduce((acc, ward) => {
+      const lastYear = ward.lastYear || 2026
+      const contested =
+        cycle === 'thirds'
+          ? (2026 - lastYear) % 3 === 0
+          : cycle === 'halves'
+            ? (2026 - lastYear) % 2 === 0
+            : true
+      return acc + (contested ? Math.max(ward.vacancies || 0, 1) : 0)
+    }, 0)
+    const incumbentMatchedWards = allWards.filter(ward =>
+      normalizedWardIncumbents.has(normalizeName(ward.wardName))
+    )
+    const shouldUseWardIncumbents =
+      incumbentMatchedWards.length > 0 &&
+      Math.abs(incumbentMatchedWards.length - seatsUp) < Math.abs(inferredContestedSeats - seatsUp)
+
+    allWards.forEach(ward => {
+      const contested = shouldUseWardIncumbents
+        ? normalizedWardIncumbents.has(normalizeName(ward.wardName))
+        : cycle === 'thirds'
+          ? (2026 - (ward.lastYear || 2026)) % 3 === 0
+          : cycle === 'halves'
+            ? (2026 - (ward.lastYear || 2026)) % 2 === 0
+            : true
+      if (!contested) return
+      empty.codes.add(ward.wardCode)
+      empty.names.add(`${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`)
+    })
+    return empty
+  }, [baseline, selectedLad, councilSeats, councilPrevious])
+
   const eligibleLads = useMemo(() => {
     if (!ladGeo) return new Set<string>()
     const eligible = new Set<string>()
@@ -1959,6 +2030,8 @@ export default function Local2026Page() {
               overlayAreaCodes={new Set(['surrey-east', 'surrey-west'])}
               hiddenLadCodes={surreyLadCodes}
               wardFeatures={wardFeatures}
+              contestedWardCodes={contestedWardKeys.codes}
+              contestedWardNameKeys={contestedWardKeys.names}
               wardVacancies={wardVacancies}
               wardVacanciesByName={wardVacanciesByName}
               wardMap={wardMap}
