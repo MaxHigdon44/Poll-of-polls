@@ -948,6 +948,17 @@ export default function Local2026Page() {
     return { share: getDegreeBaseline(), source: 'national' }
   }
 
+  const wardIncumbentLookup = useMemo(() => {
+    const map = new Map<string, string>()
+    councilPrevious?.councils?.forEach(row => {
+      const councilKey = normalizeCouncilName(row.council)
+      Object.entries(row.wardIncumbents || {}).forEach(([wardName, party]) => {
+        map.set(`${councilKey}|${normalizeName(wardName)}`, canonicalizePartyLabel(party))
+      })
+    })
+    return map
+  }, [councilPrevious])
+
   const wardMap = useMemo(() => {
     if (!baseline || !aggregate) return new Map<string, any>()
     const ladBaselineMap = new Map<
@@ -1088,16 +1099,19 @@ export default function Local2026Page() {
         ...adjustedWard.nationalShares,
         ...adjustedWard.localShares,
       }
-      let prevWinner: string | null = null
+      const incumbentKey = `${normalizeCouncilName(ward.ladName)}|${normalizeName(ward.wardName)}`
+      let prevWinner: string | null = wardIncumbentLookup.get(incumbentKey) || null
       let prevTop = -1
-      Object.entries(previousShares).forEach(([party, value]) => {
-        const numericValue = Number(value)
-        if (!Number.isFinite(numericValue)) return
-        if (numericValue > prevTop) {
-          prevTop = numericValue
-          prevWinner = party
-        }
-      })
+      if (!prevWinner) {
+        Object.entries(previousShares).forEach(([party, value]) => {
+          const numericValue = Number(value)
+          if (!Number.isFinite(numericValue)) return
+          if (numericValue > prevTop) {
+            prevTop = numericValue
+            prevWinner = party
+          }
+        })
+      }
       map.set(ward.wardCode, {
         ...projection,
         color: PARTY_COLORS[projection.winner] || '#ccc',
@@ -1124,6 +1138,7 @@ export default function Local2026Page() {
     geReformWeight,
     geGreenWeight,
     geMajorWeight,
+    wardIncumbentLookup,
   ])
 
   const wardMapByName = useMemo(() => {
@@ -1394,10 +1409,7 @@ export default function Local2026Page() {
     const incumbentMatchedWards = wardIncumbents
       ? allWards.filter(ward => wardIncumbents[normalizeName(ward.wardName)])
       : []
-    const incumbentMatchedSeats = incumbentMatchedWards.reduce(
-      (acc, ward) => acc + Math.max(ward.vacancies || 0, 1),
-      0
-    )
+    const incumbentMatchedSeats = incumbentMatchedWards.length
     const shouldUseWardIncumbents =
       incumbentMatchedWards.length > 0 &&
       Math.abs(incumbentMatchedSeats - seatsUp) < Math.abs(inferredContestedSeats - seatsUp)
@@ -1425,7 +1437,7 @@ export default function Local2026Page() {
       }
     }
     wards.forEach(ward => {
-      const seatsUpCount = Math.max(ward.vacancies || 0, 1)
+      const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(ward.vacancies || 0, 1)
       const seats = seatsUpCount * seatMultiplier
       const projection =
         wardMap.get(ward.wardCode) || wardMapByWardName.get(normalizeName(ward.wardName))

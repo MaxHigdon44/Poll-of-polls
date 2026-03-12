@@ -627,10 +627,7 @@ export default function CouncilProjectionsPage() {
       const incumbentMatchedWards = wardIncumbents
         ? allWards.filter(ward => wardIncumbents[normalizeName(ward.wardName)])
         : []
-      const incumbentMatchedSeats = incumbentMatchedWards.reduce(
-        (acc, ward) => acc + Math.max(ward.vacancies || 0, 1),
-        0
-      )
+      const incumbentMatchedSeats = incumbentMatchedWards.length
       const shouldUseWardIncumbents =
         incumbentMatchedWards.length > 0 &&
         Math.abs(incumbentMatchedSeats - seatsUp) < Math.abs(inferredContestedSeats - seatsUp)
@@ -659,7 +656,7 @@ export default function CouncilProjectionsPage() {
       const contestedPreviousTotals: Record<string, number> = {}
 
       wards.forEach(ward => {
-        const seatsUpCount = Math.max(ward.vacancies || 0, 1)
+        const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(ward.vacancies || 0, 1)
         let adjustedWard = ward
         const geWeights = {
           reform: geReformWeight,
