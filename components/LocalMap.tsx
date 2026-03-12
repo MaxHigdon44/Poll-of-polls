@@ -63,12 +63,15 @@ function getWardNameKey(feature: GeoFeature) {
   const props: any = feature.properties || {}
   const wardName = String(props.WD25NM || props.WD23NM || props.WD22NM || props.name || '')
     .toLowerCase()
-    .replace(/&/g, 'and')
+    .replace(/&/g, ' and ')
+    .replace(/[',.]/g, ' ')
+    .replace(/\bbeneden\b/g, 'benenden')
     .replace(/\s+/g, ' ')
     .trim()
   const ladName = String(props.LAD25NM || props.LAD23NM || props.LAD22NM || '')
     .toLowerCase()
-    .replace(/&/g, 'and')
+    .replace(/&/g, ' and ')
+    .replace(/[',.]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
   if (!wardName || !ladName) return null
