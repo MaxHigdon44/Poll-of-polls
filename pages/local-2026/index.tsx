@@ -1642,7 +1642,15 @@ export default function Local2026Page() {
 
     let projectedTotals = adjustedTotals
     let projectedPreviousTotals = adjustedPreviousTotals
-    if (previousRow?.seatsBefore && Object.keys(previousRow.seatsBefore).length) {
+    if (cycle === 'all_out') {
+      projectedTotals = normalizeTotalsToTotal(totalSeats, adjustedContestedTotals)
+      if (Object.keys(adjustedContestedPreviousTotals).length) {
+        projectedPreviousTotals = normalizeTotalsToTotal(
+          totalSeats,
+          adjustedContestedPreviousTotals
+        )
+      }
+    } else if (previousRow?.seatsBefore && Object.keys(previousRow.seatsBefore).length) {
       const currentTotals = { ...previousRow.seatsBefore }
       const currentSum = Object.values(currentTotals).reduce((acc, value) => acc + (value || 0), 0)
       if (currentSum && currentSum < totalSeats) {
