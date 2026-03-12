@@ -229,13 +229,7 @@ const ELECTION_LADS_2026 = new Set(
     'West Oxfordshire',
     'Winchester',
     'Worthing',
-  ].map(name =>
-    name
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
+  ].map(normalizeName)
 )
 
 const LONDON_BOROUGHS = new Set(
@@ -273,13 +267,7 @@ const LONDON_BOROUGHS = new Set(
     'Waltham Forest',
     'Wandsworth',
     'Westminster',
-  ].map(name =>
-    name
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
+  ].map(normalizeName)
 )
 
 const METRO_BOROUGHS = new Set(
@@ -316,13 +304,7 @@ const METRO_BOROUGHS = new Set(
     'Walsall',
     'Wigan',
     'Wolverhampton',
-  ].map(name =>
-    name
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
+  ].map(normalizeName)
 )
 
 const UNITARY_AUTHORITIES = new Set(
@@ -354,13 +336,7 @@ const UNITARY_AUTHORITIES = new Set(
     'Surrey Heath',
     'Waverley',
     'Woking',
-  ].map(name =>
-    name
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/\s+/g, ' ')
-      .trim()
-  )
+  ].map(normalizeName)
 )
 
 const OFFICIAL_NAMES: Record<string, string> = {
@@ -402,7 +378,7 @@ const OFFICIAL_NAMES: Record<string, string> = {
   'blackburn with darwen': 'Blackburn with Darwen Borough Council',
   'halton': 'Halton Borough Council',
   'hartlepool': 'Hartlepool Borough Council',
-  'kingston upon hull, city of': 'Hull City Council',
+  'kingston upon hull city of': 'Hull City Council',
   'isle of wight': 'Isle of Wight Council',
   'milton keynes': 'Milton Keynes Council',
   'north east lincolnshire': 'North East Lincolnshire Council',
@@ -468,22 +444,14 @@ const OFFICIAL_NAMES: Record<string, string> = {
 }
 
 const SURREY_EAST = new Set(
-  ['Elmbridge', 'Epsom and Ewell', 'Mole Valley', 'Reigate and Banstead', 'Tandridge'].map(name =>
-    name
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/\s+/g, ' ')
-      .trim()
+  ['Elmbridge', 'Epsom and Ewell', 'Mole Valley', 'Reigate and Banstead', 'Tandridge'].map(
+    normalizeName
   )
 )
 
 const SURREY_WEST = new Set(
-  ['Guildford', 'Runnymede', 'Spelthorne', 'Surrey Heath', 'Waverley', 'Woking'].map(name =>
-    name
-      .toLowerCase()
-      .replace(/&/g, 'and')
-      .replace(/\s+/g, ' ')
-      .trim()
+  ['Guildford', 'Runnymede', 'Spelthorne', 'Surrey Heath', 'Waverley', 'Woking'].map(
+    normalizeName
   )
 )
 
