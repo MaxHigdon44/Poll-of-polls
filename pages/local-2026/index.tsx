@@ -1255,27 +1255,52 @@ export default function Local2026Page() {
   const wardVacancies = useMemo(() => {
     if (!baseline || !selectedLad) return new Map<string, number>()
     const map = new Map<string, number>()
-    baseline.wards
-      .filter(ward => ward.ladCode === selectedLad)
-      .forEach(ward => {
-        map.set(ward.wardCode, Math.max(ward.vacancies || 0, 1))
-      })
+    const wards = baseline.wards.filter(ward => ward.ladCode === selectedLad)
+    const councilName = wards[0]?.ladName || null
+    const seatRow = councilName
+      ? councilSeats?.councils?.find(
+          row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
+        )
+      : null
+    const seatsUp = seatRow?.seatsUp || 0
+    const totalSeats = seatRow?.totalSeats || 0
+    let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
+    if (seatsUp && totalSeats) {
+      if (seatsUp === totalSeats) cycle = 'all_out'
+      else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
+      else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
+    }
+    wards.forEach(ward => {
+      const seatsThisCycle = cycle === 'all_out' ? Math.max(ward.vacancies || 0, 1) : 1
+      map.set(ward.wardCode, seatsThisCycle)
+    })
     return map
-  }, [baseline, selectedLad])
+  }, [baseline, selectedLad, councilSeats])
 
   const wardVacanciesByName = useMemo(() => {
     if (!baseline || !selectedLad) return new Map<string, number>()
     const map = new Map<string, number>()
-    baseline.wards
-      .filter(ward => ward.ladCode === selectedLad)
-      .forEach(ward => {
-        map.set(
-          `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`,
-          Math.max(ward.vacancies || 0, 1)
+    const wards = baseline.wards.filter(ward => ward.ladCode === selectedLad)
+    const councilName = wards[0]?.ladName || null
+    const seatRow = councilName
+      ? councilSeats?.councils?.find(
+          row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
         )
-      })
+      : null
+    const seatsUp = seatRow?.seatsUp || 0
+    const totalSeats = seatRow?.totalSeats || 0
+    let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
+    if (seatsUp && totalSeats) {
+      if (seatsUp === totalSeats) cycle = 'all_out'
+      else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
+      else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
+    }
+    wards.forEach(ward => {
+      const seatsThisCycle = cycle === 'all_out' ? Math.max(ward.vacancies || 0, 1) : 1
+      map.set(`${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`, seatsThisCycle)
+    })
     return map
-  }, [baseline, selectedLad])
+  }, [baseline, selectedLad, councilSeats])
 
   const eligibleLads = useMemo(() => {
     if (!ladGeo) return new Set<string>()
