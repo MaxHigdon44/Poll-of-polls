@@ -169,6 +169,10 @@ const LEAVE_LAD_FILE = 'leave_lad.csv'
 const AGE_WARD_FILE = 'age_ward.csv'
 const NSSEC_WARD_FILE = 'nssec_ward.csv'
 const DEGREE_WARD_FILE = 'degree_ward.csv'
+const TENURE_LSOA_FILE = 'tenure_lsoa_grouped.csv'
+const TENURE_BASELINE_FILE = 'tenure_england_wales.csv'
+const LSOA_TO_WARD_LOOKUP_FILE = 'lsoa_to_ward_2025.geojson'
+const WARD_TO_CED_LOOKUP_FILE = 'ward_to_ced_2025.geojson'
 const LAD_REGION_FILE = 'lad_region_2023.csv'
 const SEATS_UP_FILE = '2026_seats_up.xlsx'
 const WIKIPEDIA_API =
@@ -244,6 +248,51 @@ const COUNTY_ELECTIONS_2026 = new Set(
     name.toLowerCase()
   )
 )
+
+const AGE_BASELINE = {
+  age18_35: 0.29,
+  age35_55: 0.33,
+  age55_plus: 0.38,
+}
+
+const BBC_BASELINE_NATIONAL_BY_YEAR = {
+  2021: {
+    Labour: 29,
+    Conservative: 36,
+    Reform: 0,
+    'Liberal Democrat': 17,
+    Green: 10,
+    SNP: 0,
+    'Plaid Cymru': 0,
+  },
+  2022: {
+    Labour: 35,
+    Conservative: 30,
+    Reform: 0,
+    'Liberal Democrat': 19,
+    Green: 11,
+    SNP: 0,
+    'Plaid Cymru': 0,
+  },
+  2023: {
+    Labour: 35,
+    Conservative: 26,
+    Reform: 0,
+    'Liberal Democrat': 20,
+    Green: 12,
+    SNP: 0,
+    'Plaid Cymru': 0,
+  },
+  2024: {
+    Labour: 34,
+    Conservative: 25,
+    Reform: 0,
+    'Liberal Democrat': 17,
+    Green: 13,
+    SNP: 0,
+    'Plaid Cymru': 0,
+  },
+}
 
 function normalize(value) {
   return String(value || '')
@@ -387,6 +436,23 @@ async function buildAgeShare(baseline) {
     if (entry) wardNameAggressiveEntries[key] = entry
   })
 
+  const wardToCedLookup = await buildWardToCedLookup()
+  if (wardToCedLookup) {
+    const cedEntries = buildCedEntriesFromLookup(wardToCedLookup.rows, {
+      directEntries: wardEntries,
+      keyField: 'WD25CD',
+      nameField: 'WD25NM',
+      ladNameField: 'LAD25NM',
+      cedCodeField: 'CED25CD',
+      cedNameField: 'CED25NM',
+      valueKeys: ['age18_35', 'age35_55', 'age55_plus'],
+      wardNames: wardNameEntries,
+      wardNamesOnly: wardNameOnlyEntries,
+      wardNamesAggressive: wardNameAggressiveEntries,
+    })
+    Object.assign(wardEntries, cedEntries)
+  }
+
   const ladEntries = {}
   const ladTotals = new Map()
   baseline.forEach(ward => {
@@ -450,6 +516,10 @@ async function buildNssecShare(baseline) {
   if ([wardCodeIdx, wardNameIdx, nssecCodeIdx, obsIdx].some(idx => idx === -1)) {
     return null
   }
+  const wardCodeField = headers[wardCodeIdx]
+  const wardNameField = headers[wardNameIdx]
+  const nssecCodeField = headers[nssecCodeIdx]
+  const obsField = headers[obsIdx]
 
   const wardTotals = new Map()
   const wardNameMap = new Map()
@@ -458,14 +528,14 @@ async function buildNssecShare(baseline) {
   const wardNameCounts = new Map()
 
   rows.forEach(row => {
-    const wardCode = String(row[wardCodeIdx] || '').trim()
+    const wardCode = String(row[wardCodeField] || '').trim()
     if (!wardCode) return
-    const wardNameRaw = String(row[wardNameIdx] || '').trim()
+    const wardNameRaw = String(row[wardNameField] || '').trim()
     const wardName = wardNameRaw.replace(/\s*\(([^)]+)\)\s*$/, '').trim()
     const wardLadMatch = wardNameRaw.match(/\(([^)]+)\)\s*$/)
     const wardLad = wardLadMatch ? wardLadMatch[1].trim() : null
-    const nssecCode = Number(row[nssecCodeIdx])
-    const obs = Number(row[obsIdx])
+    const nssecCode = Number(row[nssecCodeField])
+    const obs = Number(row[obsField])
     if (!Number.isFinite(nssecCode) || !Number.isFinite(obs)) return
 
     if (nssecCode === -8 || nssecCode === 9) return
@@ -533,6 +603,23 @@ async function buildNssecShare(baseline) {
     const entry = wardEntries[code]
     if (entry) wardNameAggressiveEntries[key] = entry
   })
+
+  const wardToCedLookup = await buildWardToCedLookup()
+  if (wardToCedLookup) {
+    const cedEntries = buildCedEntriesFromLookup(wardToCedLookup.rows, {
+      directEntries: wardEntries,
+      keyField: 'WD25CD',
+      nameField: 'WD25NM',
+      ladNameField: 'LAD25NM',
+      cedCodeField: 'CED25CD',
+      cedNameField: 'CED25NM',
+      valueKeys: ['higher', 'intermediate', 'lower'],
+      wardNames: wardNameEntries,
+      wardNamesOnly: wardNameOnlyEntries,
+      wardNamesAggressive: wardNameAggressiveEntries,
+    })
+    Object.assign(wardEntries, cedEntries)
+  }
 
   const ladEntries = {}
   const ladTotals = new Map()
@@ -615,6 +702,10 @@ async function buildDegreeShare(baseline) {
   if ([wardCodeIdx, wardNameIdx, levelCodeIdx, obsIdx].some(idx => idx === -1)) {
     return null
   }
+  const wardCodeField = headers[wardCodeIdx]
+  const wardNameField = headers[wardNameIdx]
+  const levelCodeField = headers[levelCodeIdx]
+  const obsField = headers[obsIdx]
 
   const wardTotals = new Map()
   const wardNameMap = new Map()
@@ -623,14 +714,14 @@ async function buildDegreeShare(baseline) {
   const wardNameCounts = new Map()
 
   rows.forEach(row => {
-    const wardCode = String(row[wardCodeIdx] || '').trim()
+    const wardCode = String(row[wardCodeField] || '').trim()
     if (!wardCode) return
-    const wardNameRaw = String(row[wardNameIdx] || '').trim()
+    const wardNameRaw = String(row[wardNameField] || '').trim()
     const wardName = wardNameRaw.replace(/\s*\(([^)]+)\)\s*$/, '').trim()
     const wardLadMatch = wardNameRaw.match(/\(([^)]+)\)\s*$/)
     const wardLad = wardLadMatch ? wardLadMatch[1].trim() : null
-    const levelCode = Number(row[levelCodeIdx])
-    const obs = Number(row[obsIdx])
+    const levelCode = Number(row[levelCodeField])
+    const obs = Number(row[obsField])
     if (!Number.isFinite(levelCode) || !Number.isFinite(obs)) return
 
     if (levelCode === -8 || levelCode === 6) return
@@ -691,6 +782,23 @@ async function buildDegreeShare(baseline) {
     if (entry) wardNameAggressiveEntries[key] = entry
   })
 
+  const wardToCedLookup = await buildWardToCedLookup()
+  if (wardToCedLookup) {
+    const cedEntries = buildCedEntriesFromLookup(wardToCedLookup.rows, {
+      directEntries: wardEntries,
+      keyField: 'WD25CD',
+      nameField: 'WD25NM',
+      ladNameField: 'LAD25NM',
+      cedCodeField: 'CED25CD',
+      cedNameField: 'CED25NM',
+      valueKeys: ['degree', 'noDegree'],
+      wardNames: wardNameEntries,
+      wardNamesOnly: wardNameOnlyEntries,
+      wardNamesAggressive: wardNameAggressiveEntries,
+    })
+    Object.assign(wardEntries, cedEntries)
+  }
+
   const ladEntries = {}
   const ladTotals = new Map()
   baseline.forEach(ward => {
@@ -728,6 +836,276 @@ async function buildDegreeShare(baseline) {
         noDegree: totalNoDegree / totalPop,
       }
     : { degree: 0.4, noDegree: 0.6 }
+
+  return {
+    wards: wardEntries,
+    wardNames: wardNameEntries,
+    wardNamesOnly: wardNameOnlyEntries,
+    wardNamesAggressive: wardNameAggressiveEntries,
+    lads: ladEntries,
+    meta: { baseline: baselineShares },
+  }
+}
+
+function getTenureBucket(category) {
+  const normalized = String(category || '').trim()
+  if (!normalized || normalized === 'Does not apply') return null
+  if (normalized === 'Owned: Owns outright') return 'ownedOutright'
+  if (
+    normalized === 'Owned: Owns with a mortgage or loan' ||
+    normalized === 'Shared ownership: Shared ownership'
+  ) {
+    return 'ownsWithMortgage'
+  }
+  if (
+    normalized === 'Social rented: Rents from council or Local Authority' ||
+    normalized === 'Social rented: Other social rented'
+  ) {
+    return 'socialRented'
+  }
+  if (
+    normalized === 'Private rented: Private landlord or letting agency' ||
+    normalized === 'Private rented: Other private rented' ||
+    normalized === 'Lives rent free'
+  ) {
+    return 'privateRented'
+  }
+  return null
+}
+
+async function buildTenureShare(baseline) {
+  const csvPath = path.join(RAW_DIR, TENURE_LSOA_FILE)
+  if (!fs.existsSync(csvPath)) return null
+
+  const { headers, rows } = await loadCsv(csvPath)
+  if (!headers || !rows) return null
+
+  const lsoaCodeField =
+    headers.find(header => String(header || '').trim() === 'LSOA21CD') || headers[0]
+  const lsoaNameField =
+    headers.find(header => String(header || '').trim() === 'LSOA21NM') || headers[1]
+  const ownedOutrightField = headers.find(
+    header => String(header || '').trim() === 'Owned outright'
+  )
+  const ownsWithMortgageField = headers.find(
+    header => String(header || '').trim() === 'Owns with mortgage'
+  )
+  const socialRentedField = headers.find(
+    header => String(header || '').trim() === 'Social rented'
+  )
+  const privateRentedField = headers.find(
+    header => String(header || '').trim() === 'Private rented'
+  )
+  const totalField = headers.find(header => String(header || '').trim() === 'Total households')
+  if (
+    !ownedOutrightField ||
+    !ownsWithMortgageField ||
+    !socialRentedField ||
+    !privateRentedField ||
+    !totalField
+  ) {
+    return null
+  }
+
+  const lsoaEntries = {}
+  rows.forEach(row => {
+    const lsoaCode = String(row[lsoaCodeField] || '').trim()
+    if (!lsoaCode) return
+    const totalPop = Number(row[totalField])
+    if (!Number.isFinite(totalPop) || totalPop <= 0) return
+    lsoaEntries[lsoaCode] = {
+      lsoaCode,
+      lsoaName: String(row[lsoaNameField] || '').trim(),
+      ownedOutright: Number(row[ownedOutrightField] || 0) / totalPop,
+      ownsWithMortgage: Number(row[ownsWithMortgageField] || 0) / totalPop,
+      socialRented: Number(row[socialRentedField] || 0) / totalPop,
+      privateRented: Number(row[privateRentedField] || 0) / totalPop,
+      totalPop,
+    }
+  })
+
+  const lsoaToWardLookup = await buildLsoaToWardLookup()
+  if (!lsoaToWardLookup) return null
+
+  const wardTotals = new Map()
+  const wardNameMap = new Map()
+  const wardNameOnlyMap = new Map()
+  const wardNameAggressiveMap = new Map()
+  const wardNameCounts = new Map()
+  ;(lsoaToWardLookup.rows || []).forEach(row => {
+    const lsoaCode = String(row.LSOA21CD || '').trim()
+    const wardCode = String(row.WD25CD || '').trim()
+    const wardName = String(row.WD25NM || '').trim()
+    const ladName = String(row.LAD25NM || '').trim()
+    if (!lsoaCode || !wardCode || !wardName) return
+    const entry = lsoaEntries[lsoaCode]
+    if (!entry?.totalPop) return
+
+    const totals = wardTotals.get(wardCode) || {
+      wardName,
+      totalPop: 0,
+      ownedOutright: 0,
+      ownsWithMortgage: 0,
+      socialRented: 0,
+      privateRented: 0,
+    }
+    totals.totalPop += entry.totalPop
+    totals.ownedOutright += entry.ownedOutright * entry.totalPop
+    totals.ownsWithMortgage += entry.ownsWithMortgage * entry.totalPop
+    totals.socialRented += entry.socialRented * entry.totalPop
+    totals.privateRented += entry.privateRented * entry.totalPop
+    wardTotals.set(wardCode, totals)
+
+    if (ladName) {
+      const key = `${normalize(ladName)}|${normalize(wardName)}`
+      wardNameMap.set(key, wardCode)
+    }
+    const nameKey = normalize(wardName)
+    wardNameCounts.set(nameKey, (wardNameCounts.get(nameKey) || 0) + 1)
+    if (!wardNameOnlyMap.has(nameKey)) wardNameOnlyMap.set(nameKey, wardCode)
+    if (!wardNameAggressiveMap.has(nameKey)) wardNameAggressiveMap.set(nameKey, wardCode)
+  })
+
+  const wardEntries = {}
+  wardTotals.forEach((value, code) => {
+    if (!value.totalPop) return
+    wardEntries[code] = {
+      wardCode: code,
+      wardName: value.wardName,
+      ownedOutright: value.ownedOutright / value.totalPop,
+      ownsWithMortgage: value.ownsWithMortgage / value.totalPop,
+      socialRented: value.socialRented / value.totalPop,
+      privateRented: value.privateRented / value.totalPop,
+      totalPop: value.totalPop,
+    }
+  })
+
+  const wardNameEntries = {}
+  wardNameMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameEntries[key] = entry
+  })
+  const wardNameOnlyEntries = {}
+  wardNameOnlyMap.forEach((code, key) => {
+    if (wardNameCounts.get(key) !== 1) return
+    const entry = wardEntries[code]
+    if (entry) wardNameOnlyEntries[key] = entry
+  })
+  const wardNameAggressiveEntries = {}
+  wardNameAggressiveMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameAggressiveEntries[key] = entry
+  })
+
+  const wardToCedLookup = await buildWardToCedLookup()
+  if (wardToCedLookup) {
+    const cedEntries = buildCedEntriesFromLookup(wardToCedLookup.rows, {
+      directEntries: wardEntries,
+      keyField: 'WD25CD',
+      nameField: 'WD25NM',
+      ladNameField: 'LAD25NM',
+      cedCodeField: 'CED25CD',
+      cedNameField: 'CED25NM',
+      valueKeys: ['ownedOutright', 'ownsWithMortgage', 'socialRented', 'privateRented'],
+      wardNames: wardNameEntries,
+      wardNamesOnly: wardNameOnlyEntries,
+      wardNamesAggressive: wardNameAggressiveEntries,
+    })
+    Object.assign(wardEntries, cedEntries)
+  }
+
+  const ladEntries = {}
+  const ladTotals = new Map()
+  baseline.forEach(ward => {
+    const tenure = wardEntries[ward.wardCode]
+    if (!tenure?.totalPop) return
+    const entry = ladTotals.get(ward.ladCode) || {
+      totalPop: 0,
+      ownedOutright: 0,
+      ownsWithMortgage: 0,
+      socialRented: 0,
+      privateRented: 0,
+    }
+    entry.totalPop += tenure.totalPop
+    entry.ownedOutright += tenure.ownedOutright * tenure.totalPop
+    entry.ownsWithMortgage += tenure.ownsWithMortgage * tenure.totalPop
+    entry.socialRented += tenure.socialRented * tenure.totalPop
+    entry.privateRented += tenure.privateRented * tenure.totalPop
+    ladTotals.set(ward.ladCode, entry)
+  })
+  ladTotals.forEach((value, code) => {
+    if (!value.totalPop) return
+    ladEntries[code] = {
+      ownedOutright: value.ownedOutright / value.totalPop,
+      ownsWithMortgage: value.ownsWithMortgage / value.totalPop,
+      socialRented: value.socialRented / value.totalPop,
+      privateRented: value.privateRented / value.totalPop,
+    }
+  })
+
+  let baselineShares = null
+  const baselinePath = path.join(RAW_DIR, TENURE_BASELINE_FILE)
+  if (fs.existsSync(baselinePath)) {
+    const { headers: baselineHeaders, rows: baselineRows } = await loadCsv(baselinePath)
+    const categoryField = baselineHeaders.find(
+      header =>
+        String(header || '').trim() === 'Tenure of household (9 categories)' ||
+        String(header || '').trim() === 'Tenure of household (4 buckets)'
+    )
+    const observationField = baselineHeaders.find(
+      header => String(header || '').trim() === 'Observation'
+    )
+    if (categoryField && observationField) {
+      const totals = {
+        ownedOutright: 0,
+        ownsWithMortgage: 0,
+        socialRented: 0,
+        privateRented: 0,
+      }
+      baselineRows.forEach(row => {
+        const bucket = getTenureBucket(row[categoryField])
+        if (!bucket) return
+        totals[bucket] += Number(row[observationField] || 0)
+      })
+      const totalPop = sumObject(totals)
+      if (totalPop) {
+        baselineShares = {
+          ownedOutright: totals.ownedOutright / totalPop,
+          ownsWithMortgage: totals.ownsWithMortgage / totalPop,
+          socialRented: totals.socialRented / totalPop,
+          privateRented: totals.privateRented / totalPop,
+        }
+      }
+    }
+  }
+
+  if (!baselineShares) {
+    let totalPop = 0
+    let ownedOutright = 0
+    let ownsWithMortgage = 0
+    let socialRented = 0
+    let privateRented = 0
+    Object.values(wardEntries).forEach(entry => {
+      totalPop += entry.totalPop
+      ownedOutright += entry.ownedOutright * entry.totalPop
+      ownsWithMortgage += entry.ownsWithMortgage * entry.totalPop
+      socialRented += entry.socialRented * entry.totalPop
+      privateRented += entry.privateRented * entry.totalPop
+    })
+    baselineShares = totalPop
+      ? {
+          ownedOutright: ownedOutright / totalPop,
+          ownsWithMortgage: ownsWithMortgage / totalPop,
+          socialRented: socialRented / totalPop,
+          privateRented: privateRented / totalPop,
+        }
+      : {
+          ownedOutright: 0.3,
+          ownsWithMortgage: 0.3,
+          socialRented: 0.2,
+          privateRented: 0.2,
+        }
+  }
 
   return {
     wards: wardEntries,
@@ -941,6 +1319,92 @@ async function buildLadToCountyLookup() {
   })
   mapping.names = countyNames
   return mapping
+}
+
+let wardToCedLookupPromise = null
+let lsoaToWardLookupPromise = null
+
+async function buildWardToCedLookup() {
+  if (wardToCedLookupPromise) return wardToCedLookupPromise
+  wardToCedLookupPromise = (async () => {
+    const filePath = path.join(RAW_DIR, WARD_TO_CED_LOOKUP_FILE)
+    if (!fs.existsSync(filePath)) return null
+    const data = JSON.parse(await fsp.readFile(filePath, 'utf8'))
+    const rows = (data.features || []).map(feature => feature.properties || {}).filter(Boolean)
+    return { rows }
+  })()
+  return wardToCedLookupPromise
+}
+
+async function buildLsoaToWardLookup() {
+  if (lsoaToWardLookupPromise) return lsoaToWardLookupPromise
+  lsoaToWardLookupPromise = (async () => {
+    const filePath = path.join(RAW_DIR, LSOA_TO_WARD_LOOKUP_FILE)
+    if (!fs.existsSync(filePath)) return null
+    const data = JSON.parse(await fsp.readFile(filePath, 'utf8'))
+    const rows = (data.features || []).map(feature => feature.properties || {}).filter(Boolean)
+    return { rows }
+  })()
+  return lsoaToWardLookupPromise
+}
+
+function buildCedEntriesFromLookup(
+  rows,
+  {
+    directEntries,
+    keyField,
+    nameField,
+    ladNameField,
+    cedCodeField,
+    cedNameField,
+    valueKeys,
+    wardNames,
+    wardNamesOnly,
+    wardNamesAggressive,
+  }
+) {
+  const cedTotals = new Map()
+  ;(rows || []).forEach(row => {
+    const wardCode = String(row[keyField] || '').trim()
+    const wardName = String(row[nameField] || '').trim()
+    const ladName = String(row[ladNameField] || '').trim()
+    const cedCode = String(row[cedCodeField] || '').trim()
+    const cedName = String(row[cedNameField] || '').trim()
+    if (!wardCode || !wardName || !cedCode || !cedName) return
+
+    const nameOnlyKey = normalize(wardName)
+    const nameKey = ladName ? `${normalize(ladName)}|${nameOnlyKey}` : null
+    const entry =
+      directEntries?.[wardCode] ||
+      (nameKey ? wardNames?.[nameKey] : null) ||
+      wardNamesOnly?.[nameOnlyKey] ||
+      wardNamesAggressive?.[nameOnlyKey] ||
+      null
+    if (!entry?.totalPop) return
+
+    const totals = cedTotals.get(cedCode) || { wardName: cedName, totalPop: 0 }
+    totals.totalPop += entry.totalPop
+    valueKeys.forEach(key => {
+      totals[key] = (totals[key] || 0) + (entry[key] || 0) * entry.totalPop
+    })
+    cedTotals.set(cedCode, totals)
+  })
+
+  const cedEntries = {}
+  cedTotals.forEach((entry, cedCode) => {
+    if (!entry.totalPop) return
+    const next = {
+      wardCode: cedCode,
+      wardName: entry.wardName,
+      totalPop: entry.totalPop,
+    }
+    valueKeys.forEach(key => {
+      next[key] = (entry[key] || 0) / entry.totalPop
+    })
+    cedEntries[cedCode] = next
+  })
+
+  return cedEntries
 }
 
 async function buildCouncilSeatsLookup() {
@@ -1210,6 +1674,8 @@ function parseLeaveShareCsv(rows, type, nameFieldCandidates = []) {
     const code = row[codeField]
     if (!code) return
     const raw = row[leaveField]
+    const rawText = String(raw ?? '').trim()
+    if (!rawText) return
     const value = Number(String(raw || '').replace(/[^0-9.]/g, ''))
     if (!Number.isFinite(value)) return
     const share = value > 1 ? value / 100 : value
@@ -1228,14 +1694,147 @@ function parseLeaveShareCsv(rows, type, nameFieldCandidates = []) {
   return map
 }
 
+function getOuterRings(geometry) {
+  if (!geometry) return []
+  if (geometry.type === 'Polygon') return Array.isArray(geometry.coordinates) ? [geometry.coordinates[0]] : []
+  if (geometry.type === 'MultiPolygon') {
+    return Array.isArray(geometry.coordinates) ? geometry.coordinates.map(polygon => polygon[0]).filter(Boolean) : []
+  }
+  return []
+}
+
+function getBBox(geometry) {
+  const outerRings = getOuterRings(geometry)
+  let minX = Infinity
+  let minY = Infinity
+  let maxX = -Infinity
+  let maxY = -Infinity
+  outerRings.forEach(ring => {
+    ring.forEach(([x, y]) => {
+      if (x < minX) minX = x
+      if (y < minY) minY = y
+      if (x > maxX) maxX = x
+      if (y > maxY) maxY = y
+    })
+  })
+  return { minX, minY, maxX, maxY }
+}
+
+function bboxesOverlap(a, b) {
+  return a.minX <= b.maxX && a.maxX >= b.minX && a.minY <= b.maxY && a.maxY >= b.minY
+}
+
+function pointInBBox(point, bbox) {
+  return (
+    point[0] >= bbox.minX &&
+    point[0] <= bbox.maxX &&
+    point[1] >= bbox.minY &&
+    point[1] <= bbox.maxY
+  )
+}
+
+function pointOnSegment(point, start, end) {
+  const [px, py] = point
+  const [x1, y1] = start
+  const [x2, y2] = end
+  const cross = (px - x1) * (y2 - y1) - (py - y1) * (x2 - x1)
+  if (Math.abs(cross) > 1e-12) return false
+  const dot = (px - x1) * (px - x2) + (py - y1) * (py - y2)
+  return dot <= 1e-12
+}
+
+function pointInRing(point, ring) {
+  if (!Array.isArray(ring) || ring.length < 3) return false
+  let inside = false
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i += 1) {
+    const current = ring[i]
+    const previous = ring[j]
+    if (pointOnSegment(point, previous, current)) return true
+    const xi = current[0]
+    const yi = current[1]
+    const xj = previous[0]
+    const yj = previous[1]
+    const intersects =
+      yi > point[1] !== yj > point[1] &&
+      point[0] < ((xj - xi) * (point[1] - yi)) / (yj - yi || Number.EPSILON) + xi
+    if (intersects) inside = !inside
+  }
+  return inside
+}
+
+function pointInGeometry(point, geometry) {
+  if (!geometry) return false
+  const polygons =
+    geometry.type === 'Polygon'
+      ? [geometry.coordinates]
+      : geometry.type === 'MultiPolygon'
+        ? geometry.coordinates
+        : []
+  return polygons.some(polygon => {
+    if (!Array.isArray(polygon) || !polygon.length || !pointInRing(point, polygon[0])) return false
+    for (let i = 1; i < polygon.length; i += 1) {
+      if (pointInRing(point, polygon[i])) return false
+    }
+    return true
+  })
+}
+
+function ringArea(ring) {
+  if (!Array.isArray(ring) || ring.length < 3) return 0
+  let area = 0
+  for (let i = 0; i < ring.length - 1; i += 1) {
+    const [x1, y1] = ring[i]
+    const [x2, y2] = ring[i + 1]
+    area += x1 * y2 - x2 * y1
+  }
+  return area / 2
+}
+
+function ringCentroid(ring) {
+  if (!Array.isArray(ring) || ring.length < 3) return ring?.[0] || [0, 0]
+  let cx = 0
+  let cy = 0
+  let areaFactor = 0
+  for (let i = 0; i < ring.length - 1; i += 1) {
+    const [x1, y1] = ring[i]
+    const [x2, y2] = ring[i + 1]
+    const cross = x1 * y2 - x2 * y1
+    areaFactor += cross
+    cx += (x1 + x2) * cross
+    cy += (y1 + y2) * cross
+  }
+  if (Math.abs(areaFactor) < 1e-12) return ring[0] || [0, 0]
+  return [cx / (3 * areaFactor), cy / (3 * areaFactor)]
+}
+
+function getRepresentativePoint(feature) {
+  const outerRings = getOuterRings(feature.geometry)
+  if (!outerRings.length) return null
+  let largestRing = outerRings[0]
+  let largestArea = Math.abs(ringArea(largestRing))
+  for (let i = 1; i < outerRings.length; i += 1) {
+    const area = Math.abs(ringArea(outerRings[i]))
+    if (area > largestArea) {
+      largestArea = area
+      largestRing = outerRings[i]
+    }
+  }
+  const centroid = ringCentroid(largestRing)
+  if (pointInGeometry(centroid, feature.geometry)) return centroid
+  const bbox = getBBox(feature.geometry)
+  const bboxCenter = [(bbox.minX + bbox.maxX) / 2, (bbox.minY + bbox.maxY) / 2]
+  if (pointInGeometry(bboxCenter, feature.geometry)) return bboxCenter
+  return largestRing[0] || null
+}
+
 function loadLeaveWardXlsx(filePath) {
   const workbook = xlsx.readFile(filePath, { cellDates: false })
-  const sheet = workbook.Sheets[workbook.SheetNames[0]]
+  const sheet = workbook.Sheets['Data'] || workbook.Sheets[workbook.SheetNames[0]]
   const rows = xlsx.utils.sheet_to_json(sheet, { defval: null })
   return { rows }
 }
 
-async function buildLeaveShare(wardGeoCodes) {
+async function buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCounty) {
   const wardPath = path.join(RAW_DIR, LEAVE_WARD_FILE)
   const wardXlsxPath = path.join(RAW_DIR, LEAVE_WARD_XLSX)
   const ladPath = path.join(RAW_DIR, LEAVE_LAD_FILE)
@@ -1249,6 +1848,27 @@ async function buildLeaveShare(wardGeoCodes) {
   const ladCsv = await loadCsv(ladPath)
   const wardMap = parseLeaveShareCsv(wardCsv.rows, 'ward', ['WardName', 'ward_name'])
   const ladMap = parseLeaveShareCsv(ladCsv.rows, 'lad')
+  const ladNameToCode = new Map()
+  ;(ladCsv.rows || []).forEach(row => {
+    const code = row.LAD24CD || row.LAD23CD || row.LAD22CD || row.LAD21CD || row.Area_Code || row.AREA_CODE
+    const name = row.LAD24NM || row.LAD23NM || row.LAD22NM || row.LAD21NM || row.Area || row.AREA_NAME || row.Area_Name
+    if (!code || !name) return
+    ladNameToCode.set(normalize(name), String(code))
+  })
+  const wardNameToOldLadCode = new Map()
+  ;(wardCsv.rows || []).forEach(row => {
+    const wardName = row.WardName || row.ward_name
+    const countingArea = row.CountingArea || row.counting_area
+    if (!wardName || !countingArea) return
+    const oldLadCode = ladNameToCode.get(normalize(countingArea))
+    if (!oldLadCode) return
+    const key = String(wardName)
+      .toLowerCase()
+      .replace(/&/g, 'and')
+      .replace(/\s+/g, ' ')
+      .trim()
+    if (!wardNameToOldLadCode.has(key)) wardNameToOldLadCode.set(key, oldLadCode)
+  })
 
   const wardEntries = {}
   wardMap.forEach((leaveShare, code) => {
@@ -1266,6 +1886,156 @@ async function buildLeaveShare(wardGeoCodes) {
     ladEntries[code] = { leaveShare }
   })
 
+  let cedDerived = 0
+  let cedDistrictFallback = 0
+  if (wardGeo?.features?.length && cedGeo?.features?.length && ladGeo?.features?.length) {
+    const wardFeaturesByCounty = new Map()
+    wardGeo.features.forEach(feature => {
+      const props = feature.properties || {}
+      const wardCode = props.reference || props.WD25CD || props.WD23CD
+      const wardName = props.name || props.WD25NM || props.WD23NM
+      const ladCode = props.ladCode || props.LAD23CD || props.LAD24CD
+      const countyCode = ladToCounty?.get(ladCode)
+      if (!wardCode || !wardName || !ladCode || !countyCode) return
+      const share =
+        wardMap.get(String(wardCode)) ??
+        wardMap.nameMap?.get(
+          String(wardName)
+            .toLowerCase()
+            .replace(/&/g, 'and')
+            .replace(/\s+/g, ' ')
+            .trim()
+        ) ??
+        null
+      const oldLadCode =
+        wardNameToOldLadCode.get(
+          String(wardName)
+            .toLowerCase()
+            .replace(/&/g, 'and')
+            .replace(/\s+/g, ' ')
+            .trim()
+        ) || null
+      const entry = {
+        code: String(wardCode),
+        ladCode: String(ladCode),
+        districtCode: oldLadCode || String(ladCode),
+        share,
+        bbox: getBBox(feature.geometry),
+        geometry: feature.geometry,
+      }
+      const list = wardFeaturesByCounty.get(countyCode) || []
+      list.push(entry)
+      wardFeaturesByCounty.set(countyCode, list)
+    })
+
+    const districtFeaturesByCounty = new Map()
+    ladGeo.features.forEach(feature => {
+      const props = feature.properties || {}
+      const ladCode = props.reference || props.LAD23CD || props.LAD24CD
+      const countyCode = ladToCounty?.get(ladCode)
+      if (!ladCode || !countyCode) return
+      const entry = {
+        ladCode: String(ladCode),
+        bbox: getBBox(feature.geometry),
+        geometry: feature.geometry,
+      }
+      const list = districtFeaturesByCounty.get(countyCode) || []
+      list.push(entry)
+      districtFeaturesByCounty.set(countyCode, list)
+    })
+
+    cedGeo.features.forEach(feature => {
+      const props = feature.properties || {}
+      const cedCode = props.reference || props.CED25CD || props.CED24CD || props.CED23CD
+      const cedName = props.name || props.CED25NM || props.CED24NM || props.CED23NM
+      const countyCode =
+        props.county ||
+        (String(props.ladCode || '').startsWith('E100') ? String(props.ladCode) : ladToCounty?.get(props.ladCode))
+      if (!cedCode || !cedName || !countyCode) return
+      const cedBBox = getBBox(feature.geometry)
+      const wardCandidates = (wardFeaturesByCounty.get(countyCode) || []).filter(candidate =>
+        bboxesOverlap(cedBBox, candidate.bbox)
+      )
+
+      let weightedShare = 0
+      let matchedSamples = 0
+      let dominantDistrict = null
+      let dominantDistrictCount = 0
+      if (wardCandidates.length) {
+        const gridSize = 18
+        const districtCounts = new Map()
+        for (let xi = 0; xi <= gridSize; xi += 1) {
+          for (let yi = 0; yi <= gridSize; yi += 1) {
+            const point = [
+              cedBBox.minX + ((cedBBox.maxX - cedBBox.minX) * xi) / gridSize,
+              cedBBox.minY + ((cedBBox.maxY - cedBBox.minY) * yi) / gridSize,
+            ]
+            if (!pointInGeometry(point, feature.geometry)) continue
+            const ward = wardCandidates.find(
+              candidate =>
+                pointInBBox(point, candidate.bbox) && pointInGeometry(point, candidate.geometry)
+            )
+            if (!ward) continue
+            districtCounts.set(ward.districtCode, (districtCounts.get(ward.districtCode) || 0) + 1)
+            if (typeof ward.share === 'number') {
+              matchedSamples += 1
+              weightedShare += ward.share
+            }
+          }
+        }
+        districtCounts.forEach((count, ladCode) => {
+          if (count > dominantDistrictCount) {
+            dominantDistrict = ladCode
+            dominantDistrictCount = count
+          }
+        })
+        if (!dominantDistrict) {
+          wardCandidates.forEach(candidate => {
+            districtCounts.set(
+              candidate.districtCode,
+              (districtCounts.get(candidate.districtCode) || 0) + 1
+            )
+          })
+          districtCounts.forEach((count, ladCode) => {
+            if (count > dominantDistrictCount) {
+              dominantDistrict = ladCode
+              dominantDistrictCount = count
+            }
+          })
+        }
+      }
+
+      if (matchedSamples > 0) {
+        wardEntries[cedCode] = { leaveShare: weightedShare / matchedSamples }
+        wardNameEntries[cedName.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ').trim()] = {
+          leaveShare: weightedShare / matchedSamples,
+        }
+        cedDerived += 1
+        return
+      }
+
+      const representativePoint = getRepresentativePoint(feature)
+      if (!dominantDistrict && representativePoint) {
+        const district = (districtFeaturesByCounty.get(countyCode) || []).find(
+          candidate =>
+            pointInBBox(representativePoint, candidate.bbox) &&
+            pointInGeometry(representativePoint, candidate.geometry)
+        )
+        if (district) dominantDistrict = district.ladCode
+      }
+
+      const districtLeaveShare =
+        (dominantDistrict && ladMap.get(String(dominantDistrict))) || null
+      if (typeof districtLeaveShare === 'number') {
+        wardEntries[cedCode] = { leaveShare: districtLeaveShare }
+        wardNameEntries[cedName.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ').trim()] = {
+          leaveShare: districtLeaveShare,
+        }
+        cedDistrictFallback += 1
+      }
+    })
+  }
+
   const coverage = wardGeoCodes && wardGeoCodes.size
     ? wardMap.size / wardGeoCodes.size
     : null
@@ -1278,6 +2048,8 @@ async function buildLeaveShare(wardGeoCodes) {
       wardCoverage: coverage,
       wards: wardMap.size,
       lads: ladMap.size,
+      cedsFromWards: cedDerived,
+      cedsFromDistrictFallback: cedDistrictFallback,
     },
   }
 }
@@ -2491,6 +3263,7 @@ async function buildBaseline() {
   const output = {
     generatedAt: new Date().toISOString(),
     baselineNational,
+    baselineNationalByYear: BBC_BASELINE_NATIONAL_BY_YEAR,
     wards: baseline,
   }
 
@@ -2508,7 +3281,7 @@ async function buildBaseline() {
     JSON.stringify({ generatedAt: new Date().toISOString(), councils: councilPrevious })
   )
 
-  const leaveShare = await buildLeaveShare(wardGeoCodes)
+  const leaveShare = await buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCounty)
   if (leaveShare) {
     await fsp.writeFile(
       path.join(OUT_DIR, 'leave-share.json'),
@@ -2677,6 +3450,14 @@ async function buildBaseline() {
     )
   }
 
+  const tenureShare = await buildTenureShare(baseline)
+  if (tenureShare) {
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'tenure-share.json'),
+      JSON.stringify(tenureShare)
+    )
+  }
+
   const ladRegion = await buildLadRegionMap(baseline)
   if (ladRegion) {
     await fsp.writeFile(
@@ -2765,7 +3546,11 @@ async function buildBaseline() {
 
   await fsp.writeFile(
     path.join(OUT_DIR, 'baseline-national.json'),
-    JSON.stringify({ baselineNational, totalBaselineVotes })
+    JSON.stringify({
+      baselineNational,
+      baselineNationalByYear: BBC_BASELINE_NATIONAL_BY_YEAR,
+      totalBaselineVotes,
+    })
   )
 
   const audit = {

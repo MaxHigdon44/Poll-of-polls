@@ -23,16 +23,32 @@ import {
   type DegreeShare,
 } from '@/lib/local2026/degree'
 import {
+  TENURE_EFFECT_STRENGTH,
+  getTenureAdjustment,
+  type TenureBaseline,
+  type TenureShare,
+} from '@/lib/local2026/tenure'
+import {
   GE_WEIGHT_GREEN,
   GE_WEIGHT_MAJOR,
   GE_WEIGHT_REFORM,
   blendShare,
   getGeWeightForParty,
+  getRelativeGeShare,
 } from '@/lib/local2026/ge'
 
 const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
 const WARDS_GEO_URL =
   'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/627ae9540e3a4e199f4594a727b35724/geojson?layers=0'
+
+const COUNTY_REGION_LOOKUP: Record<string, string> = {
+  E10000011: 'South East',
+  E10000012: 'East of England',
+  E10000014: 'South East',
+  E10000020: 'East of England',
+  E10000029: 'East of England',
+  E10000032: 'South East',
+}
 
 type GeoFeature = {
   type: 'Feature'
@@ -60,6 +76,7 @@ type WardBaseline = {
 type BaselineData = {
   generatedAt: string
   baselineNational: Record<string, number>
+  baselineNationalByYear?: Record<string, Record<string, number>>
   wards: WardBaseline[]
 }
 
@@ -141,9 +158,23 @@ type DegreeLookup = {
   meta?: { baseline?: DegreeBaseline }
 }
 
+type TenureLookup = {
+  wards?: Record<string, TenureShare & { totalPop?: number; wardName?: string }>
+  wardNames?: Record<string, TenureShare & { totalPop?: number; wardName?: string }>
+  wardNamesOnly?: Record<string, TenureShare & { totalPop?: number; wardName?: string }>
+  wardNamesAggressive?: Record<string, TenureShare & { totalPop?: number; wardName?: string }>
+  lads?: Record<string, TenureShare>
+  meta?: { baseline?: TenureBaseline }
+}
+
 type WardToPconLookup = {
   wards?: Record<string, string>
   wardNames?: Record<string, string>
+}
+
+type CedToPconLookup = {
+  ceds?: Record<string, string>
+  cedNames?: Record<string, string>
 }
 
 type GePconLookup = {
@@ -482,11 +513,14 @@ function computeWardProjection(
   nssecBaseline: NssecBaseline,
   degreeShare: DegreeShare,
   degreeBaseline: DegreeBaseline,
+  tenureShare: TenureShare,
+  tenureBaseline: TenureBaseline,
   leaveStrength: number,
   ageStrength: number,
   regionStrength: number,
   nssecStrength: number,
-  degreeStrength: number
+  degreeStrength: number,
+  tenureStrength: number
 ) {
   const nationalParties = [
     'Labour',
@@ -519,6 +553,7 @@ function computeWardProjection(
     const regionAdj = getRegionAdjustment(party, regionName)
     const nssecAdj = getNssecAdjustment(party, nssecShare, nssecBaseline)
     const degreeAdj = getDegreeAdjustment(party, degreeShare, degreeBaseline)
+    const tenureAdj = getTenureAdjustment(party, tenureShare, tenureBaseline)
     const value = Math.max(
       0,
       base +
@@ -527,7 +562,8 @@ function computeWardProjection(
         ageStrength * ageAdj +
         regionStrength * regionAdj +
         nssecStrength * nssecAdj +
-        degreeStrength * degreeAdj
+        degreeStrength * degreeAdj +
+        tenureStrength * tenureAdj
     )
     adjustedNational[party] = value
     sumNational += value
@@ -593,6 +629,25 @@ function computeWardProjection(
   })
 
   return { shares: combined, winner }
+}
+
+function getBaselineNationalForYear(
+  baseline: BaselineData,
+  year: number | null | undefined
+): Record<string, number> {
+  const key = year ? String(year) : ''
+  const byYear = key ? baseline.baselineNationalByYear?.[key] : null
+  if (!byYear) return baseline.baselineNational
+  return {
+    Labour: byYear.Labour ?? baseline.baselineNational.Labour ?? 0,
+    Conservative: byYear.Conservative ?? baseline.baselineNational.Conservative ?? 0,
+    Reform: byYear.Reform ?? baseline.baselineNational.Reform ?? 0,
+    'Liberal Democrat':
+      byYear['Liberal Democrat'] ?? baseline.baselineNational['Liberal Democrat'] ?? 0,
+    Green: byYear.Green ?? baseline.baselineNational.Green ?? 0,
+    SNP: byYear.SNP ?? baseline.baselineNational.SNP ?? 0,
+    'Plaid Cymru': byYear['Plaid Cymru'] ?? baseline.baselineNational['Plaid Cymru'] ?? 0,
+  }
 }
 
 function sumShares(shares: Record<string, number>) {
@@ -695,6 +750,33 @@ function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, numb
   return Object.fromEntries(floored.map(entry => [entry.party, entry.seats]))
 }
 
+function getSeatsPerWardForPopup(
+  wards: WardBaseline[],
+  seatRow: CouncilSeatRow | null | undefined,
+  ward: WardBaseline
+) {
+  const seatsUp = seatRow?.seatsUp || 0
+  const totalSeats = seatRow?.totalSeats || 0
+  let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
+  if (seatsUp && totalSeats) {
+    if (seatsUp === totalSeats) cycle = 'all_out'
+    else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
+    else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
+  }
+  if (cycle !== 'all_out') return 1
+
+  const vacancySum = wards.reduce((acc, entry) => acc + Math.max(entry.vacancies || 0, 1), 0)
+  if (vacancySum === totalSeats) {
+    return Math.max(ward.vacancies || 0, 1)
+  }
+
+  if (wards.length && totalSeats % wards.length === 0) {
+    return Math.max(1, Math.round(totalSeats / wards.length))
+  }
+
+  return Math.max(ward.vacancies || 0, 1)
+}
+
 export default function Local2026Page() {
   const router = useRouter()
   const [wardGeo, setWardGeo] = useState<GeoCollection | null>(null)
@@ -708,7 +790,9 @@ export default function Local2026Page() {
   const [regionLookup, setRegionLookup] = useState<RegionLookup | null>(null)
   const [nssecLookup, setNssecLookup] = useState<NssecLookup | null>(null)
   const [degreeLookup, setDegreeLookup] = useState<DegreeLookup | null>(null)
+  const [tenureLookup, setTenureLookup] = useState<TenureLookup | null>(null)
   const [wardToPcon, setWardToPcon] = useState<WardToPconLookup | null>(null)
+  const [cedToPcon, setCedToPcon] = useState<CedToPconLookup | null>(null)
   const [geLookup, setGeLookup] = useState<GePconLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
@@ -718,6 +802,7 @@ export default function Local2026Page() {
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
   const [nssecStrength, setNssecStrength] = useState(NSSEC_EFFECT_STRENGTH)
   const [degreeStrength, setDegreeStrength] = useState(DEGREE_EFFECT_STRENGTH)
+  const [tenureStrength, setTenureStrength] = useState(TENURE_EFFECT_STRENGTH)
   const [geReformWeight, setGeReformWeight] = useState(GE_WEIGHT_REFORM)
   const [geGreenWeight, setGeGreenWeight] = useState(GE_WEIGHT_GREEN)
   const [geMajorWeight, setGeMajorWeight] = useState(GE_WEIGHT_MAJOR)
@@ -767,11 +852,20 @@ export default function Local2026Page() {
       .then(res => res.json())
       .then(setDegreeLookup)
       .catch(() => setDegreeLookup(null))
+    fetch('/data/tenure-share.json')
+      .then(res => res.json())
+      .then(setTenureLookup)
+      .catch(() => setTenureLookup(null))
 
     fetch('/data/ward-to-pcon.json')
       .then(res => res.json())
       .then(setWardToPcon)
       .catch(() => setWardToPcon(null))
+
+    fetch('/data/ced-to-pcon.json')
+      .then(res => res.json())
+      .then(setCedToPcon)
+      .catch(() => setCedToPcon(null))
 
     fetch('/data/ge2024-pcon.json')
       .then(res => res.json())
@@ -921,6 +1015,7 @@ export default function Local2026Page() {
   const getRegionForWard = (ladCode: string) => {
     const entry = regionLookup?.lads?.[ladCode]
     if (entry?.regionName) return entry.regionName
+    if (COUNTY_REGION_LOOKUP[ladCode]) return COUNTY_REGION_LOOKUP[ladCode]
     return null
   }
 
@@ -961,6 +1056,17 @@ export default function Local2026Page() {
     return { degree: 0.4, noDegree: 0.6 }
   }
 
+  const getTenureBaseline = () => {
+    const baseline = tenureLookup?.meta?.baseline
+    if (baseline) return baseline
+    return {
+      ownedOutright: 0.32831847091249194,
+      ownsWithMortgage: 0.297073553740984,
+      socialRented: 0.1705895998333387,
+      privateRented: 0.20401837551318536,
+    }
+  }
+
   const getDegreeShareForWard = (
     wardCode: string,
     ladCode: string,
@@ -984,6 +1090,31 @@ export default function Local2026Page() {
     const ladShare = degreeLookup?.lads?.[ladCode]
     if (ladShare) return { share: ladShare, source: 'lad' }
     return { share: getDegreeBaseline(), source: 'national' }
+  }
+
+  const getTenureShareForWard = (
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): { share: TenureShare; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
+    const wardShare = tenureLookup?.wards?.[wardCode]
+    if (wardShare) return { share: wardShare, source: 'ward' }
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = tenureLookup?.wardNames?.[key]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+    }
+    if (wardName) {
+      const nameKey = normalizeName(wardName)
+      const nameShare = tenureLookup?.wardNamesOnly?.[nameKey]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+      const aggressiveShare = tenureLookup?.wardNamesAggressive?.[nameKey]
+      if (aggressiveShare) return { share: aggressiveShare, source: 'ward-name' }
+    }
+    const ladShare = tenureLookup?.lads?.[ladCode]
+    if (ladShare) return { share: ladShare, source: 'lad' }
+    return { share: getTenureBaseline(), source: 'national' }
   }
 
   const wardIncumbentLookup = useMemo(() => {
@@ -1056,7 +1187,10 @@ export default function Local2026Page() {
       }
       const wardNameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
       const pconCode =
-        wardToPcon?.wards?.[ward.wardCode] || wardToPcon?.wardNames?.[wardNameKey]
+        wardToPcon?.wards?.[ward.wardCode] ||
+        wardToPcon?.wardNames?.[wardNameKey] ||
+        cedToPcon?.ceds?.[ward.wardCode] ||
+        cedToPcon?.cedNames?.[wardNameKey]
       const geShares = pconCode ? geLookup?.pcon?.[pconCode] : null
       if (geShares) {
         const beforeBlend = { ...adjustedWard.nationalShares }
@@ -1075,7 +1209,7 @@ export default function Local2026Page() {
           const baseShare = adjustedWard.nationalShares?.[party] ?? 0
           const geShare = geShares?.[party]
           if (baseShare === 0 && (party === 'Reform' || party === 'Green')) {
-            blendedNational[party] = blendShare(baseShare, geShare, 1)
+            blendedNational[party] = getRelativeGeShare(party, geShare)
             return
           }
           blendedNational[party] = blendShare(baseShare, geShare, weight)
@@ -1109,16 +1243,25 @@ export default function Local2026Page() {
         ward.wardName,
         ward.ladName
       )
+      const tenureShare = getTenureShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
       const degreeBaseline = getDegreeBaseline()
+      const tenureBaseline = getTenureBaseline()
       const ageStrengthEffective =
         ageShare.source === 'lad' ? Math.min(ageStrength, 0.6) : ageStrength
       const nssecStrengthEffective =
         nssecShare.source === 'lad' ? Math.min(nssecStrength, 0.6) : nssecStrength
       const degreeStrengthEffective =
         degreeShare.source === 'lad' ? Math.min(degreeStrength, 0.6) : degreeStrength
+      const tenureStrengthEffective =
+        tenureShare.source === 'lad' ? Math.min(tenureStrength, 0.6) : tenureStrength
       const projection = computeWardProjection(
         adjustedWard,
-        baseline.baselineNational,
+        getBaselineNationalForYear(baseline, adjustedWard.lastYear),
         aggregate,
         leaveShare,
         ageShare.share,
@@ -1127,11 +1270,14 @@ export default function Local2026Page() {
         nssecBaseline,
         degreeShare.share,
         degreeBaseline,
+        tenureShare.share,
+        tenureBaseline,
         leaveStrength,
         ageStrengthEffective,
         regionStrength,
         nssecStrengthEffective,
-        degreeStrengthEffective
+        degreeStrengthEffective,
+        tenureStrengthEffective
       )
       const previousShares: Record<string, number> = {
         ...adjustedWard.nationalShares,
@@ -1166,13 +1312,16 @@ export default function Local2026Page() {
     regionLookup,
     nssecLookup,
     degreeLookup,
+    tenureLookup,
     wardToPcon,
+    cedToPcon,
     geLookup,
     leaveStrength,
     ageStrength,
     regionStrength,
     nssecStrength,
     degreeStrength,
+    tenureStrength,
     geReformWeight,
     geGreenWeight,
     geMajorWeight,
@@ -1257,16 +1406,8 @@ export default function Local2026Page() {
           row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
         )
       : null
-    const seatsUp = seatRow?.seatsUp || 0
-    const totalSeats = seatRow?.totalSeats || 0
-    let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
-    if (seatsUp && totalSeats) {
-      if (seatsUp === totalSeats) cycle = 'all_out'
-      else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
-      else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
-    }
     wards.forEach(ward => {
-      const seatsThisCycle = cycle === 'all_out' ? Math.max(ward.vacancies || 0, 1) : 1
+      const seatsThisCycle = getSeatsPerWardForPopup(wards, seatRow, ward)
       map.set(ward.wardCode, seatsThisCycle)
     })
     return map
@@ -1282,16 +1423,8 @@ export default function Local2026Page() {
           row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
         )
       : null
-    const seatsUp = seatRow?.seatsUp || 0
-    const totalSeats = seatRow?.totalSeats || 0
-    let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
-    if (seatsUp && totalSeats) {
-      if (seatsUp === totalSeats) cycle = 'all_out'
-      else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
-      else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
-    }
     wards.forEach(ward => {
-      const seatsThisCycle = cycle === 'all_out' ? Math.max(ward.vacancies || 0, 1) : 1
+      const seatsThisCycle = getSeatsPerWardForPopup(wards, seatRow, ward)
       map.set(`${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`, seatsThisCycle)
     })
     return map
@@ -1632,7 +1765,9 @@ export default function Local2026Page() {
       if (useFeatureContested) {
         return
       }
-      const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(ward.vacancies || 0, 1)
+      const seatsUpCount = shouldUseWardIncumbents
+        ? 1
+        : getSeatsPerWardForPopup(wards, seatRow, ward)
       const seats = seatsUpCount * seatMultiplier
       const projection =
         wardMap.get(ward.wardCode) || wardMapByWardName.get(normalizeName(ward.wardName))
@@ -1699,7 +1834,11 @@ export default function Local2026Page() {
         const code = getGeoWardCode(feature)
         const nameKey = getGeoWardNameKey(feature) || ''
         const baselineWard = (code ? baselineByCode.get(code) : null) || baselineByName.get(nameKey)
-        const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(baselineWard?.vacancies || 0, 1)
+        const seatsUpCount = shouldUseWardIncumbents
+          ? 1
+          : baselineWard
+            ? getSeatsPerWardForPopup(wards, seatRow, baselineWard)
+            : 1
         const seats = seatsUpCount * seatMultiplier
         const wardName = normalizeName(getGeoWardName(feature))
         const prevWinner =
@@ -2020,6 +2159,17 @@ export default function Local2026Page() {
               step={0.05}
               value={degreeStrength}
               onChange={event => setDegreeStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            Tenure Strength: {tenureStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={tenureStrength}
+              onChange={event => setTenureStrength(Number(event.target.value))}
             />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
