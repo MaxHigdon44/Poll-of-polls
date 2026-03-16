@@ -4,9 +4,22 @@ import type { GeoJsonObject } from 'geojson'
 import type { Feature, FeatureCollection } from 'geojson'
 import type { Layer } from 'leaflet'
 import L from 'leaflet'
+import { allocateProjectedSeats, getSeatAllocationLabel } from '@/lib/local2026/multiMember'
 
 type GeoFeature = Feature
 type GeoCollection = FeatureCollection
+
+const PARTY_COLORS: Record<string, string> = {
+  Labour: '#E4003B',
+  Conservative: '#0087DC',
+  Reform: '#12B6CF',
+  'Liberal Democrat': '#FAA61A',
+  Green: '#02A95B',
+  SNP: '#FDF38E',
+  'Plaid Cymru': '#008672',
+  Other: '#9a9a9a',
+  Independent: '#9a9a9a',
+}
 
 type LocalMapProps = {
   ladGeo: GeoCollection
@@ -20,21 +33,40 @@ type LocalMapProps = {
   wardVacanciesByName?: Map<string, number>
   wardMap: Map<
     string,
-    { winner: string; shares: Record<string, number>; color: string; prevWinner?: string | null }
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
   >
   wardMapByName: Map<
     string,
-    { winner: string; shares: Record<string, number>; color: string; prevWinner?: string | null }
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
   >
   wardMapByWardName?: Map<
     string,
-    { winner: string; shares: Record<string, number>; color: string; prevWinner?: string | null }
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
   >
   fallbackProjection?: {
     winner: string
     shares: Record<string, number>
     color: string
     prevWinner?: string | null
+    seatAllocation?: Record<string, number>
   } | null
   selectedLad: string | null
   selectedLadFeature: GeoFeature | null
@@ -129,6 +161,58 @@ function getWardNameKey(feature: GeoFeature) {
 function getWardDisplayName(feature: GeoFeature) {
   const props: any = feature.properties || {}
   return props.WD25NM || props.WD23NM || props.WD22NM || props.name || 'Ward'
+}
+
+function getPartyStripePatternId(primary: string, secondary: string) {
+  const a = primary.replace('#', '')
+  const b = secondary.replace('#', '')
+  return `party-stripes-${a}-${b}`
+}
+
+function ensurePartyStripePattern(primary: string, secondary: string) {
+  if (typeof document === 'undefined') return null
+  const svg = document.querySelector('.leaflet-overlay-pane svg')
+  if (!svg) return null
+  let defs = svg.querySelector('defs')
+  if (!defs) {
+    defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs')
+    svg.prepend(defs)
+  }
+  const id = getPartyStripePatternId(primary, secondary)
+  if (svg.querySelector(`#${id}`)) return id
+
+  const pattern = document.createElementNS('http://www.w3.org/2000/svg', 'pattern')
+  pattern.setAttribute('id', id)
+  pattern.setAttribute('patternUnits', 'userSpaceOnUse')
+  pattern.setAttribute('width', '8')
+  pattern.setAttribute('height', '8')
+  pattern.setAttribute('patternTransform', 'rotate(45)')
+
+  const background = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+  background.setAttribute('width', '8')
+  background.setAttribute('height', '8')
+  background.setAttribute('fill', primary)
+  pattern.appendChild(background)
+
+  const stripe = document.createElementNS('http://www.w3.org/2000/svg', 'rect')
+  stripe.setAttribute('width', '4')
+  stripe.setAttribute('height', '8')
+  stripe.setAttribute('fill', secondary)
+  pattern.appendChild(stripe)
+
+  defs.appendChild(pattern)
+  return id
+}
+
+function getElectedParties(
+  projection: { shares: Record<string, number>; seatAllocation?: Record<string, number> } | null | undefined,
+  vacancies: number
+) {
+  const seatAllocation = projection?.seatAllocation || allocateProjectedSeats(projection?.shares || {}, vacancies)
+  const electedParties = Object.entries(seatAllocation)
+    .filter(([, seats]) => seats > 0)
+    .sort((a, b) => b[1] - a[1])
+  return { seatAllocation, electedParties }
 }
 
 export default function LocalMap({
@@ -279,7 +363,25 @@ export default function LocalMap({
       wardMapByName.get(getWardNameKey(feature) || '') ||
       wardMapByWardName?.get(String(getWardDisplayName(feature)).toLowerCase()) ||
       fallbackProjection
+    const vacancies =
+      (wardCode ? wardVacancies?.get(wardCode) : 0) ||
+      (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
+      1
     const color = projection ? projection.color || '#ccc' : '#ccc'
+    const { electedParties } = getElectedParties(projection, vacancies)
+    if (electedParties.length >= 2) {
+      const primaryColor = PARTY_COLORS[electedParties[0][0]] || color
+      const secondaryColor = PARTY_COLORS[electedParties[1][0]] || '#9a9a9a'
+      const id = ensurePartyStripePattern(primaryColor, secondaryColor)
+      if (id) {
+        return {
+          color: '#333',
+          weight: 0.5,
+          fillColor: `url(#${id})`,
+          fillOpacity: 0.7,
+        }
+      }
+    }
     return {
       color: '#333',
       weight: 0.5,
@@ -309,17 +411,6 @@ export default function LocalMap({
       fallbackProjection
     if (!projection) return
 
-    let topParty = projection.winner
-    let topValue = -1
-    Object.entries(projection.shares).forEach(([party, value]) => {
-      const numericValue = Number(value)
-      if (Number.isNaN(numericValue)) return
-      if (numericValue > topValue) {
-        topValue = numericValue
-        topParty = party
-      }
-    })
-
     const sorted = Object.entries(projection.shares)
       .map(([party, value]) => ({ party, value: Number(value) }))
       .filter(entry => Number.isFinite(entry.value))
@@ -329,8 +420,22 @@ export default function LocalMap({
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
       1
+    const { seatAllocation, electedParties } = getElectedParties(projection, vacancies)
+    if (electedParties.length >= 2 && 'setStyle' in layer) {
+      const primaryColor = PARTY_COLORS[electedParties[0][0]] || projection.color || '#ccc'
+      const secondaryColor = PARTY_COLORS[electedParties[1][0]] || '#9a9a9a'
+      const id = ensurePartyStripePattern(primaryColor, secondaryColor)
+      if (id) {
+        ;(layer as any).setStyle({ fillColor: `url(#${id})` })
+      }
+    }
     const popupLines = sorted
-      .map(entry => `${entry.party}: ${entry.value.toFixed(1)}%`)
+      .map(entry => {
+        const seats = seatAllocation[entry.party] || 0
+        const suffix =
+          electedParties.length >= 2 && seats > 0 ? ` (${getSeatAllocationLabel(seats)})` : ''
+        return `${entry.party}: ${entry.value.toFixed(1)}%${suffix}`
+      })
       .join('<br/>')
     const prev = projection.prevWinner ? `Previous winner: ${projection.prevWinner}` : null
     layer.bindPopup(

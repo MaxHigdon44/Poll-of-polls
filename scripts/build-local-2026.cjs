@@ -255,22 +255,22 @@ const AGE_BASELINE = {
   age55_plus: 0.38,
 }
 
-const BBC_BASELINE_NATIONAL_BY_YEAR = {
+const BASELINE_NATIONAL_BY_YEAR = {
   2021: {
-    Labour: 29,
-    Conservative: 36,
-    Reform: 0,
-    'Liberal Democrat': 17,
-    Green: 10,
+    Labour: 20.745136962554223,
+    Conservative: 45.525552350984796,
+    Reform: 0.232044049350195,
+    'Liberal Democrat': 17.576813327460577,
+    Green: 9.000883201010462,
     SNP: 0,
     'Plaid Cymru': 0,
   },
   2022: {
-    Labour: 35,
-    Conservative: 30,
-    Reform: 0,
-    'Liberal Democrat': 19,
-    Green: 11,
+    Labour: 40.585880083116066,
+    Conservative: 28.71578181747461,
+    Reform: 0.18062657339491414,
+    'Liberal Democrat': 15.473970342190924,
+    Green: 8.424140522452163,
     SNP: 0,
     'Plaid Cymru': 0,
   },
@@ -284,11 +284,11 @@ const BBC_BASELINE_NATIONAL_BY_YEAR = {
     'Plaid Cymru': 0,
   },
   2024: {
-    Labour: 34,
-    Conservative: 25,
-    Reform: 0,
-    'Liberal Democrat': 17,
-    Green: 13,
+    Labour: 34.908565317328225,
+    Conservative: 23.0402287037395,
+    Reform: 1.5316392318193588,
+    'Liberal Democrat': 15.016967389228912,
+    Green: 11.090023545986101,
     SNP: 0,
     'Plaid Cymru': 0,
   },
@@ -1140,12 +1140,16 @@ async function buildLadRegionMap(baseline) {
 
   const ladMap = {}
   const regionMap = {}
+  const ladCodeHeader = headers[ladCodeIdx]
+  const ladNameHeader = headers[ladNameIdx]
+  const regionCodeHeader = headers[regionCodeIdx]
+  const regionNameHeader = headers[regionNameIdx]
   rows.forEach(row => {
-    const ladCode = String(row[ladCodeIdx] || '').trim()
+    const ladCode = String(row[ladCodeHeader] || '').trim()
     if (!ladCode) return
-    const ladName = String(row[ladNameIdx] || '').trim()
-    const regionCode = String(row[regionCodeIdx] || '').trim()
-    const regionName = String(row[regionNameIdx] || '').trim()
+    const ladName = String(row[ladNameHeader] || '').trim()
+    const regionCode = String(row[regionCodeHeader] || '').trim()
+    const regionName = String(row[regionNameHeader] || '').trim()
     ladMap[ladCode] = { ladCode, ladName, regionCode, regionName }
     if (regionName) {
       if (!regionMap[regionName]) regionMap[regionName] = []
@@ -2961,11 +2965,11 @@ async function buildBaseline() {
   if (!skipGeo && countyGeo && cedGeo) {
     countyGeo.features = countyGeo.features.map(feature => {
       const props = feature.properties || {}
-      if (!props.reference && (props.CTYUA23CD || props.CTYUA24CD)) {
-        props.reference = props.CTYUA23CD || props.CTYUA24CD
+      if (!props.reference && (props.CTYUA23CD || props.CTYUA24CD || props.CTY24CD)) {
+        props.reference = props.CTYUA23CD || props.CTYUA24CD || props.CTY24CD
       }
-      if (!props.name && (props.CTYUA23NM || props.CTYUA24NM)) {
-        props.name = props.CTYUA23NM || props.CTYUA24NM
+      if (!props.name && (props.CTYUA23NM || props.CTYUA24NM || props.CTY24NM)) {
+        props.name = props.CTYUA23NM || props.CTYUA24NM || props.CTY24NM
       }
       feature.properties = props
       return feature
@@ -3263,7 +3267,7 @@ async function buildBaseline() {
   const output = {
     generatedAt: new Date().toISOString(),
     baselineNational,
-    baselineNationalByYear: BBC_BASELINE_NATIONAL_BY_YEAR,
+    baselineNationalByYear: BASELINE_NATIONAL_BY_YEAR,
     wards: baseline,
   }
 
@@ -3548,7 +3552,7 @@ async function buildBaseline() {
     path.join(OUT_DIR, 'baseline-national.json'),
     JSON.stringify({
       baselineNational,
-      baselineNationalByYear: BBC_BASELINE_NATIONAL_BY_YEAR,
+      baselineNationalByYear: BASELINE_NATIONAL_BY_YEAR,
       totalBaselineVotes,
     })
   )

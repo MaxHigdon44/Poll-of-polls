@@ -35,6 +35,7 @@ import {
   getGeWeightForParty,
   getRelativeGeShare,
 } from '@/lib/local2026/ge'
+import { allocateProjectedSeats } from '@/lib/local2026/multiMember'
 
 const COUNTY_REGION_LOOKUP: Record<string, string> = {
   E10000011: 'South East',
@@ -312,10 +313,20 @@ function computeWardProjection(
     'Plaid Cymru': aggregate.pc ?? 0,
   }
 
+  const partyAllowedInRegion = (party: string, currentRegionName: string | null) => {
+    if (party === 'SNP') return currentRegionName === 'Scotland'
+    if (party === 'Plaid Cymru') return currentRegionName === 'Wales'
+    return true
+  }
+
   const adjustedNational: Record<string, number> = {}
   let sumNational = 0
   const adjustedLeaveShare = clampLeaveShare(leaveShare)
   nationalParties.forEach(party => {
+    if (!partyAllowedInRegion(party, regionName)) {
+      adjustedNational[party] = 0
+      return
+    }
     const base = ward.nationalShares[party] ?? 0
     const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
@@ -443,6 +454,75 @@ function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, numb
     assigned += 1
   }
   return Object.fromEntries(scaled.map(entry => [entry.party, entry.seats]))
+}
+
+const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
+  birmingham: {
+    'acocks green': 2,
+    'alum rock': 2,
+    aston: 2,
+    'bartley green': 2,
+    billesley: 2,
+    'bournbrook and selly park': 2,
+    'bournville and cotteridge': 2,
+    'brandwood and kings heath': 2,
+    'bromford and hodge hill': 2,
+    edgbaston: 2,
+    erdington: 2,
+    'glebe farm and tile cross': 2,
+    'hall green north': 2,
+    'handsworth wood': 2,
+    harborne: 2,
+    kingstanding: 2,
+    ladywood: 2,
+    'longbridge and west heath': 2,
+    moseley: 2,
+    'north edgbaston': 2,
+    oscott: 2,
+    'perry barr': 2,
+    quinton: 2,
+    sheldon: 2,
+    'small heath': 2,
+    'soho and jewellery quarter': 2,
+    'sparkbrook and balsall heath east': 2,
+    sparkhill: 2,
+    'stockland green': 2,
+    'sutton vesey': 2,
+    'sutton walmley and minworth': 2,
+    'weoley and selly oak': 2,
+  },
+}
+
+function getSeatsPerWard(
+  wards: WardBaseline[],
+  seatRow: CouncilSeatRow | null | undefined,
+  ward: WardBaseline
+) {
+  const councilKey = normalizeCouncilName(ward.ladName)
+  const wardKey = normalizeName(ward.wardName)
+  const override = MIXED_ALL_OUT_SEAT_OVERRIDES[councilKey]?.[wardKey]
+  if (override) return override
+
+  const seatsUp = seatRow?.seatsUp || 0
+  const totalSeats = seatRow?.totalSeats || 0
+  let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
+  if (seatsUp && totalSeats) {
+    if (seatsUp === totalSeats) cycle = 'all_out'
+    else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
+    else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
+  }
+  if (cycle !== 'all_out') return Math.max(ward.vacancies || 0, 1)
+
+  const vacancySum = wards.reduce((acc, entry) => acc + Math.max(entry.vacancies || 0, 1), 0)
+  if (vacancySum === totalSeats) {
+    return Math.max(ward.vacancies || 0, 1)
+  }
+
+  if (wards.length && totalSeats % wards.length === 0) {
+    return Math.max(1, Math.round(totalSeats / wards.length))
+  }
+
+  return Math.max(ward.vacancies || 0, 1)
 }
 
 export default function CouncilProjectionsPage() {
@@ -770,7 +850,7 @@ export default function CouncilProjectionsPage() {
       const contestedPreviousTotals: Record<string, number> = {}
 
       wards.forEach(ward => {
-        const seatsUpCount = shouldUseWardIncumbents ? 1 : Math.max(ward.vacancies || 0, 1)
+        const seatsUpCount = shouldUseWardIncumbents ? 1 : getSeatsPerWard(wards, seatRow, ward)
         let adjustedWard = ward
         const geWeights = {
           reform: geReformWeight,
@@ -901,8 +981,11 @@ export default function CouncilProjectionsPage() {
           }
         }
         if (contested) {
-          const projectedKey = canonicalizePartyLabel(projection.winner)
-          contestedTotals[projectedKey] = (contestedTotals[projectedKey] || 0) + seatsUpCount
+          const projectedSeatAllocation = allocateProjectedSeats(projection.shares || {}, seatsUpCount)
+          Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
+            const projectedKey = canonicalizePartyLabel(party)
+            contestedTotals[projectedKey] = (contestedTotals[projectedKey] || 0) + allocatedSeats
+          })
           const contestedPrev = canonicalizePartyLabel(prevWinner || projection.winner)
           contestedPreviousTotals[contestedPrev] =
             (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount

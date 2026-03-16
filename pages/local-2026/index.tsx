@@ -36,6 +36,7 @@ import {
   getGeWeightForParty,
   getRelativeGeShare,
 } from '@/lib/local2026/ge'
+import { allocateProjectedSeats } from '@/lib/local2026/multiMember'
 
 const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
 const WARDS_GEO_URL =
@@ -542,10 +543,20 @@ function computeWardProjection(
     'Plaid Cymru': aggregate.pc ?? 0,
   }
 
+  const partyAllowedInRegion = (party: string, currentRegionName: string | null) => {
+    if (party === 'SNP') return currentRegionName === 'Scotland'
+    if (party === 'Plaid Cymru') return currentRegionName === 'Wales'
+    return true
+  }
+
   const adjustedNational: Record<string, number> = {}
   let sumNational = 0
   const adjustedLeaveShare = clampLeaveShare(leaveShare)
   nationalParties.forEach(party => {
+    if (!partyAllowedInRegion(party, regionName)) {
+      adjustedNational[party] = 0
+      return
+    }
     const base = ward.nationalShares[party] ?? 0
     const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
@@ -750,11 +761,53 @@ function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, numb
   return Object.fromEntries(floored.map(entry => [entry.party, entry.seats]))
 }
 
+const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
+  birmingham: {
+    'acocks green': 2,
+    'alum rock': 2,
+    aston: 2,
+    'bartley green': 2,
+    billesley: 2,
+    'bournbrook and selly park': 2,
+    'bournville and cotteridge': 2,
+    'brandwood and kings heath': 2,
+    'bromford and hodge hill': 2,
+    edgbaston: 2,
+    erdington: 2,
+    'glebe farm and tile cross': 2,
+    'hall green north': 2,
+    'handsworth wood': 2,
+    harborne: 2,
+    kingstanding: 2,
+    ladywood: 2,
+    'longbridge and west heath': 2,
+    moseley: 2,
+    'north edgbaston': 2,
+    oscott: 2,
+    'perry barr': 2,
+    quinton: 2,
+    sheldon: 2,
+    'small heath': 2,
+    'soho and jewellery quarter': 2,
+    'sparkbrook and balsall heath east': 2,
+    sparkhill: 2,
+    'stockland green': 2,
+    'sutton vesey': 2,
+    'sutton walmley and minworth': 2,
+    'weoley and selly oak': 2,
+  },
+}
+
 function getSeatsPerWardForPopup(
   wards: WardBaseline[],
   seatRow: CouncilSeatRow | null | undefined,
   ward: WardBaseline
 ) {
+  const councilKey = normalizeCouncilName(ward.ladName)
+  const wardKey = normalizeName(ward.wardName)
+  const override = MIXED_ALL_OUT_SEAT_OVERRIDES[councilKey]?.[wardKey]
+  if (override) return override
+
   const seatsUp = seatRow?.seatsUp || 0
   const totalSeats = seatRow?.totalSeats || 0
   let cycle: 'all_out' | 'thirds' | 'halves' | 'unknown' = 'unknown'
@@ -1771,7 +1824,10 @@ export default function Local2026Page() {
       const seats = seatsUpCount * seatMultiplier
       const projection =
         wardMap.get(ward.wardCode) || wardMapByWardName.get(normalizeName(ward.wardName))
-      const projectedWinner = projection?.winner || ladFallbackProjection?.winner || 'Other'
+      const projectedSeatAllocation = allocateProjectedSeats(
+        projection?.shares || ladFallbackProjection?.shares || {},
+        seatsUpCount
+      )
       const previousShares: Record<string, number> = {
         ...ward.nationalShares,
         ...ward.localShares,
@@ -1803,24 +1859,27 @@ export default function Local2026Page() {
           contested = (2026 - lastYear) % 2 === 0
         }
       }
-      const winner = canonicalizePartyLabel(
-        contested ? projectedWinner : prevWinner || projectedWinner
+      const fallbackProjectedWinner = canonicalizePartyLabel(
+        projection?.winner || ladFallbackProjection?.winner || 'Other'
       )
-      totals[winner] = (totals[winner] || 0) + seats
-      const prev = canonicalizePartyLabel(prevWinner || projectedWinner)
+      const prev = canonicalizePartyLabel(prevWinner || fallbackProjectedWinner)
       previousTotals[prev] = (previousTotals[prev] || 0) + seats
       if (contested) {
-        const contestedProjected = canonicalizePartyLabel(projectedWinner)
-        contestedTotals[contestedProjected] =
-          (contestedTotals[contestedProjected] || 0) + seatsUpCount
-        const contestedPrev = canonicalizePartyLabel(prevWinner || projectedWinner)
-        contestedPreviousTotals[contestedPrev] =
-          (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
-        seatChangeEvents.push({
-          prevWinner: contestedPrev,
-          projectedWinner: contestedProjected,
-          seats: seatsUpCount,
+        Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
+          const contestedProjected = canonicalizePartyLabel(party)
+          contestedTotals[contestedProjected] =
+            (contestedTotals[contestedProjected] || 0) + allocatedSeats
+          totals[contestedProjected] =
+            (totals[contestedProjected] || 0) + allocatedSeats * seatMultiplier
+          seatChangeEvents.push({
+            prevWinner: prev,
+            projectedWinner: contestedProjected,
+            seats: allocatedSeats,
+          })
         })
+        contestedPreviousTotals[prev] = (contestedPreviousTotals[prev] || 0) + seatsUpCount
+      } else {
+        totals[prev] = (totals[prev] || 0) + seats
       }
     })
     if (useFeatureContested) {
@@ -1845,17 +1904,20 @@ export default function Local2026Page() {
           (shouldUseWardIncumbents ? normalizedWardIncumbents.get(wardName) : null) ||
           canonicalizePartyLabel(projection.prevWinner || '')
         if (!prevWinner) return
-        const projectedWinner = canonicalizePartyLabel(projection.winner)
-        contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + seatsUpCount
+        const projectedSeatAllocation = allocateProjectedSeats(projection.shares || {}, seatsUpCount)
+        Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
+          const projectedWinner = canonicalizePartyLabel(party)
+          contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + allocatedSeats
+          totals[projectedWinner] = (totals[projectedWinner] || 0) + allocatedSeats * seatMultiplier
+          seatChangeEvents.push({
+            prevWinner,
+            projectedWinner,
+            seats: allocatedSeats,
+          })
+        })
         contestedPreviousTotals[prevWinner] =
           (contestedPreviousTotals[prevWinner] || 0) + seatsUpCount
-        totals[projectedWinner] = (totals[projectedWinner] || 0) + seats
         previousTotals[prevWinner] = (previousTotals[prevWinner] || 0) + seats
-        seatChangeEvents.push({
-          prevWinner,
-          projectedWinner,
-          seats: seatsUpCount,
-        })
       })
     }
 
