@@ -2,10 +2,10 @@ export const PARTY_LEAVE_REMAIN_DELTAS: Record<
   string,
   { remain: number; leave: number }
 > = {
-  Labour: { remain: 8.33, leave: -7.66 },
+  Labour: { remain: 6.33, leave: -8.66 },
   Conservative: { remain: -1.67, leave: 5.3 },
   Reform: { remain: -14.67, leave: 19.0 },
-  'Liberal Democrat': { remain: 5.0, leave: -4.33 },
+  'Liberal Democrat': { remain: 6.0, leave: -4.33 },
   Green: { remain: 2.67, leave: -9.0 },
   SNP: { remain: 2.0, leave: -1.3 },
   'Plaid Cymru': { remain: 1.33, leave: -0.33 },

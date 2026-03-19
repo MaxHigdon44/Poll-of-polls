@@ -28,6 +28,12 @@ import {
   type TenureShare,
 } from '@/lib/local2026/tenure'
 import {
+  RURAL_URBAN_EFFECT_STRENGTH,
+  getRuralUrbanAdjustment,
+  type RuralUrbanBaseline,
+  type RuralUrbanShare,
+} from '@/lib/local2026/ruralUrban'
+import {
   GE_WEIGHT_GREEN,
   GE_WEIGHT_MAJOR,
   GE_WEIGHT_REFORM,
@@ -35,6 +41,7 @@ import {
   getGeWeightForParty,
   getRelativeGeShare,
 } from '@/lib/local2026/ge'
+import { getConcentrationMultiplier } from '@/lib/local2026/concentration'
 import { allocateProjectedSeats } from '@/lib/local2026/multiMember'
 
 const COUNTY_REGION_LOOKUP: Record<string, string> = {
@@ -42,6 +49,7 @@ const COUNTY_REGION_LOOKUP: Record<string, string> = {
   E10000012: 'East of England',
   E10000014: 'South East',
   E10000020: 'East of England',
+  E10000030: 'South East',
   E10000029: 'East of England',
   E10000032: 'South East',
 }
@@ -139,6 +147,15 @@ type TenureLookup = {
   meta?: { baseline?: TenureBaseline }
 }
 
+type RuralUrbanLookup = {
+  wards?: Record<string, RuralUrbanShare & { totalPop?: number; wardName?: string }>
+  wardNames?: Record<string, RuralUrbanShare & { totalPop?: number; wardName?: string }>
+  wardNamesOnly?: Record<string, RuralUrbanShare & { totalPop?: number; wardName?: string }>
+  wardNamesAggressive?: Record<string, RuralUrbanShare & { totalPop?: number; wardName?: string }>
+  lads?: Record<string, RuralUrbanShare>
+  meta?: { baseline?: RuralUrbanBaseline }
+}
+
 type WardToPconLookup = {
   wards?: Record<string, string>
   wardNames?: Record<string, string>
@@ -166,6 +183,11 @@ type AggregateRow = {
 
 type AggregateResponse = {
   aggregates: AggregateRow[]
+}
+
+type WardVacancyLookup = {
+  wards?: Record<string, number>
+  wardNames?: Record<string, number>
 }
 
 type GeoFeature = {
@@ -210,6 +232,97 @@ function normalizeName(value: string | undefined | null) {
     .replace(/\s+/g, ' ')
     .trim()
 }
+
+const SURREY_EAST_DIVISIONS = new Set(
+  [
+    'E58001472',
+    'E58001478',
+    'E58001501',
+    'E58001502',
+    'E58001527',
+    'E58001528',
+    'E58001529',
+    'E58001534',
+    'E58001535',
+    'E58001481',
+    'E58001482',
+    'E58001484',
+    'E58001483',
+    'E58001533',
+    'E58001463',
+    'E58001466',
+    'E58001474',
+    'E58001475',
+    'E58001476',
+    'E58001508',
+    'E58001465',
+    'E58001477',
+    'E58001503',
+    'E58001504',
+    'E58001513',
+    'E58001514',
+    'E58001516',
+    'E58001517',
+    'E58001518',
+    'E58001525',
+    'E58001469',
+    'E58001470',
+    'E58001492',
+    'E58001511',
+    'E58001515',
+    'E58001530',
+  ]
+)
+
+const SURREY_WEST_DIVISIONS = new Set(
+  [
+    'E58001461',
+    'E58001494',
+    'E58001495',
+    'E58001496',
+    'E58001497',
+    'E58001498',
+    'E58001505',
+    'E58001519',
+    'E58001520',
+    'E58001541',
+    'E58001460',
+    'E58001471',
+    'E58001479',
+    'E58001480',
+    'E58001488',
+    'E58001540',
+    'E58001462',
+    'E58001507',
+    'E58001512',
+    'E58001521',
+    'E58001522',
+    'E58001523',
+    'E58001524',
+    'E58001464',
+    'E58001467',
+    'E58001468',
+    'E58001489',
+    'E58001500',
+    'E58001509',
+    'E58001473',
+    'E58001485',
+    'E58001486',
+    'E58001487',
+    'E58001490',
+    'E58001491',
+    'E58001499',
+    'E58001531',
+    'E58001532',
+    'E58001493',
+    'E58001506',
+    'E58001526',
+    'E58001536',
+    'E58001538',
+    'E58001537',
+    'E58001539',
+  ]
+)
 
 function normalizeCouncilName(name: string) {
   return normalizeName(name)
@@ -286,13 +399,20 @@ function computeWardProjection(
   degreeBaseline: DegreeBaseline,
   tenureShare: TenureShare,
   tenureBaseline: TenureBaseline,
+  ruralUrbanShare: RuralUrbanShare,
+  ruralUrbanBaseline: RuralUrbanBaseline,
   leaveStrength: number,
   ageStrength: number,
   regionStrength: number,
   nssecStrength: number,
   degreeStrength: number,
-  tenureStrength: number
+  tenureStrength: number,
+  ruralUrbanStrength: number
 ) {
+  const labourDeltaMultiplier =
+    ward.lastYear === 2021 ? 1.4 : ward.lastYear === 2022 ? 1.3 : ward.lastYear === 2024 ? 1.15 : 1
+  const labourBaselineCarry =
+    ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024 ? 0.93 : 1
   const nationalParties = [
     'Labour',
     'Conservative',
@@ -304,7 +424,7 @@ function computeWardProjection(
   ]
 
   const aggregateMap: Record<string, number> = {
-    Labour: aggregate.labour ?? 0,
+    Labour: (aggregate.labour ?? 0) - 2,
     Conservative: aggregate.conservative ?? 0,
     Reform: aggregate.reform ?? 0,
     'Liberal Democrat': aggregate.libdem ?? 0,
@@ -322,19 +442,41 @@ function computeWardProjection(
   const adjustedNational: Record<string, number> = {}
   let sumNational = 0
   const adjustedLeaveShare = clampLeaveShare(leaveShare)
+  let baselineWinner: string | null = null
+  let baselineTop = -1
+  Object.entries({ ...ward.nationalShares, ...ward.localShares }).forEach(([party, value]) => {
+    if ((value ?? 0) > baselineTop) {
+      baselineTop = value ?? 0
+      baselineWinner = party
+    }
+  })
   nationalParties.forEach(party => {
     if (!partyAllowedInRegion(party, regionName)) {
       adjustedNational[party] = 0
       return
     }
-    const base = ward.nationalShares[party] ?? 0
-    const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
+    const base = (ward.nationalShares[party] ?? 0) * (party === 'Labour' ? labourBaselineCarry : 1)
+    const rawDelta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
+    let delta = party === 'Labour' && rawDelta < 0 ? rawDelta * labourDeltaMultiplier : rawDelta
+    if (party === 'Conservative' && delta < 0) {
+      delta *= 0.9
+    }
+    if (
+      party === 'Reform' &&
+      delta > 0 &&
+      ward.lastYear === 2021 &&
+      canonicalizePartyLabel(baselineWinner) === 'Conservative'
+    ) {
+      delta *= 0.95
+    }
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
     const regionAdj = getRegionAdjustment(party, regionName)
     const nssecAdj = getNssecAdjustment(party, nssecShare, nssecBaseline)
     const degreeAdj = getDegreeAdjustment(party, degreeShare, degreeBaseline)
     const tenureAdj = getTenureAdjustment(party, tenureShare, tenureBaseline)
+    const ruralUrbanAdj = getRuralUrbanAdjustment(party, ruralUrbanShare, ruralUrbanBaseline)
+    const concentrationMultiplier = getConcentrationMultiplier(party, ward.nationalShares[party] ?? 0)
     const value = Math.max(
       0,
       base +
@@ -344,8 +486,9 @@ function computeWardProjection(
         regionStrength * regionAdj +
         nssecStrength * nssecAdj +
         degreeStrength * degreeAdj +
-        tenureStrength * tenureAdj
-    )
+        tenureStrength * tenureAdj +
+        ruralUrbanStrength * ruralUrbanAdj
+    ) * concentrationMultiplier
     adjustedNational[party] = value
     sumNational += value
   })
@@ -496,12 +639,17 @@ const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
 function getSeatsPerWard(
   wards: WardBaseline[],
   seatRow: CouncilSeatRow | null | undefined,
-  ward: WardBaseline
+  ward: WardBaseline,
+  wardVacancyLookup?: WardVacancyLookup | null
 ) {
   const councilKey = normalizeCouncilName(ward.ladName)
   const wardKey = normalizeName(ward.wardName)
   const override = MIXED_ALL_OUT_SEAT_OVERRIDES[councilKey]?.[wardKey]
   if (override) return override
+  const explicitVacancy =
+    wardVacancyLookup?.wards?.[ward.wardCode] ||
+    wardVacancyLookup?.wardNames?.[`${normalizeName(ward.ladName)}|${wardKey}`]
+  if (explicitVacancy) return explicitVacancy
 
   const seatsUp = seatRow?.seatsUp || 0
   const totalSeats = seatRow?.totalSeats || 0
@@ -535,6 +683,8 @@ export default function CouncilProjectionsPage() {
   const [nssecLookup, setNssecLookup] = useState<NssecLookup | null>(null)
   const [degreeLookup, setDegreeLookup] = useState<DegreeLookup | null>(null)
   const [tenureLookup, setTenureLookup] = useState<TenureLookup | null>(null)
+  const [ruralUrbanLookup, setRuralUrbanLookup] = useState<RuralUrbanLookup | null>(null)
+  const [wardVacancyLookup, setWardVacancyLookup] = useState<WardVacancyLookup | null>(null)
   const [wardToPcon, setWardToPcon] = useState<WardToPconLookup | null>(null)
   const [cedToPcon, setCedToPcon] = useState<CedToPconLookup | null>(null)
   const [geLookup, setGeLookup] = useState<GePconLookup | null>(null)
@@ -542,15 +692,20 @@ export default function CouncilProjectionsPage() {
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
   const [countyGeo, setCountyGeo] = useState<GeoCollection | null>(null)
+  const [hasMounted, setHasMounted] = useState(false)
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
   const [nssecStrength, setNssecStrength] = useState(NSSEC_EFFECT_STRENGTH)
   const [degreeStrength, setDegreeStrength] = useState(DEGREE_EFFECT_STRENGTH)
   const [tenureStrength, setTenureStrength] = useState(TENURE_EFFECT_STRENGTH)
+  const [ruralUrbanStrength, setRuralUrbanStrength] = useState(RURAL_URBAN_EFFECT_STRENGTH)
   const [geReformWeight, setGeReformWeight] = useState(GE_WEIGHT_REFORM)
   const [geGreenWeight, setGeGreenWeight] = useState(GE_WEIGHT_GREEN)
   const [geMajorWeight, setGeMajorWeight] = useState(GE_WEIGHT_MAJOR)
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
 
   useEffect(() => {
     router.prefetch('/local-2026')
@@ -582,6 +737,14 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setTenureLookup)
       .catch(() => setTenureLookup(null))
+    fetch('/data/rural-urban-share.json')
+      .then(res => res.json())
+      .then(setRuralUrbanLookup)
+      .catch(() => setRuralUrbanLookup(null))
+    fetch('/data/ward-vacancies.json')
+      .then(res => res.json())
+      .then(setWardVacancyLookup)
+      .catch(() => setWardVacancyLookup(null))
     fetch('/data/ward-to-pcon.json')
       .then(res => res.json())
       .then(setWardToPcon)
@@ -684,6 +847,17 @@ export default function CouncilProjectionsPage() {
     }
   }
 
+  const getRuralUrbanBaseline = () => {
+    const baseline = ruralUrbanLookup?.meta?.baseline
+    if (baseline) return baseline
+    return {
+      conurbation: 0.3663336976668199,
+      cityTown: 0.45521235562383135,
+      ruralTownFringe: 0.09743014933962564,
+      ruralVillageHamlet: 0.08102379736972319,
+    }
+  }
+
   const getDegreeShareForWard = (
     wardCode: string,
     ladCode: string,
@@ -734,6 +908,31 @@ export default function CouncilProjectionsPage() {
     return { share: getTenureBaseline(), source: 'national' }
   }
 
+  const getRuralUrbanShareForWard = (
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): { share: RuralUrbanShare; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
+    const wardShare = ruralUrbanLookup?.wards?.[wardCode]
+    if (wardShare) return { share: wardShare, source: 'ward' }
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = ruralUrbanLookup?.wardNames?.[key]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+    }
+    if (wardName) {
+      const nameKey = normalizeName(wardName)
+      const nameShare = ruralUrbanLookup?.wardNamesOnly?.[nameKey]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+      const aggressiveShare = ruralUrbanLookup?.wardNamesAggressive?.[nameKey]
+      if (aggressiveShare) return { share: aggressiveShare, source: 'ward-name' }
+    }
+    const ladShare = ruralUrbanLookup?.lads?.[ladCode]
+    if (ladShare) return { share: ladShare, source: 'lad' }
+    return { share: getRuralUrbanBaseline(), source: 'national' }
+  }
+
   const getNssecBaseline = () => {
     const baseline = nssecLookup?.meta?.baseline
     if (baseline) return baseline
@@ -774,8 +973,125 @@ export default function CouncilProjectionsPage() {
       byLad.set(ward.ladCode, list)
     })
 
+    const rawProjectionByCode = new Map<string, { winner: string; shares: Record<string, number> }>()
+    baseline.wards.forEach(ward => {
+      let adjustedWard = ward
+      const geWeights = {
+        reform: geReformWeight,
+        green: geGreenWeight,
+        major: geMajorWeight,
+      }
+      const wardNameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+      const pconCode =
+        wardToPcon?.wards?.[ward.wardCode] ||
+        wardToPcon?.wardNames?.[wardNameKey] ||
+        cedToPcon?.ceds?.[ward.wardCode] ||
+        cedToPcon?.cedNames?.[wardNameKey]
+      const geShares = pconCode ? geLookup?.pcon?.[pconCode] : null
+      if (geShares) {
+        const blendedNational = { ...adjustedWard.nationalShares }
+        ;[
+          'Labour',
+          'Conservative',
+          'Reform',
+          'Liberal Democrat',
+          'Green',
+          'SNP',
+          'Plaid Cymru',
+        ].forEach(party => {
+          const weight = getGeWeightForParty(party, geWeights)
+          if (!weight) return
+          const baseShare = adjustedWard.nationalShares?.[party] ?? 0
+          const geShare = geShares?.[party]
+          if (baseShare === 0 && (party === 'Reform' || party === 'Green')) {
+            blendedNational[party] = getRelativeGeShare(party, geShare)
+            return
+          }
+          blendedNational[party] = blendShare(baseShare, geShare, weight)
+        })
+        adjustedWard = { ...adjustedWard, nationalShares: blendedNational }
+      }
+      const leaveShare = getLeaveShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
+      const ageShare = getAgeShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
+      const regionName = getRegionForWard(ward.ladCode)
+      const nssecShare = getNssecShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
+      const degreeShare = getDegreeShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
+      const tenureShare = getTenureShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
+      const ruralUrbanShare = getRuralUrbanShareForWard(
+        ward.wardCode,
+        ward.ladCode,
+        ward.wardName,
+        ward.ladName
+      )
+      const ageStrengthEffective =
+        ageShare.source === 'lad' ? Math.min(ageStrength, 0.6) : ageStrength
+      const nssecStrengthEffective =
+        nssecShare.source === 'lad' ? Math.min(nssecStrength, 0.6) : nssecStrength
+      const degreeStrengthEffective =
+        degreeShare.source === 'lad' ? Math.min(degreeStrength, 0.6) : degreeStrength
+      const tenureStrengthEffective =
+        tenureShare.source === 'lad' ? Math.min(tenureStrength, 0.6) : tenureStrength
+      const ruralUrbanStrengthEffective =
+        ruralUrbanShare.source === 'lad'
+          ? Math.min(ruralUrbanStrength, 0.6)
+          : ruralUrbanStrength
+      const projection = computeWardProjection(
+        adjustedWard,
+        getBaselineNationalForYear(baseline, adjustedWard.lastYear),
+        aggregate,
+        leaveShare,
+        ageShare.share,
+        regionName,
+        nssecShare.share,
+        getNssecBaseline(),
+        degreeShare.share,
+        getDegreeBaseline(),
+        tenureShare.share,
+        getTenureBaseline(),
+        ruralUrbanShare.share,
+        getRuralUrbanBaseline(),
+        leaveStrength,
+        ageStrengthEffective,
+        regionStrength,
+        nssecStrengthEffective,
+        degreeStrengthEffective,
+        tenureStrengthEffective,
+        ruralUrbanStrengthEffective
+      )
+      rawProjectionByCode.set(ward.wardCode, projection)
+    })
+
     const projections: CouncilProjectionRow[] = []
-    const councilFeatures = [...(countyGeo?.features || []), ...ladGeo.features]
+    const surreyCouncilFeatures = [
+      { properties: { reference: 'surrey-east', name: 'East Surrey' } },
+      { properties: { reference: 'surrey-west', name: 'West Surrey' } },
+    ]
+    const councilFeatures = [...(countyGeo?.features || []), ...ladGeo.features, ...surreyCouncilFeatures]
     councilFeatures.forEach(feature => {
       const ladCode = feature.properties?.reference
       const ladName = feature.properties?.name
@@ -806,7 +1122,16 @@ export default function CouncilProjectionsPage() {
         else cycle = 'all_out'
       }
 
-      const allWards = byLad.get(ladCode) || []
+      const allWards =
+        ladCode === 'surrey-east'
+          ? baseline.wards.filter(
+              ward => ward.ladCode === 'E10000030' && SURREY_EAST_DIVISIONS.has(ward.wardCode)
+            )
+          : ladCode === 'surrey-west'
+            ? baseline.wards.filter(
+                ward => ward.ladCode === 'E10000030' && SURREY_WEST_DIVISIONS.has(ward.wardCode)
+              )
+            : byLad.get(ladCode) || []
       const inferredContestedSeats = allWards.reduce((acc, ward) => {
         const lastYear = ward.lastYear || 2026
         let contested = true
@@ -850,105 +1175,11 @@ export default function CouncilProjectionsPage() {
       const contestedPreviousTotals: Record<string, number> = {}
 
       wards.forEach(ward => {
-        const seatsUpCount = shouldUseWardIncumbents ? 1 : getSeatsPerWard(wards, seatRow, ward)
-        let adjustedWard = ward
-        const geWeights = {
-          reform: geReformWeight,
-          green: geGreenWeight,
-          major: geMajorWeight,
-        }
-        const wardNameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
-        const pconCode =
-          wardToPcon?.wards?.[ward.wardCode] ||
-          wardToPcon?.wardNames?.[wardNameKey] ||
-          cedToPcon?.ceds?.[ward.wardCode] ||
-          cedToPcon?.cedNames?.[wardNameKey]
-        const geShares = pconCode ? geLookup?.pcon?.[pconCode] : null
-        if (geShares) {
-          const blendedNational = { ...adjustedWard.nationalShares }
-          ;[
-            'Labour',
-            'Conservative',
-            'Reform',
-            'Liberal Democrat',
-            'Green',
-            'SNP',
-            'Plaid Cymru',
-          ].forEach(party => {
-            const weight = getGeWeightForParty(party, geWeights)
-            if (!weight) return
-            const baseShare = adjustedWard.nationalShares?.[party] ?? 0
-            const geShare = geShares?.[party]
-            if (baseShare === 0 && (party === 'Reform' || party === 'Green')) {
-              blendedNational[party] = getRelativeGeShare(party, geShare)
-              return
-            }
-            blendedNational[party] = blendShare(baseShare, geShare, weight)
-          })
-          adjustedWard = { ...adjustedWard, nationalShares: blendedNational }
-        }
-        const leaveShare = getLeaveShareForWard(
-          ward.wardCode,
-          ward.ladCode,
-          ward.wardName,
-          ward.ladName
-        )
-        const ageShare = getAgeShareForWard(
-          ward.wardCode,
-          ward.ladCode,
-          ward.wardName,
-          ward.ladName
-        )
-        const regionName = getRegionForWard(ward.ladCode)
-        const nssecShare = getNssecShareForWard(
-          ward.wardCode,
-          ward.ladCode,
-          ward.wardName,
-          ward.ladName
-        )
-        const nssecBaseline = getNssecBaseline()
-        const degreeShare = getDegreeShareForWard(
-          ward.wardCode,
-          ward.ladCode,
-          ward.wardName,
-          ward.ladName
-        )
-        const tenureShare = getTenureShareForWard(
-          ward.wardCode,
-          ward.ladCode,
-          ward.wardName,
-          ward.ladName
-        )
-        const degreeBaseline = getDegreeBaseline()
-        const tenureBaseline = getTenureBaseline()
-        const ageStrengthEffective =
-          ageShare.source === 'lad' ? Math.min(ageStrength, 0.6) : ageStrength
-        const nssecStrengthEffective =
-          nssecShare.source === 'lad' ? Math.min(nssecStrength, 0.6) : nssecStrength
-        const degreeStrengthEffective =
-          degreeShare.source === 'lad' ? Math.min(degreeStrength, 0.6) : degreeStrength
-        const tenureStrengthEffective =
-          tenureShare.source === 'lad' ? Math.min(tenureStrength, 0.6) : tenureStrength
-        const projection = computeWardProjection(
-          adjustedWard,
-          getBaselineNationalForYear(baseline, adjustedWard.lastYear),
-          aggregate,
-          leaveShare,
-          ageShare.share,
-          regionName,
-          nssecShare.share,
-          nssecBaseline,
-          degreeShare.share,
-          degreeBaseline,
-          tenureShare.share,
-          tenureBaseline,
-          leaveStrength,
-          ageStrengthEffective,
-          regionStrength,
-          nssecStrengthEffective,
-          degreeStrengthEffective,
-          tenureStrengthEffective
-        )
+        const seatsUpCount = shouldUseWardIncumbents
+          ? 1
+          : getSeatsPerWard(wards, seatRow, ward, wardVacancyLookup)
+        const projection = rawProjectionByCode.get(ward.wardCode)
+        if (!projection) return
         const previousShares: Record<string, number> = {
           ...ward.nationalShares,
           ...ward.localShares,
@@ -1057,6 +1288,8 @@ export default function CouncilProjectionsPage() {
     nssecLookup,
     degreeLookup,
     tenureLookup,
+    ruralUrbanLookup,
+    wardVacancyLookup,
     wardToPcon,
     cedToPcon,
     geLookup,
@@ -1066,6 +1299,7 @@ export default function CouncilProjectionsPage() {
     nssecStrength,
     degreeStrength,
     tenureStrength,
+    ruralUrbanStrength,
     geReformWeight,
     geGreenWeight,
     geMajorWeight,
@@ -1140,13 +1374,25 @@ export default function CouncilProjectionsPage() {
           <Link href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
             Council Projections
           </Link>
+          <Link
+            href="/may-2025-simulation"
+            style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}
+          >
+            May 2025 Simulation
+          </Link>
+          <Link
+            href="/may-2025-council-projections"
+            style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}
+          >
+            May 2025 Council Projections
+          </Link>
         </div>
         <p style={{ margin: '0.35rem 0 0', color: '#555' }}>
           Councils up for election in 2026 with previous and projected control.
         </p>
       </header>
 
-      {process.env.NODE_ENV !== 'production' && (
+      {hasMounted && process.env.NODE_ENV !== 'production' && (
         <div
           style={{
             display: 'flex',
@@ -1223,6 +1469,17 @@ export default function CouncilProjectionsPage() {
               step={0.05}
               value={tenureStrength}
               onChange={event => setTenureStrength(Number(event.target.value))}
+            />
+          </label>
+          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+            Rural/Urban Strength: {ruralUrbanStrength.toFixed(2)}
+            <input
+              type="range"
+              min={0}
+              max={1}
+              step={0.05}
+              value={ruralUrbanStrength}
+              onChange={event => setRuralUrbanStrength(Number(event.target.value))}
             />
           </label>
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>

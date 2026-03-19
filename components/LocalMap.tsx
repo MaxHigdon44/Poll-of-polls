@@ -24,6 +24,7 @@ const PARTY_COLORS: Record<string, string> = {
 type LocalMapProps = {
   ladGeo: GeoCollection
   overlayAreas?: GeoCollection | null
+  boundaryAreas?: GeoCollection | null
   overlayAreaCodes?: Set<string>
   hiddenLadCodes?: Set<string>
   wardFeatures: GeoFeature[]
@@ -73,6 +74,8 @@ type LocalMapProps = {
   onSelectLad: (lad: string | null) => void
   eligibleLads: Set<string>
   ladCategoryByCode: Map<string, 'county' | 'district' | 'london' | 'metro' | 'unitary'>
+  nonContestedLabel?: string
+  previousWinnerLabel?: string
 }
 
 function FitBounds({ feature }: { feature: GeoFeature | null }) {
@@ -134,12 +137,23 @@ function PatternDefs() {
 
 function getWardCode(feature: GeoFeature) {
   const props: any = feature.properties || {}
-  return props.reference || props.WD25CD || props.WD23CD || props.WD22CD || null
+  return (
+    props.reference ||
+    props.CED25CD ||
+    props.CED24CD ||
+    props.WD25CD ||
+    props.WD23CD ||
+    props.WD22CD ||
+    null
+  )
 }
 
 function getWardNameKey(feature: GeoFeature) {
   const props: any = feature.properties || {}
-  const wardName = String(props.WD25NM || props.WD23NM || props.WD22NM || props.name || '')
+  const wardName = String(
+    props.CED25NM || props.CED24NM || props.WD25NM || props.WD23NM || props.WD22NM || props.name || ''
+  )
+    .replace(/\s+ed$/i, '')
     .replace(/'s\b/gi, 's')
     .toLowerCase()
     .replace(/&/g, ' and ')
@@ -147,7 +161,15 @@ function getWardNameKey(feature: GeoFeature) {
     .replace(/\bbeneden\b/g, 'benenden')
     .replace(/\s+/g, ' ')
     .trim()
-  const ladName = String(props.LAD25NM || props.LAD23NM || props.LAD22NM || '')
+  const ladName = String(
+    props.CTY25NM ||
+      props.CTY24NM ||
+      props.LAD25NM ||
+      props.LAD23NM ||
+      props.LAD22NM ||
+      props.ladName ||
+      ''
+  )
     .replace(/'s\b/gi, 's')
     .toLowerCase()
     .replace(/&/g, ' and ')
@@ -160,7 +182,15 @@ function getWardNameKey(feature: GeoFeature) {
 
 function getWardDisplayName(feature: GeoFeature) {
   const props: any = feature.properties || {}
-  return props.WD25NM || props.WD23NM || props.WD22NM || props.name || 'Ward'
+  return (
+    props.CED25NM ||
+    props.CED24NM ||
+    props.WD25NM ||
+    props.WD23NM ||
+    props.WD22NM ||
+    props.name ||
+    'Ward'
+  )
 }
 
 function getPartyStripePatternId(primary: string, secondary: string) {
@@ -218,6 +248,7 @@ function getElectedParties(
 export default function LocalMap({
   ladGeo,
   overlayAreas,
+  boundaryAreas,
   overlayAreaCodes,
   hiddenLadCodes,
   wardFeatures,
@@ -234,6 +265,8 @@ export default function LocalMap({
   onSelectLad,
   eligibleLads,
   ladCategoryByCode,
+  nonContestedLabel = 'Not contested',
+  previousWinnerLabel = 'Previous winner',
 }: LocalMapProps) {
   const countyFeatures = ladGeo.features.filter(feature => {
     const code = feature.properties?.reference
@@ -325,10 +358,18 @@ export default function LocalMap({
   })
 
   const overlayStyle = () => ({
-    color: '#1565C0',
-    weight: 2,
+    color: 'transparent',
+    weight: 0,
     fillColor: '#1E88E5',
     fillOpacity: 0.35,
+  })
+
+  const boundaryStyle = () => ({
+    color: '#1565C0',
+    weight: 2,
+    fillColor: 'transparent',
+    fillOpacity: 0,
+    opacity: 0.9,
   })
 
   const wardStyle = (feature?: GeoFeature) => {
@@ -401,7 +442,7 @@ export default function LocalMap({
       (wardCode ? contestedWardCodes?.has(wardCode) : false) ||
       (wardNameKey ? contestedWardNameKeys?.has(wardNameKey) : false)
     if (!isContested) {
-      layer.bindPopup(`<strong>${wardName}</strong><br/>Not contested in 2026`)
+      layer.bindPopup(`<strong>${wardName}</strong><br/>${nonContestedLabel}`)
       return
     }
     const projection =
@@ -437,7 +478,7 @@ export default function LocalMap({
         return `${entry.party}: ${entry.value.toFixed(1)}%${suffix}`
       })
       .join('<br/>')
-    const prev = projection.prevWinner ? `Previous winner: ${projection.prevWinner}` : null
+    const prev = projection.prevWinner ? `${previousWinnerLabel}: ${projection.prevWinner}` : null
     layer.bindPopup(
       `<strong>${wardName}</strong><br/>${popupLines}<br/>Seats up: ${vacancies}${
         prev ? `<br/>${prev}` : ''
@@ -511,6 +552,13 @@ export default function LocalMap({
               }
             },
           }}
+        />
+      )}
+      {!selectedLad && boundaryAreas && (
+        <GeoJSON
+          data={boundaryAreas as GeoJsonObject}
+          style={boundaryStyle}
+          interactive={false}
         />
       )}
       {selectedLad && (

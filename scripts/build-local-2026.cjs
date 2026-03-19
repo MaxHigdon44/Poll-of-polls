@@ -171,6 +171,8 @@ const NSSEC_WARD_FILE = 'nssec_ward.csv'
 const DEGREE_WARD_FILE = 'degree_ward.csv'
 const TENURE_LSOA_FILE = 'tenure_lsoa_grouped.csv'
 const TENURE_BASELINE_FILE = 'tenure_england_wales.csv'
+const RURAL_URBAN_LSOA_FILE = 'lsoa_rural_urban_2011.geojson'
+const LSOA11_TO_LSOA21_LOOKUP_FILE = 'lsoa11_to_lsoa21.geojson'
 const LSOA_TO_WARD_LOOKUP_FILE = 'lsoa_to_ward_2025.geojson'
 const WARD_TO_CED_LOOKUP_FILE = 'ward_to_ced_2025.geojson'
 const LAD_REGION_FILE = 'lad_region_2023.csv'
@@ -249,6 +251,26 @@ const COUNTY_ELECTIONS_2026 = new Set(
   )
 )
 
+const COUNTY_ELECTIONS_2025 = new Set(
+  [
+    'Cambridgeshire',
+    'Derbyshire',
+    'Devon',
+    'Gloucestershire',
+    'Hertfordshire',
+    'Kent',
+    'Leicestershire',
+    'Lincolnshire',
+    'Nottinghamshire',
+    'Oxfordshire',
+    'Staffordshire',
+    'Warwickshire',
+    'Worcestershire',
+  ].map(name => name.toLowerCase())
+)
+
+const ALL_COUNTY_ELECTIONS = new Set([...COUNTY_ELECTIONS_2025, ...COUNTY_ELECTIONS_2026])
+
 const AGE_BASELINE = {
   age18_35: 0.29,
   age35_55: 0.33,
@@ -307,6 +329,10 @@ function normalize(value) {
     .replace(/\bcity of\b/g, '')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function normalizeCedName(value) {
+  return normalize(value).replace(/\bed\b/g, '').replace(/\s+/g, ' ').trim()
 }
 
 function mapParty(name) {
@@ -451,6 +477,7 @@ async function buildAgeShare(baseline) {
       wardNamesAggressive: wardNameAggressiveEntries,
     })
     Object.assign(wardEntries, cedEntries)
+    addCountyCedAliases(baseline, cedEntries, wardEntries, wardNameEntries)
   }
 
   const ladEntries = {}
@@ -619,6 +646,7 @@ async function buildNssecShare(baseline) {
       wardNamesAggressive: wardNameAggressiveEntries,
     })
     Object.assign(wardEntries, cedEntries)
+    addCountyCedAliases(baseline, cedEntries, wardEntries, wardNameEntries)
   }
 
   const ladEntries = {}
@@ -797,6 +825,7 @@ async function buildDegreeShare(baseline) {
       wardNamesAggressive: wardNameAggressiveEntries,
     })
     Object.assign(wardEntries, cedEntries)
+    addCountyCedAliases(baseline, cedEntries, wardEntries, wardNameEntries)
   }
 
   const ladEntries = {}
@@ -871,6 +900,264 @@ function getTenureBucket(category) {
     return 'privateRented'
   }
   return null
+}
+
+function getRuralUrbanBucket(category) {
+  const normalized = String(category || '').trim()
+  if (!normalized) return null
+  if (normalized === 'A1' || normalized === 'B1') {
+    return 'conurbation'
+  }
+  if (normalized === 'C1' || normalized === 'C2') {
+    return 'cityTown'
+  }
+  if (normalized === 'D1' || normalized === 'D2') {
+    return 'ruralTownFringe'
+  }
+  if (normalized === 'E1' || normalized === 'E2') {
+    return 'ruralVillageHamlet'
+  }
+  if (
+    normalized === 'Urban: Nearer to a major town or city' ||
+    normalized === 'Urban: Further from a major town or city'
+  ) {
+    return 'cityTown'
+  }
+  if (
+    normalized === 'Larger rural: Nearer to a major town or city' ||
+    normalized === 'Smaller rural: Nearer to a major town or city'
+  ) {
+    return 'ruralTownFringe'
+  }
+  if (
+    normalized === 'Larger rural: Further from a major town or city' ||
+    normalized === 'Smaller rural: Further from a major town or city'
+  ) {
+    return 'ruralVillageHamlet'
+  }
+  return null
+}
+
+async function buildRuralUrbanShare(baseline) {
+  const filePath = path.join(RAW_DIR, RURAL_URBAN_LSOA_FILE)
+  if (!fs.existsSync(filePath)) return null
+
+  const geo = JSON.parse(await fsp.readFile(filePath, 'utf8'))
+  const features = Array.isArray(geo?.features) ? geo.features : null
+  if (!features) return null
+
+  const rawEntries = {}
+  features.forEach(feature => {
+    const props = feature.properties || {}
+    const lsoaCode = String(props.LSOA11CD || props.LSOA21CD || '').trim()
+    if (!lsoaCode) return
+    const bucket = getRuralUrbanBucket(props.RUC11CD || props.RUC21NM)
+    rawEntries[lsoaCode] = {
+      lsoaCode,
+      lsoaName: String(props.LSOA11NM || props.LSOA21NM || '').trim(),
+      conurbation: bucket === 'conurbation' ? 1 : 0,
+      cityTown: bucket === 'cityTown' ? 1 : 0,
+      ruralTownFringe: bucket === 'ruralTownFringe' ? 1 : 0,
+      ruralVillageHamlet: bucket === 'ruralVillageHamlet' ? 1 : 0,
+      totalPop: 1,
+    }
+  })
+
+  let lsoaEntries = rawEntries
+  const uses2011Codes = features.some(feature => String(feature?.properties?.LSOA11CD || '').trim())
+  if (uses2011Codes) {
+    const lookupPath = path.join(RAW_DIR, LSOA11_TO_LSOA21_LOOKUP_FILE)
+    if (!fs.existsSync(lookupPath)) return null
+    const lookupGeo = JSON.parse(await fsp.readFile(lookupPath, 'utf8'))
+    const lookupFeatures = Array.isArray(lookupGeo?.features) ? lookupGeo.features : null
+    if (!lookupFeatures) return null
+    const mappedEntries = {}
+    lookupFeatures.forEach(feature => {
+      const props = feature.properties || {}
+      const lsoa11Code = String(props.LSOA11CD || '').trim()
+      const lsoa21Code = String(props.LSOA21CD || '').trim()
+      if (!lsoa11Code || !lsoa21Code) return
+      const entry = rawEntries[lsoa11Code]
+      if (!entry?.totalPop) return
+      const mapped = mappedEntries[lsoa21Code] || {
+        lsoaCode: lsoa21Code,
+        lsoaName: String(props.LSOA21NM || '').trim(),
+        conurbation: 0,
+        cityTown: 0,
+        ruralTownFringe: 0,
+        ruralVillageHamlet: 0,
+        totalPop: 0,
+      }
+      mapped.conurbation += entry.conurbation * entry.totalPop
+      mapped.cityTown += entry.cityTown * entry.totalPop
+      mapped.ruralTownFringe += entry.ruralTownFringe * entry.totalPop
+      mapped.ruralVillageHamlet += entry.ruralVillageHamlet * entry.totalPop
+      mapped.totalPop += entry.totalPop
+      mappedEntries[lsoa21Code] = mapped
+    })
+    Object.values(mappedEntries).forEach(entry => {
+      if (!entry.totalPop) return
+      entry.conurbation /= entry.totalPop
+      entry.cityTown /= entry.totalPop
+      entry.ruralTownFringe /= entry.totalPop
+      entry.ruralVillageHamlet /= entry.totalPop
+    })
+    lsoaEntries = mappedEntries
+  }
+
+  const wardTotals = new Map()
+  const wardNameMap = new Map()
+  const wardNameOnlyMap = new Map()
+  const wardNameAggressiveMap = new Map()
+  const wardNameCounts = new Map()
+  const lsoaToWardLookup = await buildLsoaToWardLookup()
+  if (!lsoaToWardLookup) return null
+  ;(lsoaToWardLookup.rows || []).forEach(row => {
+    const lsoaCode = String(row.LSOA21CD || '').trim()
+    const wardCode = String(row.WD25CD || '').trim()
+    const wardName = String(row.WD25NM || '').trim()
+    const ladName = String(row.LAD25NM || '').trim()
+    if (!lsoaCode || !wardCode || !wardName) return
+    const entry = lsoaEntries[lsoaCode]
+    if (!entry?.totalPop) return
+
+    const totals = wardTotals.get(wardCode) || {
+      wardName,
+      totalPop: 0,
+      conurbation: 0,
+      cityTown: 0,
+      ruralTownFringe: 0,
+      ruralVillageHamlet: 0,
+    }
+    totals.totalPop += entry.totalPop
+    totals.conurbation += entry.conurbation * entry.totalPop
+    totals.cityTown += entry.cityTown * entry.totalPop
+    totals.ruralTownFringe += entry.ruralTownFringe * entry.totalPop
+    totals.ruralVillageHamlet += entry.ruralVillageHamlet * entry.totalPop
+    wardTotals.set(wardCode, totals)
+
+    if (ladName) {
+      const key = `${normalize(ladName)}|${normalize(wardName)}`
+      wardNameMap.set(key, wardCode)
+    }
+    const nameKey = normalize(wardName)
+    wardNameCounts.set(nameKey, (wardNameCounts.get(nameKey) || 0) + 1)
+    if (!wardNameOnlyMap.has(nameKey)) wardNameOnlyMap.set(nameKey, wardCode)
+    if (!wardNameAggressiveMap.has(nameKey)) wardNameAggressiveMap.set(nameKey, wardCode)
+  })
+
+  const wardEntries = {}
+  wardTotals.forEach((value, code) => {
+    if (!value.totalPop) return
+    wardEntries[code] = {
+      wardCode: code,
+      wardName: value.wardName,
+      conurbation: value.conurbation / value.totalPop,
+      cityTown: value.cityTown / value.totalPop,
+      ruralTownFringe: value.ruralTownFringe / value.totalPop,
+      ruralVillageHamlet: value.ruralVillageHamlet / value.totalPop,
+      totalPop: value.totalPop,
+    }
+  })
+
+  const wardNameEntries = {}
+  wardNameMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameEntries[key] = entry
+  })
+  const wardNameOnlyEntries = {}
+  wardNameOnlyMap.forEach((code, key) => {
+    if (wardNameCounts.get(key) !== 1) return
+    const entry = wardEntries[code]
+    if (entry) wardNameOnlyEntries[key] = entry
+  })
+  const wardNameAggressiveEntries = {}
+  wardNameAggressiveMap.forEach((code, key) => {
+    const entry = wardEntries[code]
+    if (entry) wardNameAggressiveEntries[key] = entry
+  })
+
+  const wardToCedLookup = await buildWardToCedLookup()
+  if (wardToCedLookup) {
+    const cedEntries = buildCedEntriesFromLookup(wardToCedLookup.rows, {
+      directEntries: wardEntries,
+      keyField: 'WD25CD',
+      nameField: 'WD25NM',
+      ladNameField: 'LAD25NM',
+      cedCodeField: 'CED25CD',
+      cedNameField: 'CED25NM',
+      valueKeys: ['conurbation', 'cityTown', 'ruralTownFringe', 'ruralVillageHamlet'],
+      wardNames: wardNameEntries,
+      wardNamesOnly: wardNameOnlyEntries,
+      wardNamesAggressive: wardNameAggressiveEntries,
+    })
+    Object.assign(wardEntries, cedEntries)
+    addCountyCedAliases(baseline, cedEntries, wardEntries, wardNameEntries)
+  }
+
+  const ladEntries = {}
+  const ladTotals = new Map()
+  baseline.forEach(ward => {
+    const ru = wardEntries[ward.wardCode]
+    if (!ru?.totalPop) return
+    const entry = ladTotals.get(ward.ladCode) || {
+      totalPop: 0,
+      conurbation: 0,
+      cityTown: 0,
+      ruralTownFringe: 0,
+      ruralVillageHamlet: 0,
+    }
+    entry.totalPop += ru.totalPop
+    entry.conurbation += ru.conurbation * ru.totalPop
+    entry.cityTown += ru.cityTown * ru.totalPop
+    entry.ruralTownFringe += ru.ruralTownFringe * ru.totalPop
+    entry.ruralVillageHamlet += ru.ruralVillageHamlet * ru.totalPop
+    ladTotals.set(ward.ladCode, entry)
+  })
+  ladTotals.forEach((value, code) => {
+    if (!value.totalPop) return
+    ladEntries[code] = {
+      conurbation: value.conurbation / value.totalPop,
+      cityTown: value.cityTown / value.totalPop,
+      ruralTownFringe: value.ruralTownFringe / value.totalPop,
+      ruralVillageHamlet: value.ruralVillageHamlet / value.totalPop,
+    }
+  })
+
+  let totalPop = 0
+  let conurbation = 0
+  let cityTown = 0
+  let ruralTownFringe = 0
+  let ruralVillageHamlet = 0
+  Object.values(wardEntries).forEach(entry => {
+    totalPop += entry.totalPop
+    conurbation += entry.conurbation * entry.totalPop
+    cityTown += entry.cityTown * entry.totalPop
+    ruralTownFringe += entry.ruralTownFringe * entry.totalPop
+    ruralVillageHamlet += entry.ruralVillageHamlet * entry.totalPop
+  })
+  const baselineShares = totalPop
+    ? {
+        conurbation: conurbation / totalPop,
+        cityTown: cityTown / totalPop,
+        ruralTownFringe: ruralTownFringe / totalPop,
+        ruralVillageHamlet: ruralVillageHamlet / totalPop,
+      }
+    : {
+        conurbation: 0,
+        cityTown: 0.5,
+        ruralTownFringe: 0.25,
+        ruralVillageHamlet: 0.25,
+      }
+
+  return {
+    wards: wardEntries,
+    wardNames: wardNameEntries,
+    wardNamesOnly: wardNameOnlyEntries,
+    wardNamesAggressive: wardNameAggressiveEntries,
+    lads: ladEntries,
+    meta: { baseline: baselineShares },
+  }
 }
 
 async function buildTenureShare(baseline) {
@@ -1012,6 +1299,7 @@ async function buildTenureShare(baseline) {
       wardNamesAggressive: wardNameAggressiveEntries,
     })
     Object.assign(wardEntries, cedEntries)
+    addCountyCedAliases(baseline, cedEntries, wardEntries, wardNameEntries)
   }
 
   const ladEntries = {}
@@ -1409,6 +1697,28 @@ function buildCedEntriesFromLookup(
   })
 
   return cedEntries
+}
+
+function addCountyCedAliases(baseline, cedEntries, wardEntries, wardNameEntries) {
+  const cedByName = new Map()
+  Object.entries(cedEntries || {}).forEach(([cedCode, entry]) => {
+    const key = normalizeCedName(entry?.wardName)
+    if (!key || cedByName.has(key)) return
+    cedByName.set(key, { cedCode, entry })
+  })
+
+  ;(baseline || []).forEach(ward => {
+    if (!ALL_COUNTY_ELECTIONS.has(normalize(ward.ladName))) return
+    if (wardEntries[ward.wardCode]) return
+    const match = cedByName.get(normalizeCedName(ward.wardName))
+    if (!match?.entry) return
+    wardEntries[ward.wardCode] = {
+      ...match.entry,
+      wardCode: ward.wardCode,
+      wardName: ward.wardName,
+    }
+    wardNameEntries[`${normalize(ward.ladName)}|${normalize(ward.wardName)}`] = wardEntries[ward.wardCode]
+  })
 }
 
 async function buildCouncilSeatsLookup() {
@@ -1838,7 +2148,7 @@ function loadLeaveWardXlsx(filePath) {
   return { rows }
 }
 
-async function buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCounty) {
+async function buildLeaveShare(baseline, wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCounty) {
   const wardPath = path.join(RAW_DIR, LEAVE_WARD_FILE)
   const wardXlsxPath = path.join(RAW_DIR, LEAVE_WARD_XLSX)
   const ladPath = path.join(RAW_DIR, LEAVE_LAD_FILE)
@@ -1953,7 +2263,10 @@ async function buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCount
       const cedCode = props.reference || props.CED25CD || props.CED24CD || props.CED23CD
       const cedName = props.name || props.CED25NM || props.CED24NM || props.CED23NM
       const countyCode =
+        props.countyCode ||
         props.county ||
+        props.CTY25CD ||
+        props.CTY24CD ||
         (String(props.ladCode || '').startsWith('E100') ? String(props.ladCode) : ladToCounty?.get(props.ladCode))
       if (!cedCode || !cedName || !countyCode) return
       const cedBBox = getBBox(feature.geometry)
@@ -2010,7 +2323,12 @@ async function buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCount
       }
 
       if (matchedSamples > 0) {
-        wardEntries[cedCode] = { leaveShare: weightedShare / matchedSamples }
+        wardEntries[cedCode] = {
+          wardCode: cedCode,
+          wardName: cedName,
+          totalPop: 1,
+          leaveShare: weightedShare / matchedSamples,
+        }
         wardNameEntries[cedName.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ').trim()] = {
           leaveShare: weightedShare / matchedSamples,
         }
@@ -2031,7 +2349,12 @@ async function buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCount
       const districtLeaveShare =
         (dominantDistrict && ladMap.get(String(dominantDistrict))) || null
       if (typeof districtLeaveShare === 'number') {
-        wardEntries[cedCode] = { leaveShare: districtLeaveShare }
+        wardEntries[cedCode] = {
+          wardCode: cedCode,
+          wardName: cedName,
+          totalPop: 1,
+          leaveShare: districtLeaveShare,
+        }
         wardNameEntries[cedName.toLowerCase().replace(/&/g, 'and').replace(/\s+/g, ' ').trim()] = {
           leaveShare: districtLeaveShare,
         }
@@ -2039,6 +2362,10 @@ async function buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCount
       }
     })
   }
+  const leaveCedEntries = Object.fromEntries(
+    Object.entries(wardEntries).filter(([, entry]) => entry && entry.wardCode && String(entry.wardCode).startsWith('E58'))
+  )
+  addCountyCedAliases(baseline, leaveCedEntries, wardEntries, wardNameEntries)
 
   const coverage = wardGeoCodes && wardGeoCodes.size
     ? wardMap.size / wardGeoCodes.size
@@ -3285,7 +3612,7 @@ async function buildBaseline() {
     JSON.stringify({ generatedAt: new Date().toISOString(), councils: councilPrevious })
   )
 
-  const leaveShare = await buildLeaveShare(wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCounty)
+  const leaveShare = await buildLeaveShare(baseline, wardGeoCodes, wardGeo, cedGeo, ladGeo, ladToCounty)
   if (leaveShare) {
     await fsp.writeFile(
       path.join(OUT_DIR, 'leave-share.json'),
@@ -3459,6 +3786,14 @@ async function buildBaseline() {
     await fsp.writeFile(
       path.join(OUT_DIR, 'tenure-share.json'),
       JSON.stringify(tenureShare)
+    )
+  }
+
+  const ruralUrbanShare = await buildRuralUrbanShare(baseline)
+  if (ruralUrbanShare) {
+    await fsp.writeFile(
+      path.join(OUT_DIR, 'rural-urban-share.json'),
+      JSON.stringify(ruralUrbanShare)
     )
   }
 

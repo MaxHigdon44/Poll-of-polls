@@ -8,9 +8,9 @@ export const AGE_DELTAS: Record<
   string,
   { age18_35: number; age35_55: number; age55_plus: number }
 > = {
-  Labour: { age18_35: 5.66, age35_55: 2.67, age55_plus: -4.22 },
+  Labour: { age18_35: 3.66, age35_55: 0.67, age55_plus: -5.22 },
   Conservative: { age18_35: -7.15, age35_55: -2.13, age55_plus: 5.54 },
-  'Liberal Democrat': { age18_35: -2.4, age35_55: -1.08, age55_plus: 1.82 },
+  'Liberal Democrat': { age18_35: -2.4, age35_55: -1.08, age55_plus: 2.82 },
   SNP: { age18_35: 0.6, age35_55: 0.17, age55_plus: -0.03 },
   Reform: { age18_35: -8.45, age35_55: 0.17, age55_plus: 4.21 },
   'Plaid Cymru': { age18_35: 0.57, age35_55: -0.13, age55_plus: -0.06 },
