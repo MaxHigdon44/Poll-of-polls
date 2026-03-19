@@ -2417,18 +2417,6 @@ export default function Local2026Page() {
         <Link href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           Council Projections
         </Link>
-        <Link
-          href="/may-2025-simulation"
-          style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}
-        >
-          May 2025 Simulation
-        </Link>
-        <Link
-          href="/may-2025-council-projections"
-          style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}
-        >
-          May 2025 Council Projections
-        </Link>
       </div>
       <div style={{ marginTop: '0.75rem', marginBottom: '1.25rem', color: '#555' }}>
         {selectedCouncilName ? (
