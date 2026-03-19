@@ -412,7 +412,9 @@ function computeWardProjection(
   const labourDeltaMultiplier =
     ward.lastYear === 2021 ? 1.4 : ward.lastYear === 2022 ? 1.3 : ward.lastYear === 2024 ? 1.15 : 1
   const labourBaselineCarry =
-    ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024 ? 0.93 : 1
+    ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024
+      ? 0.93
+      : 1
   const nationalParties = [
     'Labour',
     'Conservative',
@@ -424,7 +426,7 @@ function computeWardProjection(
   ]
 
   const aggregateMap: Record<string, number> = {
-    Labour: (aggregate.labour ?? 0) - 2,
+    Labour: aggregate.labour ?? 0,
     Conservative: aggregate.conservative ?? 0,
     Reform: aggregate.reform ?? 0,
     'Liberal Democrat': aggregate.libdem ?? 0,
@@ -458,7 +460,7 @@ function computeWardProjection(
     const base = (ward.nationalShares[party] ?? 0) * (party === 'Labour' ? labourBaselineCarry : 1)
     const rawDelta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
     let delta = party === 'Labour' && rawDelta < 0 ? rawDelta * labourDeltaMultiplier : rawDelta
-    if (party === 'Conservative' && delta < 0) {
+    if (party === 'Conservative' && ward.lastYear === 2021 && delta < 0) {
       delta *= 0.9
     }
     if (
@@ -646,10 +648,6 @@ function getSeatsPerWard(
   const wardKey = normalizeName(ward.wardName)
   const override = MIXED_ALL_OUT_SEAT_OVERRIDES[councilKey]?.[wardKey]
   if (override) return override
-  const explicitVacancy =
-    wardVacancyLookup?.wards?.[ward.wardCode] ||
-    wardVacancyLookup?.wardNames?.[`${normalizeName(ward.ladName)}|${wardKey}`]
-  if (explicitVacancy) return explicitVacancy
 
   const seatsUp = seatRow?.seatsUp || 0
   const totalSeats = seatRow?.totalSeats || 0
@@ -661,14 +659,36 @@ function getSeatsPerWard(
   }
   if (cycle !== 'all_out') return Math.max(ward.vacancies || 0, 1)
 
+  const explicitVacancy =
+    wardVacancyLookup?.wards?.[ward.wardCode] ||
+    wardVacancyLookup?.wardNames?.[`${normalizeName(ward.ladName)}|${wardKey}`]
+
   const vacancySum = wards.reduce((acc, entry) => acc + Math.max(entry.vacancies || 0, 1), 0)
   if (vacancySum === totalSeats) {
     return Math.max(ward.vacancies || 0, 1)
   }
 
+  if (explicitVacancy) {
+    const explicitSum = wards.reduce((acc, entry) => {
+      const entryWardKey = normalizeName(entry.wardName)
+      const value =
+        wardVacancyLookup?.wards?.[entry.wardCode] ||
+        wardVacancyLookup?.wardNames?.[
+          `${normalizeName(entry.ladName)}|${entryWardKey}`
+        ] ||
+        0
+      return acc + value
+    }, 0)
+    if (explicitSum === totalSeats) {
+      return explicitVacancy
+    }
+  }
+
   if (wards.length && totalSeats % wards.length === 0) {
     return Math.max(1, Math.round(totalSeats / wards.length))
   }
+
+  if (explicitVacancy) return explicitVacancy
 
   return Math.max(ward.vacancies || 0, 1)
 }

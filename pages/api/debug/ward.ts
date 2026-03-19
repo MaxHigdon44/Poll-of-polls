@@ -29,6 +29,12 @@ import {
   type TenureShare,
 } from '@/lib/local2026/tenure'
 import {
+  RURAL_URBAN_EFFECT_STRENGTH,
+  getRuralUrbanAdjustment,
+  type RuralUrbanBaseline,
+  type RuralUrbanShare,
+} from '@/lib/local2026/ruralUrban'
+import {
   GE_WEIGHT_GREEN,
   GE_WEIGHT_MAJOR,
   GE_WEIGHT_REFORM,
@@ -36,6 +42,7 @@ import {
   getGeWeightForParty,
   getRelativeGeShare,
 } from '@/lib/local2026/ge'
+import { getConcentrationMultiplier } from '@/lib/local2026/concentration'
 
 type WardBaseline = {
   wardCode: string
@@ -94,6 +101,14 @@ function normalizeName(value: string | undefined | null) {
     .replace(/\bbeneden\b/g, 'benenden')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function canonicalizePartyLabel(party: string | null | undefined) {
+  const normalized = normalizeName(party)
+  if (normalized === 'ind' || normalized === 'independent' || normalized === 'independents') {
+    return 'Independent'
+  }
+  return party || 'Other'
 }
 
 function getBaselineNationalForYear(
@@ -164,6 +179,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const nssecLookup = readJson<LookupWithWardNames<NssecShare>>('nssec-share.json')
     const degreeLookup = readJson<LookupWithWardNames<DegreeShare>>('degree-share.json')
     const tenureLookup = readJson<LookupWithWardNames<TenureShare>>('tenure-share.json')
+    const ruralLookup = readJson<LookupWithWardNames<RuralUrbanShare>>('rural-urban-share.json')
     const wardToPcon = readJson<{ wards?: Record<string, string>; wardNames?: Record<string, string> }>(
       'ward-to-pcon.json'
     )
@@ -252,6 +268,40 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const regionName =
       regionLookup?.lads?.[ward.ladCode]?.regionName || COUNTY_REGION_LOOKUP[ward.ladCode] || null
     const baselineNational = getBaselineNationalForYear(baseline, adjustedWard.lastYear)
+    const rural = getLookupShare(
+      ruralLookup,
+      ward,
+      (ruralLookup.meta?.baseline as RuralUrbanBaseline) || {
+        conurbation: 0.2847,
+        cityTown: 0.5064,
+        ruralTownFringe: 0.1097,
+        ruralVillageHamlet: 0.0992,
+      }
+    )
+
+    const labourDeltaMultiplier =
+      adjustedWard.lastYear === 2021
+        ? 1.4
+        : adjustedWard.lastYear === 2022
+          ? 1.3
+          : adjustedWard.lastYear === 2024
+            ? 1.15
+            : 1
+    const labourBaselineCarry =
+      adjustedWard.lastYear === 2021 ||
+      adjustedWard.lastYear === 2022 ||
+      adjustedWard.lastYear === 2024
+        ? 0.93
+        : 1
+
+    let baselineWinner: string | null = null
+    let baselineTop = -1
+    Object.entries({ ...ward.nationalShares, ...ward.localShares }).forEach(([party, value]) => {
+      if ((value ?? 0) > baselineTop) {
+        baselineTop = value ?? 0
+        baselineWinner = party
+      }
+    })
 
     const aggregateMap: Record<string, number> = {
       Labour: Number(aggregate.labour) || 0,
@@ -274,10 +324,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       'SNP',
       'Plaid Cymru',
     ].forEach(party => {
+      const rawDelta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
+      let pollDelta = party === 'Labour' && rawDelta < 0 ? rawDelta * labourDeltaMultiplier : rawDelta
+      if (party === 'Conservative' && adjustedWard.lastYear === 2021 && pollDelta < 0) {
+        pollDelta *= 0.9
+      }
+      if (
+        party === 'Reform' &&
+        pollDelta > 0 &&
+        adjustedWard.lastYear === 2021 &&
+        canonicalizePartyLabel(baselineWinner) === 'Conservative'
+      ) {
+        pollDelta *= 0.95
+      }
       const row = {
-        base: adjustedWard.nationalShares[party] ?? 0,
+        base: (adjustedWard.nationalShares[party] ?? 0) * (party === 'Labour' ? labourBaselineCarry : 1),
         geEffect: geEffect[party] ?? 0,
-        pollDelta: (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0),
+        pollDelta,
         leaveAdj:
           LEAVE_EFFECT_STRENGTH *
           getCenteredPartyLeaveAdjustment(party, clampLeaveShare(leave.share.leaveShare)),
@@ -311,8 +374,21 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
               privateRented: 0.20401837551318536,
             }
           ),
+        ruralAdj:
+          (rural.source === 'lad' ? Math.min(RURAL_URBAN_EFFECT_STRENGTH, 0.6) : RURAL_URBAN_EFFECT_STRENGTH) *
+          getRuralUrbanAdjustment(
+            party,
+            rural.share,
+            (ruralLookup.meta?.baseline as RuralUrbanBaseline) || {
+              conurbation: 0.2847,
+              cityTown: 0.5064,
+              ruralTownFringe: 0.1097,
+              ruralVillageHamlet: 0.0992,
+            }
+          ),
+        concentrationMultiplier: getConcentrationMultiplier(party, ward.nationalShares[party] ?? 0),
       }
-      const preScale = Math.max(
+      const preMultiplier = Math.max(
         0,
         row.base +
           row.pollDelta +
@@ -321,9 +397,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           row.regionAdj +
           row.nssecAdj +
           row.degreeAdj +
-          row.tenureAdj
+          row.tenureAdj +
+          row.ruralAdj
       )
-      detail[party] = { ...row, preScale }
+      const preScale = preMultiplier * row.concentrationMultiplier
+      detail[party] = { ...row, preMultiplier, preScale }
       sumPreScale += preScale
     })
 
@@ -351,6 +429,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       nssec,
       degree,
       tenure,
+      rural,
       baselineNational,
       detail,
       localBaseline,
