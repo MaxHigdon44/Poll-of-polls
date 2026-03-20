@@ -190,6 +190,9 @@ export default function AggregatePage() {
         <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           Council Projections
         </a>
+        <a href="/methodology" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          Methodology
+        </a>
       </div>
       <div style={{ marginTop: '0.9rem', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
         UK National Polling Average

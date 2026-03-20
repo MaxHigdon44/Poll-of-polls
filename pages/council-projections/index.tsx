@@ -1394,6 +1394,9 @@ export default function CouncilProjectionsPage() {
           <Link href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
             Council Projections
           </Link>
+          <Link href="/methodology" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+            Methodology
+          </Link>
         </div>
         <p style={{ margin: '0.35rem 0 0', color: '#555' }}>
           Councils up for election in 2026 with previous and projected control.

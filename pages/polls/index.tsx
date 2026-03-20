@@ -129,6 +129,9 @@ export default function PollsPage() {
         <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           Council Projections
         </a>
+        <a href="/methodology" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          Methodology
+        </a>
       </div>
       <div style={{ marginBottom: '1rem', color: '#555' }}>
         UK National Poll Results from the Past Two Months
