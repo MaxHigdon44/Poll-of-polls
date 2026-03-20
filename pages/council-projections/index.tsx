@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
+import PageShell from '../../components/PageShell'
+import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import {
   LEAVE_EFFECT_STRENGTH,
   NATIONAL_LEAVE_SHARE,
@@ -1370,50 +1372,22 @@ export default function CouncilProjectionsPage() {
   }, [rows])
 
   return (
-    <div style={{ padding: '2rem', maxWidth: 1100, margin: '0 auto' }}>
-      <header style={{ marginBottom: '1.5rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'baseline',
-            gap: '1rem',
-            marginBottom: '0.25rem',
-          }}
-        >
-          <h1 style={{ margin: 0 }}>Council Projections</h1>
-          <Link href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            National Polling Average
-          </Link>
-          <Link href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            Recent UK Polls
-          </Link>
-          <Link href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            May 2026 Local Elections Projections
-          </Link>
-          <Link href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            Council Projections
-          </Link>
-          <Link href="/methodology" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            Methodology
-          </Link>
-        </div>
-        <p style={{ margin: '0.35rem 0 0', color: '#555' }}>
-          Councils up for election in 2026 with previous and projected control.
-        </p>
-      </header>
+    <PageShell>
+      <TopNav
+        title="Council Projections"
+        items={MAIN_TOPNAV_ITEMS}
+        subtitle="Councils up for election in 2026 with previous and projected control."
+      />
 
       {hasMounted && process.env.NODE_ENV !== 'production' && (
         <div
+          className="poll-card poll-card--subtle"
           style={{
             display: 'flex',
             flexWrap: 'wrap',
             gap: '1.5rem',
             marginBottom: '1.5rem',
-            padding: '0.75rem 1rem',
-            border: '1px solid #eee',
-            borderRadius: 8,
-            background: '#fafafa',
+            alignItems: 'flex-end',
           }}
         >
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -1680,6 +1654,6 @@ export default function CouncilProjectionsPage() {
           )})}
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }

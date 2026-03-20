@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
+import PageShell from '../../components/PageShell'
 import { computePollWeight } from '../../lib/weights'
+import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 
 type Poll = {
   poll_date: string
@@ -16,48 +18,65 @@ type Poll = {
   others: number | null
 }
 
-type AggregateHistoryRow = {
+type AggregateSeriesRow = {
   aggregate_date: string
-  labour: number | null
-  conservative: number | null
-  reform: number | null
-  libdem: number | null
-  green: number | null
-  snp: number | null
-  pc: number | null
-  others: number | null
+  labour: number | string | null
+  conservative: number | string | null
+  reform: number | string | null
+  libdem: number | string | null
+  green: number | string | null
+  snp: number | string | null
+  pc: number | string | null
+  others: number | string | null
 }
 
-type AggregateHistoryResponse = {
-  aggregates: AggregateHistoryRow[]
-}
+type TrendParty = 'labour' | 'conservative' | 'reform' | 'libdem' | 'green'
 
-const HISTORY_SERIES = [
+const TREND_PARTIES: Array<{ key: TrendParty; label: string; color: string }> = [
   { key: 'labour', label: 'Labour', color: '#E4003B' },
   { key: 'conservative', label: 'Conservative', color: '#0087DC' },
   { key: 'reform', label: 'Reform', color: '#12B6CF' },
   { key: 'libdem', label: 'Liberal Democrat', color: '#FAA61A' },
   { key: 'green', label: 'Green', color: '#02A95B' },
-] as const
+]
+
+function normalizeSeriesValue(value: number | string | null): number | null {
+  if (value == null) return null
+  const parsed = typeof value === 'number' ? value : Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+function formatPercentTick(value: number): string {
+  return Number.isInteger(value) ? `${value.toFixed(0)}%` : `${value.toFixed(1)}%`
+}
 
 export default function AggregatePage() {
   const [polls, setPolls] = useState<Poll[]>([])
-  const [aggregateHistory, setAggregateHistory] = useState<AggregateHistoryRow[]>([])
+  const [aggregateSeries, setAggregateSeries] = useState<AggregateSeriesRow[]>([])
   const [pollsterFilter, setPollsterFilter] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [minSampleSize, setMinSampleSize] = useState('')
   const [isClient, setIsClient] = useState(false)
-  const [hoveredPointKey, setHoveredPointKey] = useState<string | null>(null)
+  const [hoveredPoint, setHoveredPoint] = useState<{
+    party: string
+    color: string
+    value: number
+    date: string
+    x: number
+    y: number
+  } | null>(null)
 
   useEffect(() => {
     fetch('/api/polls')
       .then(res => res.json())
       .then(data => setPolls(data.polls ?? []))
+  }, [])
 
+  useEffect(() => {
     fetch('/api/aggregate')
       .then(res => res.json())
-      .then((data: AggregateHistoryResponse) => setAggregateHistory(data.aggregates ?? []))
+      .then(data => setAggregateSeries(data.aggregates ?? []))
   }, [])
 
   useEffect(() => {
@@ -196,140 +215,116 @@ export default function AggregatePage() {
     return { entries: sorted, maxValue }
   }, [aggregate])
 
-  const historyChart = useMemo(() => {
-    if (!aggregateHistory.length) return null
-    const series = [...aggregateHistory]
-      .reverse()
-      .map(row => ({
-        date: new Date(row.aggregate_date),
-        labour: row.labour,
-        conservative: row.conservative,
-        reform: row.reform,
-        libdem: row.libdem,
-        green: row.green,
-      }))
-      .filter(row => !Number.isNaN(row.date.getTime()))
+  const trendChart = useMemo(() => {
+    const series = [...aggregateSeries]
+      .filter(row => row.aggregate_date)
+      .sort((a, b) => new Date(a.aggregate_date).getTime() - new Date(b.aggregate_date).getTime())
+      .slice(-120)
+
     if (series.length < 2) return null
 
-    const width = 920
-    const height = 390
-    const margin = { top: 28, right: 24, bottom: 84, left: 52 }
-    const plotWidth = width - margin.left - margin.right
-    const plotHeight = height - margin.top - margin.bottom
-    const values = HISTORY_SERIES.flatMap(item =>
-      series.map(row => row[item.key]).filter((value): value is number => value != null)
+    const width = 960
+    const height = 520
+    const padding = { top: 20, right: 20, bottom: 40, left: 46 }
+    const innerWidth = width - padding.left - padding.right
+    const innerHeight = height - padding.top - padding.bottom
+
+    const allValues = series.flatMap(row =>
+      TREND_PARTIES.map(party => normalizeSeriesValue(row[party.key])).filter(
+        (value): value is number => value != null
+      )
     )
-    const maxValue = Math.max(...values)
-    const paddedMax = Math.min(50, Math.ceil((maxValue + 1.5) / 2) * 2)
-    const yMin = 10
-    const yMax = Math.max(yMin + 4, paddedMax)
+
+    if (allValues.length === 0) return null
+
+    const minValue = Math.min(...allValues, 0)
+    const maxValue = Math.max(...allValues, 0)
+    const rangeMin = Math.max(0, Math.floor((minValue - 1) / 2.5) * 2.5)
+    const rangeMax = Math.ceil((maxValue + 1) / 2.5) * 2.5
+    const valueRange = Math.max(rangeMax - rangeMin, 1)
 
     const xForIndex = (index: number) =>
-      margin.left + (index / Math.max(series.length - 1, 1)) * plotWidth
+      padding.left + (index / Math.max(series.length - 1, 1)) * innerWidth
     const yForValue = (value: number) =>
-      margin.top + plotHeight - ((value - yMin) / Math.max(yMax - yMin, 1)) * plotHeight
-    const formatDate = (date: Date) =>
-      date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+      padding.top + innerHeight - ((value - rangeMin) / valueRange) * innerHeight
 
-    const paths = HISTORY_SERIES.map(item => {
+    const tickValues: number[] = []
+    for (let value = rangeMax; value >= rangeMin; value -= 2.5) {
+      tickValues.push(Number(value.toFixed(1)))
+    }
+
+    const xTickIndexes = Array.from(new Set([0, Math.floor((series.length - 1) / 2), series.length - 1]))
+    const dateFormatter = new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'short',
+    })
+    const tooltipDateFormatter = new Intl.DateTimeFormat('en-GB', {
+      day: '2-digit',
+      month: 'short',
+      year: 'numeric',
+    })
+
+    const lines = TREND_PARTIES.map(party => {
       const points = series
         .map((row, index) => {
-          const value = row[item.key]
+          const value = normalizeSeriesValue(row[party.key])
           if (value == null) return null
           return `${xForIndex(index)},${yForValue(value)}`
         })
-        .filter(Boolean)
-      if (points.length < 2) return null
-      return { ...item, d: `M ${points.join(' L ')}` }
-    }).filter(Boolean) as Array<{ key: string; label: string; color: string; d: string }>
+        .filter((point): point is string => point != null)
 
-    const yTicks: number[] = []
-    for (let tick = yMin; tick <= yMax; tick += 1) {
-      yTicks.push(tick)
-    }
+      return { ...party, points: points.join(' ') }
+    }).filter(line => line.points)
 
-    const weeklyTickIndexes: number[] = []
-    let lastTickTime = -Infinity
-    series.forEach((row, index) => {
-      const time = row.date.getTime()
-      if (time - lastTickTime >= 7 * 24 * 60 * 60 * 1000) {
-        weeklyTickIndexes.push(index)
-        lastTickTime = time
-      }
-    })
-    const points = HISTORY_SERIES.flatMap(item =>
-      series.flatMap((row, index) => {
-        const value = row[item.key]
-        if (value == null) return []
-        const numericValue = Number(value)
-        if (!Number.isFinite(numericValue)) return []
-        return [
-          {
-            key: `${item.key}-${index}`,
-            label: item.label,
-            color: item.color,
+    const pointGroups = TREND_PARTIES.map(party => ({
+      ...party,
+      points: series
+        .map((row, index) => {
+          const value = normalizeSeriesValue(row[party.key])
+          if (value == null) return null
+          return {
             x: xForIndex(index),
-            y: yForValue(numericValue),
-            value: numericValue,
-            date: row.date,
-          },
-        ]
-      })
-    )
+            y: yForValue(value),
+            value,
+            date: row.aggregate_date,
+          }
+        })
+        .filter(
+          (
+            point
+          ): point is {
+            x: number
+            y: number
+            value: number
+            date: string
+          } => point != null
+        ),
+    }))
 
     return {
       width,
       height,
-      margin,
-      yTicks,
-      weeklyTickIndexes,
+      tickValues,
+      xTickIndexes,
+      dateFormatter,
+      tooltipDateFormatter,
       series,
-      paths,
-      points,
       xForIndex,
       yForValue,
-      formatDate,
+      lines,
+      pointGroups,
     }
-  }, [aggregateHistory])
-
-  const hoveredPoint = useMemo(() => {
-    if (!historyChart || !hoveredPointKey) return null
-    return historyChart.points.find(point => point.key === hoveredPointKey) || null
-  }, [historyChart, hoveredPointKey])
+  }, [aggregateSeries])
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-          gap: '1rem',
-          marginBottom: '0.25rem',
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Poll of Polls</h1>
-        <a href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          National Polling Average
-        </a>
-        <a href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Recent UK Polls
-        </a>
-        <a href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          May 2026 Local Elections Projections
-        </a>
-        <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Council Projections
-        </a>
-        <a href="/methodology" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Methodology
-        </a>
-      </div>
-      <div style={{ marginTop: '1.6rem', marginBottom: '1.1rem', fontSize: '1.5rem' }}>
-        UK National Polling Average
-      </div>
-      <div style={{ marginBottom: '1rem' }} />
-      <div style={{ padding: '0.25rem 0' }}>
+    <PageShell>
+      <TopNav
+        title="Poll of Polls"
+        items={MAIN_TOPNAV_ITEMS}
+        subtitle="UK National Polling Average"
+        subtitleStyle={{ fontSize: '1.5rem', color: '#172033' }}
+      />
+      <div className="poll-card">
         {aggregate ? (
           <div style={{ display: 'grid', gap: '0.75rem' }}>
             {chartData?.entries.map(entry => {
@@ -386,198 +381,145 @@ export default function AggregatePage() {
             </div>
           </div>
         ) : (
-          <div style={{ color: '#666' }}>No polls match the current filters.</div>
+          <div className="poll-muted">No polls match the current filters.</div>
         )}
       </div>
-      {historyChart && (
-        <div style={{ marginTop: '3rem' }}>
-          <div style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '0.75rem' }}>
-            Aggregate Trend Over Time for Major National Parties
-          </div>
-          <div
-            style={{
-              border: '1px solid #eee',
-              borderRadius: 12,
-              padding: '1rem',
-              background: '#fafafa',
-            }}
-          >
-            <svg
-              viewBox={`0 0 ${historyChart.width} ${historyChart.height}`}
-              style={{ width: '100%', height: 'auto', display: 'block' }}
-              role="img"
-              aria-label="Polling trend chart"
-            >
-              {historyChart.yTicks.map(tick => {
-                const y = historyChart.yForValue(tick)
-                const isMajor = tick % 5 === 0
-                return (
-                  <g key={tick}>
-                    <line
-                      x1={historyChart.margin.left}
-                      x2={historyChart.width - historyChart.margin.right}
-                      y1={y}
-                      y2={y}
-                      stroke={isMajor ? '#d8d8d8' : '#efefef'}
-                      strokeWidth={isMajor ? '1.2' : '0.8'}
-                    />
-                    {isMajor && (
-                      <text
-                        x={historyChart.margin.left - 10}
-                        y={y + 4}
-                        textAnchor="end"
-                        fontSize="11"
-                        fill="#666"
-                      >
-                        {tick}%
-                      </text>
-                    )}
-                  </g>
-                )
-              })}
-              {historyChart.weeklyTickIndexes.map(index => {
-                const x = historyChart.xForIndex(index)
-                return (
-                  <g key={index}>
-                    <line
-                      x1={x}
-                      x2={x}
-                      y1={historyChart.margin.top}
-                      y2={historyChart.height - historyChart.margin.bottom}
-                      stroke="#f0f0f0"
-                      strokeWidth="1"
-                    />
-                    <text
-                      x={x}
-                      y={historyChart.height - 24}
-                      textAnchor="middle"
-                      fontSize="11"
-                      fill="#666"
-                      transform={`rotate(-35 ${x} ${historyChart.height - 24})`}
-                    >
-                      {historyChart.formatDate(historyChart.series[index].date)}
-                    </text>
-                  </g>
-                )
-              })}
-              <line
-                x1={historyChart.margin.left}
-                x2={historyChart.margin.left}
-                y1={historyChart.margin.top}
-                y2={historyChart.height - historyChart.margin.bottom}
-                stroke="#999"
-                strokeWidth="1.2"
-              />
-              <line
-                x1={historyChart.margin.left}
-                x2={historyChart.width - historyChart.margin.right}
-                y1={historyChart.height - historyChart.margin.bottom}
-                y2={historyChart.height - historyChart.margin.bottom}
-                stroke="#999"
-                strokeWidth="1.2"
-              />
-              {historyChart.paths.map(path => (
-                <path
-                  key={path.key}
-                  d={path.d}
-                  fill="none"
-                  stroke={path.color}
-                  strokeWidth="2.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              ))}
-              {historyChart.points.map(point => (
-                <circle
-                  key={point.key}
-                  cx={point.x}
-                  cy={point.y}
-                  r="5"
-                  fill={point.color}
-                  stroke="#fff"
-                  strokeWidth="1.5"
-                  style={{ cursor: 'pointer' }}
-                  onMouseEnter={() => setHoveredPointKey(point.key)}
-                  onMouseLeave={() => setHoveredPointKey(current => (current === point.key ? null : current))}
-                />
-              ))}
-              {hoveredPoint && (() => {
-                const tooltipWidth = 144
-                const tooltipHeight = 48
-                const tooltipX = Math.max(
-                  historyChart.margin.left,
-                  Math.min(
-                    hoveredPoint.x - tooltipWidth / 2,
-                    historyChart.width - historyChart.margin.right - tooltipWidth
-                  )
-                )
-                const preferredY = hoveredPoint.y - tooltipHeight - 10
-                const tooltipY =
-                  preferredY >= 4
-                    ? preferredY
-                    : Math.min(
-                        hoveredPoint.y + 10,
-                        historyChart.height - historyChart.margin.bottom - tooltipHeight
-                      )
-                return (
-                  <g pointerEvents="none">
-                    <rect
-                      x={tooltipX}
-                      y={tooltipY}
-                      width={tooltipWidth}
-                      height={tooltipHeight}
-                      rx="8"
-                      fill="#fff"
-                      stroke="#ddd"
-                    />
-                    <text
-                      x={tooltipX + 8}
-                      y={tooltipY + 14}
-                      fontSize="11"
-                      fontWeight="600"
-                      fill={hoveredPoint.color}
-                    >
-                      {hoveredPoint.label}
-                    </text>
-                    <text
-                      x={tooltipX + 8}
-                      y={tooltipY + 28}
-                      fontSize="11"
-                      fill="#111"
-                    >
-                      {hoveredPoint.value.toFixed(1)}%
-                    </text>
-                    <text
-                      x={tooltipX + 8}
-                      y={tooltipY + 42}
-                      fontSize="10"
-                      fill="#666"
-                    >
-                      {historyChart.formatDate(hoveredPoint.date)}
-                    </text>
-                  </g>
-                )
-              })()}
-            </svg>
-            <div
-              style={{
-                display: 'flex',
-                flexWrap: 'wrap',
-                gap: '1rem',
-                marginTop: '2rem',
-                fontSize: '0.9rem',
-              }}
-            >
-              {HISTORY_SERIES.map(item => (
-                <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
-                  <span style={{ width: '12px', height: '12px', background: item.color }} />
-                  <span>{item.label}</span>
+      <div className="poll-card poll-stack poll-card--spaced">
+        <div className="poll-section-title">Aggregate Trend Over Time for Major National Parties</div>
+        {trendChart ? (
+          <>
+            <div className="poll-trend-legend">
+              {TREND_PARTIES.map(party => (
+                <div key={party.key} className="poll-trend-legend__item">
+                  <span
+                    className="poll-trend-legend__swatch"
+                    style={{ background: party.color }}
+                  />
+                  <span>{party.label}</span>
                 </div>
               ))}
             </div>
-          </div>
-        </div>
-      )}
-    </div>
+            <div className="poll-trend-chart-wrap">
+              <div className="poll-trend-chart-stage">
+                <svg
+                  viewBox={`0 0 ${trendChart.width} ${trendChart.height}`}
+                  className="poll-trend-chart"
+                  role="img"
+                  aria-label="Aggregate trend over time for major national parties"
+                >
+                  {trendChart.tickValues.map(value => {
+                    const y = trendChart.yForValue(value)
+                    return (
+                      <g key={value}>
+                        <line
+                          x1={42}
+                          x2={trendChart.width - 20}
+                          y1={y}
+                          y2={y}
+                          stroke="rgba(15,23,42,0.08)"
+                          strokeWidth="1"
+                        />
+                        <text
+                          x={34}
+                          y={y + 4}
+                          textAnchor="end"
+                          fontSize="12"
+                          fill="rgba(15,23,42,0.55)"
+                        >
+                          {formatPercentTick(value)}
+                        </text>
+                      </g>
+                    )
+                  })}
+                  {trendChart.xTickIndexes.map(index => {
+                    const row = trendChart.series[index]
+                    const x = trendChart.xForIndex(index)
+                    return (
+                      <text
+                        key={row.aggregate_date}
+                        x={x}
+                        y={trendChart.height - 10}
+                        textAnchor={index === 0 ? 'start' : index === trendChart.series.length - 1 ? 'end' : 'middle'}
+                        fontSize="12"
+                        fill="rgba(15,23,42,0.55)"
+                      >
+                        {trendChart.dateFormatter.format(new Date(row.aggregate_date))}
+                      </text>
+                    )
+                  })}
+                  {trendChart.lines.map(line => (
+                    <polyline
+                      key={line.key}
+                      fill="none"
+                      stroke={line.color}
+                      strokeWidth="3"
+                      strokeLinejoin="round"
+                      strokeLinecap="round"
+                      points={line.points}
+                    />
+                  ))}
+                  {trendChart.pointGroups.map(group =>
+                    group.points.map(point => (
+                      <circle
+                        key={`${group.key}-${point.date}`}
+                        cx={point.x}
+                        cy={point.y}
+                        r="5.5"
+                        fill={group.color}
+                        stroke="#ffffff"
+                        strokeWidth="2.5"
+                        tabIndex={0}
+                        onMouseEnter={() =>
+                          setHoveredPoint({
+                            party: group.label,
+                            color: group.color,
+                            value: point.value,
+                            date: trendChart.tooltipDateFormatter.format(new Date(point.date)),
+                            x: point.x,
+                            y: point.y,
+                          })
+                        }
+                        onMouseLeave={() => setHoveredPoint(current => (current?.date === trendChart.tooltipDateFormatter.format(new Date(point.date)) && current.party === group.label ? null : current))}
+                        onFocus={() =>
+                          setHoveredPoint({
+                            party: group.label,
+                            color: group.color,
+                            value: point.value,
+                            date: trendChart.tooltipDateFormatter.format(new Date(point.date)),
+                            x: point.x,
+                            y: point.y,
+                          })
+                        }
+                        onBlur={() => setHoveredPoint(null)}
+                      />
+                    ))
+                  )}
+                </svg>
+                {hoveredPoint ? (
+                  <div
+                    className="poll-trend-tooltip"
+                    style={{
+                      left: `min(calc(${(hoveredPoint.x / trendChart.width) * 100}% + 12px), calc(100% - 170px))`,
+                      top: `max(calc(${(hoveredPoint.y / trendChart.height) * 100}% - 72px), 8px)`,
+                    }}
+                  >
+                    <div
+                      className="poll-trend-tooltip__party"
+                      style={{ color: hoveredPoint.color }}
+                    >
+                      {hoveredPoint.party}
+                    </div>
+                    <div className="poll-trend-tooltip__value">{hoveredPoint.value.toFixed(1)}%</div>
+                    <div className="poll-trend-tooltip__date">{hoveredPoint.date}</div>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="poll-muted">No aggregate trend data available.</div>
+        )}
+      </div>
+    </PageShell>
   )
 }

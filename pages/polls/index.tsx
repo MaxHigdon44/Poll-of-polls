@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
+import PageShell from '../../components/PageShell'
+import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 
 type Poll = {
   poll_date: string
@@ -106,101 +108,75 @@ export default function PollsPage() {
   }
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-          gap: '1rem',
-          marginBottom: '0.25rem',
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Poll of Polls</h1>
-        <a href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          UK National Polling Average
-        </a>
-        <a href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Recent UK Polls
-        </a>
-        <a href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          May 2026 Local Elections Projections
-        </a>
-        <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Council Projections
-        </a>
-        <a href="/methodology" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Methodology
-        </a>
+    <PageShell>
+      <TopNav
+        title="Poll of Polls"
+        items={MAIN_TOPNAV_ITEMS}
+      />
+      <div className="poll-card poll-stack">
+        <div className="poll-muted">UK National Poll Results from the Past Two Months</div>
+        <div className="poll-toolbar">
+          <label>
+            Pollster
+            <select value={pollsterFilter} onChange={event => setPollsterFilter(event.target.value)}>
+              <option value="">All</option>
+              {pollsterOptions.map(pollster => (
+                <option key={pollster} value={pollster}>
+                  {pollster}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+        <div className="poll-table-wrap">
+          <table className="poll-data-table">
+            <thead>
+              <tr>
+                <th rowSpan={2}>Date Conducted</th>
+                <th rowSpan={2}>Pollster</th>
+                <th rowSpan={2}>Sample Size</th>
+                <th>Labour</th>
+                <th>Conservative</th>
+                <th>Reform</th>
+                <th>LD</th>
+                <th>Grn</th>
+                <th>SNP</th>
+                <th>PC</th>
+                <th rowSpan={2}>Other</th>
+                <th rowSpan={2}>Lead</th>
+              </tr>
+              <tr>
+                <th style={{ padding: 0, background: '#E4003B', height: '18px' }} />
+                <th style={{ padding: 0, background: '#0087DC', height: '18px' }} />
+                <th style={{ padding: 0, background: '#12B6CF', height: '18px' }} />
+                <th style={{ padding: 0, background: '#FAA61A', height: '18px' }} />
+                <th style={{ padding: 0, background: '#02A95B', height: '18px' }} />
+                <th style={{ padding: 0, background: '#FDF38E', height: '18px' }} />
+                <th style={{ padding: 0, background: '#008672', height: '18px' }} />
+              </tr>
+            </thead>
+            <tbody>
+              {displayedPolls.map((poll, index) => (
+                <tr key={index}>
+                  <td>{formatDate(poll.poll_date, poll.poll_date_label)}</td>
+                  <td>{poll.pollster}</td>
+                  <td>{formatSampleSize(poll.sample_size)}</td>
+                  <td>{formatPercent(poll.labour)}</td>
+                  <td>{formatPercent(poll.conservative)}</td>
+                  <td>{formatPercent(poll.reform)}</td>
+                  <td>{formatPercent(poll.libdem)}</td>
+                  <td>{formatPercent(poll.green)}</td>
+                  <td>{formatPercent(poll.snp)}</td>
+                  <td>{formatPercent(poll.pc)}</td>
+                  <td>{formatPercent(poll.others)}</td>
+                  <td style={{ background: getLeadColor(poll) }}>{formatLead(poll)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+        <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Updated daily.</div>
       </div>
-      <div style={{ marginBottom: '1rem', color: '#555' }}>
-        UK National Poll Results from the Past Two Months
-      </div>
-      <div style={{ marginBottom: '1rem', display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-        <label>
-          Pollster
-          <select
-            style={{ marginLeft: '0.5rem' }}
-            value={pollsterFilter}
-            onChange={event => setPollsterFilter(event.target.value)}
-          >
-            <option value="">All</option>
-            {pollsterOptions.map(pollster => (
-              <option key={pollster} value={pollster}>
-                {pollster}
-              </option>
-            ))}
-          </select>
-        </label>
-      </div>
-      <table border={1} cellPadding={8} style={{ borderCollapse: 'collapse', width: '100%' }}>
-        <thead>
-          <tr>
-            <th rowSpan={2}>Date Conducted</th>
-            <th rowSpan={2}>Pollster</th>
-            <th rowSpan={2}>Sample Size</th>
-            <th>Labour</th>
-            <th>Conservative</th>
-            <th>Reform</th>
-            <th>LD</th>
-            <th>Grn</th>
-            <th>SNP</th>
-            <th>PC</th>
-            <th rowSpan={2}>Other</th>
-            <th rowSpan={2}>Lead</th>
-          </tr>
-          <tr>
-            <th style={{ padding: 0, background: '#E4003B', height: '18px' }} />
-            <th style={{ padding: 0, background: '#0087DC', height: '18px' }} />
-            <th style={{ padding: 0, background: '#12B6CF', height: '18px' }} />
-            <th style={{ padding: 0, background: '#FAA61A', height: '18px' }} />
-            <th style={{ padding: 0, background: '#02A95B', height: '18px' }} />
-            <th style={{ padding: 0, background: '#FDF38E', height: '18px' }} />
-            <th style={{ padding: 0, background: '#008672', height: '18px' }} />
-          </tr>
-        </thead>
-        <tbody>
-          {displayedPolls.map((poll, index) => (
-            <tr key={index}>
-              <td>{formatDate(poll.poll_date, poll.poll_date_label)}</td>
-              <td>{poll.pollster}</td>
-              <td>{formatSampleSize(poll.sample_size)}</td>
-              <td>{formatPercent(poll.labour)}</td>
-              <td>{formatPercent(poll.conservative)}</td>
-              <td>{formatPercent(poll.reform)}</td>
-              <td>{formatPercent(poll.libdem)}</td>
-              <td>{formatPercent(poll.green)}</td>
-              <td>{formatPercent(poll.snp)}</td>
-              <td>{formatPercent(poll.pc)}</td>
-              <td>{formatPercent(poll.others)}</td>
-              <td style={{ background: getLeadColor(poll) }}>{formatLead(poll)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      <div style={{ marginTop: '1.5rem', fontSize: '0.85rem', color: '#555' }}>
-        Data sourced from Wikipedia (CC BY-SA 4.0). Updated daily.
-      </div>
-    </div>
+    </PageShell>
   )
 }

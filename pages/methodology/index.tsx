@@ -1,47 +1,26 @@
+import PageShell from '../../components/PageShell'
+import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
+
 export default function MethodologyPage() {
   return (
-    <div style={{ padding: '2rem', maxWidth: '980px' }}>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-          gap: '1rem',
-          marginBottom: '0.25rem',
-        }}
-      >
-        <h1 style={{ margin: 0 }}>Poll of Polls</h1>
-        <a href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          National Polling Average
-        </a>
-        <a href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Recent UK Polls
-        </a>
-        <a href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          May 2026 Local Elections Projections
-        </a>
-        <a href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Council Projections
-        </a>
-        <a href="/methodology" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Methodology
-        </a>
-      </div>
+    <PageShell>
+      <TopNav
+        title="Poll of Polls"
+        items={MAIN_TOPNAV_ITEMS}
+        subtitle="Model Methodology"
+        subtitleStyle={{ fontSize: '1.5rem', color: '#172033' }}
+      />
+      <div className="poll-card poll-prose">
+        <p>
+          This page documents the Poll of Polls local election model used to predict the May 2026
+          Local Elections in England. In short, the model starts from each ward or county electoral
+          division&apos;s previous local result, blends in a small amount of 2024 general election
+          geography, applies the current national polling average, then adjusts party shares using
+          demographic and geographic factors before converting vote shares into seats.
+        </p>
 
-      <div style={{ marginTop: '0.9rem', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
-        Model Methodology
-      </div>
-
-      <p style={{ lineHeight: 1.6 }}>
-        This page documents the Poll of Polls local election model used to predict the May 2026
-        Local Elections in England. In short, the model starts from each ward or county electoral
-        division&apos;s previous local result, blends in a small amount of 2024 general election
-        geography, applies the current national polling average, then adjusts party shares using
-        demographic and geographic factors before converting vote shares into seats.
-      </p>
-
-      <h2>1. National Polling Average</h2>
-      <p style={{ lineHeight: 1.6 }}>
+        <h2>1. National Polling Average</h2>
+        <p>
         The national aggregate is built from recent Westminster voting intention polls on
         Wikipedia&apos;s{' '}
         <a href="https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_United_Kingdom_general_election">
@@ -49,9 +28,9 @@ export default function MethodologyPage() {
         </a>{' '}
         page. Polls are scraped from the national tables for the current year, limited to the most
         recent two months, and stored in Vercel Postgres.
-      </p>
-      <p style={{ lineHeight: 1.6 }}>The aggregate is a weighted average. Each poll is weighted by:</p>
-      <ul>
+        </p>
+        <p>The aggregate is a weighted average. Each poll is weighted by:</p>
+        <ul>
         <li>
           recency: less than 7 days = 1.0, less than 14 = 0.75, less than 28 = 0.5, less than 42
           = 0.25, otherwise 0.1
@@ -61,24 +40,24 @@ export default function MethodologyPage() {
           weighted at 1.1, most others at 1.0, Find Out Now at 0.9
         </li>
         <li>sample size: square root of sample size, capped at 3000</li>
-      </ul>
+        </ul>
 
-      <h2>2. Baseline Local Results</h2>
-      <p style={{ lineHeight: 1.6 }}>
+        <h2>2. Baseline Local Results</h2>
+        <p>
         The main model file is <code>public/data/ward-baseline.json</code>. Each row stores:
-      </p>
-      <ul>
+        </p>
+        <ul>
         <li>ward or county electoral division code and name</li>
         <li>council code and name</li>
         <li>the most recent local election year used as the baseline</li>
         <li>party vote shares from that election</li>
         <li>local party and independent vote shares separately from national parties</li>
         <li>vacancies, total votes and previous winner information where available</li>
-      </ul>
-      <p style={{ lineHeight: 1.6 }}>
+        </ul>
+        <p>
         These baseline rows are compiled primarily from House of Commons Library spreadsheets:
-      </p>
-      <ul>
+        </p>
+        <ul>
         <li>
           <code>data/raw/LEH-2024-results-HoC-version.xlsx</code>
         </li>
@@ -91,17 +70,17 @@ export default function MethodologyPage() {
         <li>
           <code>data/raw/LEH-2021.xlsx</code>
         </li>
-      </ul>
-      <p style={{ lineHeight: 1.6 }}>
+        </ul>
+        <p>
         For some councils where the Commons Library files are incomplete at ward level, the model
         supplements them with Wikipedia ward-result pages.
-      </p>
+        </p>
 
-      <h2>3. Geography Files</h2>
-      <p style={{ lineHeight: 1.6 }}>
+        <h2>3. Geography Files</h2>
+        <p>
         Map shapes are loaded from public GeoJSON files generated from official boundary sources:
-      </p>
-      <ul>
+        </p>
+        <ul>
         <li>
           <code>public/data/wards.geojson</code>: 2025 electoral ward boundaries
         </li>
@@ -114,37 +93,37 @@ export default function MethodologyPage() {
         <li>
           <code>public/data/lads.geojson</code>: local authority polygons
         </li>
-      </ul>
-      <p style={{ lineHeight: 1.6 }}>
+        </ul>
+        <p>
         These are pulled from ONS/Open Geography Portal and ArcGIS Open Data downloads in the build
         scripts.
-      </p>
+        </p>
 
-      <h2>4. 2024 General Election Link</h2>
-      <p style={{ lineHeight: 1.6 }}>
+        <h2>4. 2024 General Election Link</h2>
+        <p>
         Each ward or division is linked to a 2024 Westminster constituency through
         <code>public/data/ward-to-pcon.json</code> and <code>public/data/ced-to-pcon.json</code>.
         Constituency-level 2024 vote shares are stored in <code>public/data/ge2024-pcon.json</code>.
-      </p>
-      <p style={{ lineHeight: 1.6 }}>
+        </p>
+        <p>
         The model applies a light blend between the local baseline and the 2024 constituency result:
-      </p>
-      <ul>
+        </p>
+        <ul>
         <li>Reform weight: 0.35</li>
         <li>Green weight: 0.05</li>
         <li>Labour / Conservative / Liberal Democrat / SNP / Plaid Cymru weight: 0.05</li>
-      </ul>
-      <p style={{ lineHeight: 1.6 }}>
+        </ul>
+        <p>
         For Reform and Green, if the local baseline is zero, the model uses their constituency
         over- or under-performance relative to their national 2024 general election share rather
         than just dropping in the raw constituency number.
-      </p>
+        </p>
 
-      <h2>5. Ward Projection Formula</h2>
-      <p style={{ lineHeight: 1.6 }}>
+        <h2>5. Ward Projection Formula</h2>
+        <p>
         After the baseline has been blended with the 2024 constituency result, each national
         party&apos;s unscaled score is:
-      </p>
+        </p>
       <pre
         style={{
           background: '#f5f5f5',
@@ -167,12 +146,12 @@ export default function MethodologyPage() {
     + degree_adjustment
     + tenure_adjustment
     + rural_urban_adjustment
-  ) * concentration_multiplier`}
+          ) * concentration_multiplier`}
         </code>
       </pre>
 
-      <h3>5.1 Baseline carry for Labour</h3>
-      <p style={{ lineHeight: 1.6 }}>
+        <h3>5.1 Baseline carry for Labour</h3>
+        <p>
         Labour&apos;s local baseline is deliberately carried forward at 93% rather than 100% in
         2021, 2022 and 2024 baseline rows. Other parties currently keep 100% of their baseline
         share before the national delta is applied.
@@ -438,6 +417,7 @@ export default function MethodologyPage() {
           <code>scripts/build-degree.cjs</code>, <code>scripts/build-nssec.cjs</code>, <code>scripts/build-lad-region.cjs</code>
         </li>
       </ul>
-    </div>
+      </div>
+    </PageShell>
   )
 }

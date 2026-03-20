@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
+import PageShell from '../../components/PageShell'
+import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import {
   LEAVE_EFFECT_STRENGTH,
   NATIONAL_LEAVE_SHARE,
@@ -2424,54 +2426,25 @@ export default function Local2026Page() {
   ])
 
   return (
-    <div style={{ padding: '2rem' }}>
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'baseline',
-          gap: '1rem',
-          marginBottom: '0.25rem',
-        }}
-      >
-        <h1 style={{ margin: 0 }}>May 2025 Simulation</h1>
-        <Link href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          National Polling Average
-        </Link>
-        <Link href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Recent UK Polls
-        </Link>
-        <Link href="/may-2025-simulation" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          May 2025 Simulation
-        </Link>
-        <Link href="/may-2025-council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          May 2025 Council Projections
-        </Link>
-        <Link href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          May 2026 Local Elections Projections
-        </Link>
-        <Link href="/council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-          Council Projections
-        </Link>
-      </div>
-      <div style={{ marginTop: '0.75rem', marginBottom: '1.25rem', color: '#555' }}>
-        {selectedCouncilName ? (
-          <span style={{ fontSize: '1.1rem', color: '#333' }}>{selectedCouncilName}</span>
-        ) : (
-          'Click a council area to zoom into ward-level projections.'
-        )}
-      </div>
+    <PageShell>
+      <TopNav
+        title="May 2025 Simulation"
+        items={MAIN_TOPNAV_ITEMS}
+        subtitle={
+          selectedCouncilName ? (
+            <span style={{ fontSize: '1.1rem', color: '#333' }}>{selectedCouncilName}</span>
+          ) : undefined
+        }
+      />
       {hasMounted && process.env.NODE_ENV !== 'production' && (
         <div
+          className="poll-card poll-card--subtle"
           style={{
             display: 'flex',
             flexWrap: 'wrap',
             gap: '1.5rem',
             marginBottom: '1.5rem',
-            padding: '0.75rem 1rem',
-            border: '1px solid #eee',
-            borderRadius: 8,
-            background: '#fafafa',
+            alignItems: 'flex-end',
           }}
         >
           <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
@@ -2586,15 +2559,8 @@ export default function Local2026Page() {
           </label>
         </div>
       )}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: '240px 1fr',
-          gap: '1.5rem',
-          alignItems: 'start',
-        }}
-      >
-        <div style={{ fontSize: '0.9rem' }}>
+      <div className="poll-map-layout">
+        <div className="poll-card poll-map-sidebar">
           <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Parties</div>
           {Object.entries(PARTY_COLORS).map(([party, color]) => (
             <div
@@ -2614,8 +2580,13 @@ export default function Local2026Page() {
             </button>
           )}
         </div>
-        <div>
-          <div style={{ height: '70vh', border: '1px solid #eee' }}>
+        <div className="poll-card poll-map-panel">
+          {!selectedLad && (
+            <div className="poll-note poll-inline-note">
+              Click a council area to zoom into ward-level projections.
+            </div>
+          )}
+          <div className="poll-map-frame">
             {councilGeo ? (
             <LocalMap
               ladGeo={councilGeo}
@@ -2639,16 +2610,7 @@ export default function Local2026Page() {
               <div style={{ padding: '1rem' }}>Loading map data...</div>
             )}
           </div>
-          <div
-            style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-              gap: '0.75rem',
-              marginTop: '0.75rem',
-              fontSize: '0.9rem',
-              alignItems: 'center',
-            }}
-          >
+          <div className="poll-key-grid">
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
               <span style={{ width: '14px', height: '14px', background: '#2E8B57' }} />
               <span>District Councils</span>
@@ -2729,6 +2691,6 @@ export default function Local2026Page() {
           </div>
         </div>
       </div>
-    </div>
+    </PageShell>
   )
 }
