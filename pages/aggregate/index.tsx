@@ -325,7 +325,7 @@ export default function AggregatePage() {
           Methodology
         </a>
       </div>
-      <div style={{ marginTop: '0.9rem', marginBottom: '1.5rem', fontSize: '1.5rem' }}>
+      <div style={{ marginTop: '1.6rem', marginBottom: '1.1rem', fontSize: '1.5rem' }}>
         UK National Polling Average
       </div>
       <div style={{ marginBottom: '1rem' }} />
@@ -390,7 +390,7 @@ export default function AggregatePage() {
         )}
       </div>
       {historyChart && (
-        <div style={{ marginTop: '2rem' }}>
+        <div style={{ marginTop: '3rem' }}>
           <div style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '0.75rem' }}>
             Aggregate Trend Over Time for Major National Parties
           </div>
