@@ -16,18 +16,48 @@ type Poll = {
   others: number | null
 }
 
+type AggregateHistoryRow = {
+  aggregate_date: string
+  labour: number | null
+  conservative: number | null
+  reform: number | null
+  libdem: number | null
+  green: number | null
+  snp: number | null
+  pc: number | null
+  others: number | null
+}
+
+type AggregateHistoryResponse = {
+  aggregates: AggregateHistoryRow[]
+}
+
+const HISTORY_SERIES = [
+  { key: 'labour', label: 'Labour', color: '#E4003B' },
+  { key: 'conservative', label: 'Conservative', color: '#0087DC' },
+  { key: 'reform', label: 'Reform', color: '#12B6CF' },
+  { key: 'libdem', label: 'Liberal Democrat', color: '#FAA61A' },
+  { key: 'green', label: 'Green', color: '#02A95B' },
+] as const
+
 export default function AggregatePage() {
   const [polls, setPolls] = useState<Poll[]>([])
+  const [aggregateHistory, setAggregateHistory] = useState<AggregateHistoryRow[]>([])
   const [pollsterFilter, setPollsterFilter] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [minSampleSize, setMinSampleSize] = useState('')
   const [isClient, setIsClient] = useState(false)
+  const [hoveredPointKey, setHoveredPointKey] = useState<string | null>(null)
 
   useEffect(() => {
     fetch('/api/polls')
       .then(res => res.json())
       .then(data => setPolls(data.polls ?? []))
+
+    fetch('/api/aggregate')
+      .then(res => res.json())
+      .then((data: AggregateHistoryResponse) => setAggregateHistory(data.aggregates ?? []))
   }, [])
 
   useEffect(() => {
@@ -166,6 +196,107 @@ export default function AggregatePage() {
     return { entries: sorted, maxValue }
   }, [aggregate])
 
+  const historyChart = useMemo(() => {
+    if (!aggregateHistory.length) return null
+    const series = [...aggregateHistory]
+      .reverse()
+      .map(row => ({
+        date: new Date(row.aggregate_date),
+        labour: row.labour,
+        conservative: row.conservative,
+        reform: row.reform,
+        libdem: row.libdem,
+        green: row.green,
+      }))
+      .filter(row => !Number.isNaN(row.date.getTime()))
+    if (series.length < 2) return null
+
+    const width = 920
+    const height = 390
+    const margin = { top: 28, right: 24, bottom: 84, left: 52 }
+    const plotWidth = width - margin.left - margin.right
+    const plotHeight = height - margin.top - margin.bottom
+    const values = HISTORY_SERIES.flatMap(item =>
+      series.map(row => row[item.key]).filter((value): value is number => value != null)
+    )
+    const maxValue = Math.max(...values)
+    const paddedMax = Math.min(50, Math.ceil((maxValue + 1.5) / 2) * 2)
+    const yMin = 10
+    const yMax = Math.max(yMin + 4, paddedMax)
+
+    const xForIndex = (index: number) =>
+      margin.left + (index / Math.max(series.length - 1, 1)) * plotWidth
+    const yForValue = (value: number) =>
+      margin.top + plotHeight - ((value - yMin) / Math.max(yMax - yMin, 1)) * plotHeight
+    const formatDate = (date: Date) =>
+      date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+
+    const paths = HISTORY_SERIES.map(item => {
+      const points = series
+        .map((row, index) => {
+          const value = row[item.key]
+          if (value == null) return null
+          return `${xForIndex(index)},${yForValue(value)}`
+        })
+        .filter(Boolean)
+      if (points.length < 2) return null
+      return { ...item, d: `M ${points.join(' L ')}` }
+    }).filter(Boolean) as Array<{ key: string; label: string; color: string; d: string }>
+
+    const yTicks: number[] = []
+    for (let tick = yMin; tick <= yMax; tick += 1) {
+      yTicks.push(tick)
+    }
+
+    const weeklyTickIndexes: number[] = []
+    let lastTickTime = -Infinity
+    series.forEach((row, index) => {
+      const time = row.date.getTime()
+      if (time - lastTickTime >= 7 * 24 * 60 * 60 * 1000) {
+        weeklyTickIndexes.push(index)
+        lastTickTime = time
+      }
+    })
+    const points = HISTORY_SERIES.flatMap(item =>
+      series.flatMap((row, index) => {
+        const value = row[item.key]
+        if (value == null) return []
+        const numericValue = Number(value)
+        if (!Number.isFinite(numericValue)) return []
+        return [
+          {
+            key: `${item.key}-${index}`,
+            label: item.label,
+            color: item.color,
+            x: xForIndex(index),
+            y: yForValue(numericValue),
+            value: numericValue,
+            date: row.date,
+          },
+        ]
+      })
+    )
+
+    return {
+      width,
+      height,
+      margin,
+      yTicks,
+      weeklyTickIndexes,
+      series,
+      paths,
+      points,
+      xForIndex,
+      yForValue,
+      formatDate,
+    }
+  }, [aggregateHistory])
+
+  const hoveredPoint = useMemo(() => {
+    if (!historyChart || !hoveredPointKey) return null
+    return historyChart.points.find(point => point.key === hoveredPointKey) || null
+  }, [historyChart, hoveredPointKey])
+
   return (
     <div style={{ padding: '2rem' }}>
       <div
@@ -258,6 +389,195 @@ export default function AggregatePage() {
           <div style={{ color: '#666' }}>No polls match the current filters.</div>
         )}
       </div>
+      {historyChart && (
+        <div style={{ marginTop: '2rem' }}>
+          <div style={{ fontSize: '1.15rem', fontWeight: 600, marginBottom: '0.75rem' }}>
+            Aggregate Trend Over Time for Major National Parties
+          </div>
+          <div
+            style={{
+              border: '1px solid #eee',
+              borderRadius: 12,
+              padding: '1rem',
+              background: '#fafafa',
+            }}
+          >
+            <svg
+              viewBox={`0 0 ${historyChart.width} ${historyChart.height}`}
+              style={{ width: '100%', height: 'auto', display: 'block' }}
+              role="img"
+              aria-label="Polling trend chart"
+            >
+              {historyChart.yTicks.map(tick => {
+                const y = historyChart.yForValue(tick)
+                const isMajor = tick % 5 === 0
+                return (
+                  <g key={tick}>
+                    <line
+                      x1={historyChart.margin.left}
+                      x2={historyChart.width - historyChart.margin.right}
+                      y1={y}
+                      y2={y}
+                      stroke={isMajor ? '#d8d8d8' : '#efefef'}
+                      strokeWidth={isMajor ? '1.2' : '0.8'}
+                    />
+                    {isMajor && (
+                      <text
+                        x={historyChart.margin.left - 10}
+                        y={y + 4}
+                        textAnchor="end"
+                        fontSize="11"
+                        fill="#666"
+                      >
+                        {tick}%
+                      </text>
+                    )}
+                  </g>
+                )
+              })}
+              {historyChart.weeklyTickIndexes.map(index => {
+                const x = historyChart.xForIndex(index)
+                return (
+                  <g key={index}>
+                    <line
+                      x1={x}
+                      x2={x}
+                      y1={historyChart.margin.top}
+                      y2={historyChart.height - historyChart.margin.bottom}
+                      stroke="#f0f0f0"
+                      strokeWidth="1"
+                    />
+                    <text
+                      x={x}
+                      y={historyChart.height - 24}
+                      textAnchor="middle"
+                      fontSize="11"
+                      fill="#666"
+                      transform={`rotate(-35 ${x} ${historyChart.height - 24})`}
+                    >
+                      {historyChart.formatDate(historyChart.series[index].date)}
+                    </text>
+                  </g>
+                )
+              })}
+              <line
+                x1={historyChart.margin.left}
+                x2={historyChart.margin.left}
+                y1={historyChart.margin.top}
+                y2={historyChart.height - historyChart.margin.bottom}
+                stroke="#999"
+                strokeWidth="1.2"
+              />
+              <line
+                x1={historyChart.margin.left}
+                x2={historyChart.width - historyChart.margin.right}
+                y1={historyChart.height - historyChart.margin.bottom}
+                y2={historyChart.height - historyChart.margin.bottom}
+                stroke="#999"
+                strokeWidth="1.2"
+              />
+              {historyChart.paths.map(path => (
+                <path
+                  key={path.key}
+                  d={path.d}
+                  fill="none"
+                  stroke={path.color}
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              ))}
+              {historyChart.points.map(point => (
+                <circle
+                  key={point.key}
+                  cx={point.x}
+                  cy={point.y}
+                  r="5"
+                  fill={point.color}
+                  stroke="#fff"
+                  strokeWidth="1.5"
+                  style={{ cursor: 'pointer' }}
+                  onMouseEnter={() => setHoveredPointKey(point.key)}
+                  onMouseLeave={() => setHoveredPointKey(current => (current === point.key ? null : current))}
+                />
+              ))}
+              {hoveredPoint && (() => {
+                const tooltipWidth = 144
+                const tooltipHeight = 48
+                const tooltipX = Math.max(
+                  historyChart.margin.left,
+                  Math.min(
+                    hoveredPoint.x - tooltipWidth / 2,
+                    historyChart.width - historyChart.margin.right - tooltipWidth
+                  )
+                )
+                const preferredY = hoveredPoint.y - tooltipHeight - 10
+                const tooltipY =
+                  preferredY >= 4
+                    ? preferredY
+                    : Math.min(
+                        hoveredPoint.y + 10,
+                        historyChart.height - historyChart.margin.bottom - tooltipHeight
+                      )
+                return (
+                  <g pointerEvents="none">
+                    <rect
+                      x={tooltipX}
+                      y={tooltipY}
+                      width={tooltipWidth}
+                      height={tooltipHeight}
+                      rx="8"
+                      fill="#fff"
+                      stroke="#ddd"
+                    />
+                    <text
+                      x={tooltipX + 8}
+                      y={tooltipY + 14}
+                      fontSize="11"
+                      fontWeight="600"
+                      fill={hoveredPoint.color}
+                    >
+                      {hoveredPoint.label}
+                    </text>
+                    <text
+                      x={tooltipX + 8}
+                      y={tooltipY + 28}
+                      fontSize="11"
+                      fill="#111"
+                    >
+                      {hoveredPoint.value.toFixed(1)}%
+                    </text>
+                    <text
+                      x={tooltipX + 8}
+                      y={tooltipY + 42}
+                      fontSize="10"
+                      fill="#666"
+                    >
+                      {historyChart.formatDate(hoveredPoint.date)}
+                    </text>
+                  </g>
+                )
+              })()}
+            </svg>
+            <div
+              style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '1rem',
+                marginTop: '2rem',
+                fontSize: '0.9rem',
+              }}
+            >
+              {HISTORY_SERIES.map(item => (
+                <div key={item.key} style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                  <span style={{ width: '12px', height: '12px', background: item.color }} />
+                  <span>{item.label}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
