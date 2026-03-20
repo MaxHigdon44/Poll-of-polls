@@ -170,6 +170,7 @@ function getWardNameKey(feature: GeoFeature) {
       props.ladName ||
       ''
   )
+    .replace(/\bcounty\b/gi, ' ')
     .replace(/'s\b/gi, 's')
     .toLowerCase()
     .replace(/&/g, ' and ')

@@ -35,6 +35,10 @@ import {
   type RuralUrbanShare,
 } from '@/lib/local2026/ruralUrban'
 import {
+  MAY_2025_AGGREGATE,
+  MAY_2025_COUNCIL_SET,
+} from '@/lib/local2025/simulation'
+import {
   GE_WEIGHT_GREEN,
   GE_WEIGHT_MAJOR,
   GE_WEIGHT_REFORM,
@@ -48,15 +52,28 @@ import { allocateProjectedSeats } from '@/lib/local2026/multiMember'
 const LocalMap = dynamic(() => import('../../components/LocalMap'), { ssr: false })
 const WARDS_GEO_URL =
   'https://open-geography-portalx-ons.hub.arcgis.com/api/download/v1/items/627ae9540e3a4e199f4594a727b35724/geojson?layers=0'
+const ELECTION_YEAR = 2025
 
 const COUNTY_REGION_LOOKUP: Record<string, string> = {
+  E10000003: 'East of England',
+  E10000007: 'East Midlands',
+  E10000008: 'South West',
   E10000011: 'South East',
   E10000012: 'East of England',
+  E10000013: 'South West',
   E10000014: 'South East',
+  E10000015: 'East of England',
+  E10000016: 'South East',
+  E10000018: 'East Midlands',
+  E10000019: 'East Midlands',
   E10000020: 'East of England',
-  E10000030: 'South East',
+  E10000024: 'East Midlands',
+  E10000025: 'South East',
+  E10000028: 'West Midlands',
   E10000029: 'East of England',
+  E10000031: 'West Midlands',
   E10000032: 'South East',
+  E10000034: 'West Midlands',
 }
 
 type GeoFeature = {
@@ -112,6 +129,19 @@ type CouncilPreviousRow = {
 type CouncilPreviousData = {
   generatedAt: string
   councils: CouncilPreviousRow[]
+}
+
+type CouncilActualRow = {
+  council: string
+  seatsUp: number
+  totalSeats: number
+  actualControl: string | null
+  actualSeats: Record<string, number>
+}
+
+type CouncilActualData = {
+  generatedAt: string
+  councils: CouncilActualRow[]
 }
 
 type CouncilComposition = {
@@ -199,6 +229,11 @@ type GePconLookup = {
   pcon?: Record<string, Record<string, number>>
 }
 
+type WardVacancyLookup = {
+  wards?: Record<string, number>
+  wardNames?: Record<string, number>
+}
+
 type AggregateRow = {
   aggregate_date: string
   labour: number | null
@@ -217,11 +252,6 @@ type AggregateResponse = {
   aggregates: AggregateRow[]
 }
 
-type WardVacancyLookup = {
-  wards?: Record<string, number>
-  wardNames?: Record<string, number>
-}
-
 const PARTY_COLORS: Record<string, string> = {
   Labour: '#E4003B',
   Conservative: '#0087DC',
@@ -233,61 +263,36 @@ const PARTY_COLORS: Record<string, string> = {
   Other: '#9a9a9a',
 }
 
-const ELECTION_LADS_2026 = new Set(
+const ELECTION_LADS_2025 = new Set(
   [
-    'Adur',
-    'Basildon',
-    'Basingstoke and Deane',
-    'Brentwood',
-    'Broxbourne',
-    'Burnley',
-    'Cambridge',
-    'Cannock Chase',
-    'Cheltenham',
-    'Cherwell',
-    'Chorley',
-    'Colchester',
-    'Crawley',
-    'Eastleigh',
-    'Epping Forest',
-    'Exeter',
-    'Fareham',
-    'Gosport',
-    'Harlow',
-    'Hart',
-    'Hastings',
-    'Havant',
-    'Huntingdonshire',
-    'Hyndburn',
-    'Ipswich',
-    'Lincoln',
-    'Newcastle-under-Lyme',
-    'Norwich',
-    'Nuneaton and Bedworth',
-    'Oxford',
-    'Pendle',
-    'Preston',
-    'Redditch',
-    'Rochford',
-    'Rugby',
-    'Rushmoor',
-    'South Cambridgeshire',
-    'St Albans',
-    'Stevenage',
-    'Tamworth',
-    'Three Rivers',
-    'Tunbridge Wells',
-    'Watford',
-    'Welwyn Hatfield',
-    'West Lancashire',
-    'West Oxfordshire',
-    'Winchester',
-    'Worthing',
+    'Doncaster',
+    'Buckinghamshire',
+    'Cornwall',
+    'County Durham',
+    'North Northamptonshire',
+    'Northumberland',
+    'Shropshire',
+    'West Northamptonshire',
+    'Wiltshire',
   ].map(normalizeName)
 )
 
-const COUNTY_ELECTIONS_2026 = new Set(
-  ['East Sussex', 'Essex', 'Hampshire', 'Norfolk', 'Suffolk'].map(normalizeName)
+const COUNTY_ELECTIONS_2025 = new Set(
+  [
+    'Cambridgeshire',
+    'Derbyshire',
+    'Devon',
+    'Gloucestershire',
+    'Hertfordshire',
+    'Kent',
+    'Leicestershire',
+    'Lincolnshire',
+    'Nottinghamshire',
+    'Oxfordshire',
+    'Staffordshire',
+    'Warwickshire',
+    'Worcestershire',
+  ].map(normalizeName)
 )
 
 const LONDON_BOROUGHS = new Set(
@@ -513,97 +518,6 @@ const SURREY_WEST = new Set(
   )
 )
 
-const SURREY_EAST_DIVISIONS = new Set(
-  [
-    'E58001472',
-    'E58001478',
-    'E58001501',
-    'E58001502',
-    'E58001527',
-    'E58001528',
-    'E58001529',
-    'E58001534',
-    'E58001535',
-    'E58001481',
-    'E58001482',
-    'E58001484',
-    'E58001483',
-    'E58001533',
-    'E58001463',
-    'E58001466',
-    'E58001474',
-    'E58001475',
-    'E58001476',
-    'E58001508',
-    'E58001465',
-    'E58001477',
-    'E58001503',
-    'E58001504',
-    'E58001513',
-    'E58001514',
-    'E58001516',
-    'E58001517',
-    'E58001518',
-    'E58001525',
-    'E58001469',
-    'E58001470',
-    'E58001492',
-    'E58001511',
-    'E58001515',
-    'E58001530',
-  ]
-)
-
-const SURREY_WEST_DIVISIONS = new Set(
-  [
-    'E58001461',
-    'E58001494',
-    'E58001495',
-    'E58001496',
-    'E58001497',
-    'E58001498',
-    'E58001505',
-    'E58001519',
-    'E58001520',
-    'E58001541',
-    'E58001460',
-    'E58001471',
-    'E58001479',
-    'E58001480',
-    'E58001488',
-    'E58001540',
-    'E58001462',
-    'E58001507',
-    'E58001512',
-    'E58001521',
-    'E58001522',
-    'E58001523',
-    'E58001524',
-    'E58001464',
-    'E58001467',
-    'E58001468',
-    'E58001489',
-    'E58001500',
-    'E58001509',
-    'E58001473',
-    'E58001485',
-    'E58001486',
-    'E58001487',
-    'E58001490',
-    'E58001491',
-    'E58001499',
-    'E58001531',
-    'E58001532',
-    'E58001493',
-    'E58001506',
-    'E58001526',
-    'E58001536',
-    'E58001538',
-    'E58001537',
-    'E58001539',
-  ]
-)
-
 function normalizeName(value: string | undefined | null) {
   return String(value || '')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -611,6 +525,7 @@ function normalizeName(value: string | undefined | null) {
     .toLowerCase()
     .replace(/&/g, ' and ')
     .replace(/[',.]/g, ' ')
+    .replace(/\bcounty durham\b/g, 'durham')
     .replace(/\bbeneden\b/g, 'benenden')
     .replace(/\s+/g, ' ')
     .trim()
@@ -813,6 +728,7 @@ function sumShares(shares: Record<string, number>) {
 function normalizeCouncilName(name: string) {
   return normalizeName(name)
     .replace(/[^\w\s]/g, '')
+    .replace(/\bcounty\b/g, '')
     .replace(/\bcouncil\b/g, '')
     .replace(/\bdistrict\b/g, '')
     .replace(/\bborough\b/g, '')
@@ -837,12 +753,16 @@ function getGeoWardName(feature: GeoFeature) {
   return String(props.WD25NM || props.WD23NM || props.WD22NM || props.name || '')
 }
 
+function normalizeSubAreaName(value: string | undefined | null) {
+  return normalizeName(value).replace(/\bed\b/g, '').replace(/\s+/g, ' ').trim()
+}
+
 function getGeoWardNameKey(feature: GeoFeature) {
   const props = feature.properties || {}
-  const wardName = getGeoWardName(feature)
+  const wardName = normalizeSubAreaName(getGeoWardName(feature))
   const ladName = String(props.LAD25NM || props.LAD23NM || props.LAD22NM || props.ladName || '')
   if (!wardName || !ladName) return null
-  return `${normalizeName(ladName)}|${normalizeName(wardName)}`
+  return `${normalizeName(ladName)}|${wardName}`
 }
 
 function canonicalizePartyLabel(party: string | null | undefined) {
@@ -1002,10 +922,7 @@ export default function Local2026Page() {
   const router = useRouter()
   const [wardGeo, setWardGeo] = useState<GeoCollection | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
-  const [countyGeo, setCountyGeo] = useState<GeoCollection | null>(null)
   const [cedGeo, setCedGeo] = useState<GeoCollection | null>(null)
-  const [surreyOverlay, setSurreyOverlay] = useState<GeoCollection | null>(null)
-  const [surreyBoundary, setSurreyBoundary] = useState<GeoCollection | null>(null)
   const [baseline, setBaseline] = useState<BaselineData | null>(null)
   const [aggregate, setAggregate] = useState<AggregateRow | null>(null)
   const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
@@ -1015,12 +932,13 @@ export default function Local2026Page() {
   const [degreeLookup, setDegreeLookup] = useState<DegreeLookup | null>(null)
   const [tenureLookup, setTenureLookup] = useState<TenureLookup | null>(null)
   const [ruralUrbanLookup, setRuralUrbanLookup] = useState<RuralUrbanLookup | null>(null)
-  const [wardVacancyLookup, setWardVacancyLookup] = useState<WardVacancyLookup | null>(null)
   const [wardToPcon, setWardToPcon] = useState<WardToPconLookup | null>(null)
   const [cedToPcon, setCedToPcon] = useState<CedToPconLookup | null>(null)
   const [geLookup, setGeLookup] = useState<GePconLookup | null>(null)
+  const [wardVacancyLookup, setWardVacancyLookup] = useState<WardVacancyLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
+  const [actualResults, setActualResults] = useState<CouncilActualData | null>(null)
   const [selectedLad, setSelectedLad] = useState<string | null>(null)
   const [hasMounted, setHasMounted] = useState(false)
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
@@ -1038,30 +956,15 @@ export default function Local2026Page() {
   }, [])
 
   useEffect(() => {
-    fetch('/data/lads.geojson')
+    fetch('/data/may-2025-councils.geojson')
       .then(res => res.json())
       .then(setLadGeo)
       .catch(() => setLadGeo(null))
 
-    fetch('/data/counties.geojson')
-      .then(res => res.json())
-      .then(setCountyGeo)
-      .catch(() => setCountyGeo(null))
-
-    fetch('/data/ced.geojson')
+    fetch('/data/ced-all.geojson')
       .then(res => res.json())
       .then(setCedGeo)
       .catch(() => setCedGeo(null))
-
-    fetch('/data/surrey-unitaries-overlay.geojson')
-      .then(res => res.json())
-      .then(setSurreyOverlay)
-      .catch(() => setSurreyOverlay(null))
-
-    fetch('/data/surrey-unitaries-boundary.geojson')
-      .then(res => res.json())
-      .then(setSurreyBoundary)
-      .catch(() => setSurreyBoundary(null))
 
     fetch('/data/ward-vacancies.json')
       .then(res => res.json())
@@ -1120,23 +1023,20 @@ export default function Local2026Page() {
       .then(res => res.json())
       .then(setGeLookup)
       .catch(() => setGeLookup(null))
-
-    fetch('/data/council-seats.json')
+    fetch('/data/may-2025-council-seats.json')
       .then(res => res.json())
       .then(setCouncilSeats)
       .catch(() => setCouncilSeats(null))
-
-    fetch('/data/council-previous.json')
+    fetch('/data/may-2025-council-previous.json')
       .then(res => res.json())
       .then(setCouncilPrevious)
       .catch(() => setCouncilPrevious(null))
-
-    fetch('/api/aggregate')
+    fetch('/data/may-2025-actual-results.json')
       .then(res => res.json())
-      .then((data: AggregateResponse) => {
-        setAggregate(data.aggregates?.[0] ?? null)
-      })
-      .catch(() => setAggregate(null))
+      .then(setActualResults)
+      .catch(() => setActualResults(null))
+
+    setAggregate(MAY_2025_AGGREGATE as AggregateRow)
   }, [])
 
   useEffect(() => {
@@ -1175,12 +1075,12 @@ export default function Local2026Page() {
   }, [router.isReady, router.query.council])
 
   useEffect(() => {
-    router.prefetch('/council-projections')
+    router.prefetch('/may-2025-council-projections')
   }, [router])
 
   useEffect(() => {
     const handleRouteStart = (url: string) => {
-      if (!url.startsWith('/local-2026')) {
+      if (!url.startsWith('/may-2025-simulation')) {
         setSelectedLad(null)
         setWardGeo(null)
       }
@@ -1193,19 +1093,14 @@ export default function Local2026Page() {
 
   const councilGeo = useMemo<GeoCollection | null>(() => {
     if (!ladGeo) return null
-    const countyFeatures = countyGeo?.features || []
-    const ladFeatures = ladGeo.features || []
-    return {
-      type: 'FeatureCollection',
-      features: [...countyFeatures, ...ladFeatures],
-    }
-  }, [ladGeo, countyGeo])
+    return ladGeo
+  }, [ladGeo])
 
   useEffect(() => {
     if (!router.isReady) return
     if (selectedLad) {
       void router.replace(
-        { pathname: '/local-2026', query: { council: selectedLad } },
+        { pathname: '/may-2025-simulation', query: { council: selectedLad } },
         undefined,
         { shallow: true }
       )
@@ -1680,29 +1575,27 @@ export default function Local2026Page() {
 
   const selectedBaselineWards = useMemo(() => {
     if (!selectedLad || !baseline) return []
-    if (selectedLad === 'surrey-east') {
-      return baseline.wards.filter(
-        ward => ward.ladCode === 'E10000030' && SURREY_EAST_DIVISIONS.has(ward.wardCode)
-      )
-    }
-    if (selectedLad === 'surrey-west') {
-      return baseline.wards.filter(
-        ward => ward.ladCode === 'E10000030' && SURREY_WEST_DIVISIONS.has(ward.wardCode)
-      )
-    }
-    return baseline.wards.filter(ward => ward.ladCode === selectedLad)
-  }, [baseline, selectedLad])
+    const selectedFeature =
+      councilGeo?.features.find(feature => feature.properties?.reference === selectedLad) || null
+    const selectedName = String(selectedFeature?.properties?.name || '')
+    const normalizedSelectedCouncil = normalizeCouncilName(selectedName)
+    return baseline.wards.filter(ward => {
+      if (ward.ladCode === selectedLad) return true
+      if (!normalizedSelectedCouncil) return false
+      return normalizeCouncilName(ward.ladName) === normalizedSelectedCouncil
+    })
+  }, [baseline, selectedLad, councilGeo])
 
   const wardMapByWardName = useMemo(() => {
     if (!baseline || !aggregate || !selectedLad) return new Map<string, any>()
     const map = new Map<string, any>()
     selectedBaselineWards.forEach(ward => {
-      const key = normalizeName(ward.wardName)
-      if (map.has(key)) return
-      const projection = wardMap.get(ward.wardCode)
-      if (!projection) return
-      map.set(key, projection)
-    })
+        const key = normalizeSubAreaName(ward.wardName)
+        if (map.has(key)) return
+        const projection = wardMap.get(ward.wardCode)
+        if (!projection) return
+        map.set(key, projection)
+      })
     return map
   }, [baseline, aggregate, selectedLad, wardMap, selectedBaselineWards])
 
@@ -1714,7 +1607,7 @@ export default function Local2026Page() {
     let weightSum = 0
     wards.forEach(ward => {
       const projection =
-        wardMap.get(ward.wardCode) || wardMapByWardName.get(normalizeName(ward.wardName))
+        wardMap.get(ward.wardCode) || wardMapByWardName.get(normalizeSubAreaName(ward.wardName))
       if (!projection) return
       const weight = ward.totalVotes || 0
       if (!weight) return
@@ -1750,12 +1643,7 @@ export default function Local2026Page() {
     if (!baseline || !selectedLad) return new Map<string, number>()
     const map = new Map<string, number>()
     const wards = selectedBaselineWards
-    const councilName =
-      selectedLad === 'surrey-east'
-        ? 'East Surrey'
-        : selectedLad === 'surrey-west'
-          ? 'West Surrey'
-          : wards[0]?.ladName || null
+    const councilName = wards[0]?.ladName || null
     const seatRow = councilName
       ? councilSeats?.councils?.find(
           row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
@@ -1772,12 +1660,7 @@ export default function Local2026Page() {
     if (!baseline || !selectedLad) return new Map<string, number>()
     const map = new Map<string, number>()
     const wards = selectedBaselineWards
-    const councilName =
-      selectedLad === 'surrey-east'
-        ? 'East Surrey'
-        : selectedLad === 'surrey-west'
-          ? 'West Surrey'
-          : wards[0]?.ladName || null
+    const councilName = wards[0]?.ladName || null
     const seatRow = councilName
       ? councilSeats?.councils?.find(
           row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
@@ -1786,6 +1669,7 @@ export default function Local2026Page() {
     wards.forEach(ward => {
       const seatsThisCycle = getSeatsPerWardForPopup(wards, seatRow, ward, wardVacancyLookup)
       map.set(`${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`, seatsThisCycle)
+      map.set(`${normalizeName(ward.ladName)}|${normalizeSubAreaName(ward.wardName)}`, seatsThisCycle)
     })
     return map
   }, [baseline, selectedLad, councilSeats, selectedBaselineWards, wardVacancyLookup])
@@ -1795,12 +1679,7 @@ export default function Local2026Page() {
     if (!baseline || !selectedLad || !councilSeats?.councils?.length) return empty
     const allWards = selectedBaselineWards
     if (!allWards.length) return empty
-    const councilName =
-      selectedLad === 'surrey-east'
-        ? 'East Surrey'
-        : selectedLad === 'surrey-west'
-          ? 'West Surrey'
-          : allWards[0]?.ladName || ''
+    const councilName = allWards[0]?.ladName || ''
     const seatRow = councilSeats.councils.find(
       row => normalizeCouncilName(row.council) === normalizeCouncilName(councilName)
     )
@@ -1835,12 +1714,12 @@ export default function Local2026Page() {
       Object.keys(wardIncumbents || {}).map(wardName => normalizeName(wardName))
     )
     const inferredContestedSeats = allWards.reduce((acc, ward) => {
-      const lastYear = ward.lastYear || 2026
+      const lastYear = ward.lastYear || ELECTION_YEAR
       const contested =
         cycle === 'thirds'
-          ? (2026 - lastYear) % 3 === 0
+          ? (ELECTION_YEAR - lastYear) % 3 === 0
           : cycle === 'halves'
-            ? (2026 - lastYear) % 2 === 0
+            ? (ELECTION_YEAR - lastYear) % 2 === 0
             : true
       return acc + (contested ? Math.max(ward.vacancies || 0, 1) : 0)
     }, 0)
@@ -1855,9 +1734,9 @@ export default function Local2026Page() {
       const contested = shouldUseWardIncumbents
         ? normalizedWardIncumbents.has(normalizeName(ward.wardName))
         : cycle === 'thirds'
-          ? (2026 - (ward.lastYear || 2026)) % 3 === 0
+          ? (ELECTION_YEAR - (ward.lastYear || ELECTION_YEAR)) % 3 === 0
           : cycle === 'halves'
-            ? (2026 - (ward.lastYear || 2026)) % 2 === 0
+            ? (ELECTION_YEAR - (ward.lastYear || ELECTION_YEAR)) % 2 === 0
             : true
       if (!contested) return
       empty.codes.add(ward.wardCode)
@@ -1872,19 +1751,10 @@ export default function Local2026Page() {
     councilGeo.features.forEach(feature => {
       const name = feature.properties?.name
       const normalized = normalizeName(name)
-      if (
-        COUNTY_ELECTIONS_2026.has(normalized) ||
-        ELECTION_LADS_2026.has(normalized) ||
-        LONDON_BOROUGHS.has(normalized) ||
-        METRO_BOROUGHS.has(normalized) ||
-        UNITARY_AUTHORITIES.has(normalized)
-      ) {
+      if (COUNTY_ELECTIONS_2025.has(normalized) || ELECTION_LADS_2025.has(normalized)) {
         eligible.add(feature.properties?.reference)
       }
     })
-    eligible.add('surrey-east')
-    eligible.add('surrey-west')
-    eligible.add('E07000245')
     return eligible
   }, [councilGeo])
 
@@ -1896,16 +1766,26 @@ export default function Local2026Page() {
       const code = feature.properties?.reference
       if (!code) return
       const normalized = normalizeName(name)
-      if (COUNTY_ELECTIONS_2026.has(normalized)) {
+      if (COUNTY_ELECTIONS_2025.has(normalized)) {
         mapping.set(code, 'county')
-      } else if (LONDON_BOROUGHS.has(normalized)) {
-        mapping.set(code, 'london')
-      } else if (METRO_BOROUGHS.has(normalized)) {
-        mapping.set(code, 'metro')
-      } else if (UNITARY_AUTHORITIES.has(normalized)) {
-        mapping.set(code, 'unitary')
-      } else if (ELECTION_LADS_2026.has(normalized)) {
-        mapping.set(code, 'district')
+      } else if (ELECTION_LADS_2025.has(normalized)) {
+        mapping.set(
+          code,
+          normalized === 'doncaster'
+            ? 'metro'
+            : new Set([
+                'buckinghamshire',
+                'cornwall',
+                'county durham',
+                'north northamptonshire',
+                'northumberland',
+                'shropshire',
+                'west northamptonshire',
+                'wiltshire',
+              ]).has(normalized)
+              ? 'unitary'
+              : 'district'
+        )
       }
     })
     return mapping
@@ -1954,12 +1834,41 @@ export default function Local2026Page() {
     return codes
   }, [ladGeo])
 
-  const syntheticCouncilOverlay = useMemo(() => {
-    const features: GeoFeature[] = [
-      ...(surreyOverlay?.features || []),
-    ]
-    return features.length ? ({ type: 'FeatureCollection' as const, features } satisfies GeoCollection) : null
-  }, [surreyOverlay])
+  const surreyOverlay = useMemo(() => {
+    if (!ladGeo) return null
+    const eastPolys: any[] = []
+    const westPolys: any[] = []
+    ladGeo.features.forEach(feature => {
+      const name = feature.properties?.name
+      const normalized = normalizeName(name)
+      const geom = feature.geometry
+      if (!geom) return
+      const target =
+        SURREY_EAST.has(normalized) ? eastPolys : SURREY_WEST.has(normalized) ? westPolys : null
+      if (!target) return
+      if (geom.type === 'Polygon') {
+        target.push(geom.coordinates)
+      } else if (geom.type === 'MultiPolygon') {
+        geom.coordinates.forEach((coords: any) => target.push(coords))
+      }
+    })
+    const features: GeoFeature[] = []
+    if (eastPolys.length) {
+      features.push({
+        type: 'Feature',
+        properties: { reference: 'surrey-east', name: 'East Surrey' },
+        geometry: { type: 'MultiPolygon', coordinates: eastPolys },
+      })
+    }
+    if (westPolys.length) {
+      features.push({
+        type: 'Feature',
+        properties: { reference: 'surrey-west', name: 'West Surrey' },
+        geometry: { type: 'MultiPolygon', coordinates: westPolys },
+      })
+    }
+    return { type: 'FeatureCollection' as const, features }
+  }, [ladGeo])
 
   const councilComposition = useMemo<CouncilComposition | null>(() => {
     if (!baseline || !selectedLad || !councilSeats?.councils?.length || !councilGeo) return null
@@ -1975,7 +1884,7 @@ export default function Local2026Page() {
     if (!selectedFeature) return null
     const councilName = String(selectedFeature.properties?.name || '')
     if (!councilName) return null
-    const isCounty = COUNTY_ELECTIONS_2026.has(normalizeName(councilName))
+    const isCounty = COUNTY_ELECTIONS_2025.has(normalizeName(councilName))
     const normalizedTarget = normalizeCouncilName(councilName)
     const seatRow = councilSeats.councils.find(
       row => normalizeCouncilName(row.council) === normalizedTarget
@@ -2010,12 +1919,12 @@ export default function Local2026Page() {
 
     const allWards = selectedBaselineWards
     const inferredContestedSeats = allWards.reduce((acc, ward) => {
-      const lastYear = ward.lastYear || 2026
+      const lastYear = ward.lastYear || ELECTION_YEAR
       let contested = true
       if (cycle === 'thirds') {
-        contested = (2026 - lastYear) % 3 === 0
+        contested = (ELECTION_YEAR - lastYear) % 3 === 0
       } else if (cycle === 'halves') {
-        contested = (2026 - lastYear) % 2 === 0
+        contested = (ELECTION_YEAR - lastYear) % 2 === 0
       }
       if (!contested) return acc
       return acc + Math.max(ward.vacancies || 0, 1)
@@ -2037,12 +1946,12 @@ export default function Local2026Page() {
     let useLastYear = !shouldUseWardIncumbents && cycle !== 'all_out'
     if (useLastYear) {
       const contestedSeats = wards.reduce((acc, ward) => {
-        const lastYear = ward.lastYear || 2026
+        const lastYear = ward.lastYear || ELECTION_YEAR
         let contested = true
         if (cycle === 'thirds') {
-          contested = (2026 - lastYear) % 3 === 0
+          contested = (ELECTION_YEAR - lastYear) % 3 === 0
         } else if (cycle === 'halves') {
-          contested = (2026 - lastYear) % 2 === 0
+          contested = (ELECTION_YEAR - lastYear) % 2 === 0
         }
         if (!contested) return acc
         return acc + Math.max(ward.vacancies || 0, 1)
@@ -2051,18 +1960,32 @@ export default function Local2026Page() {
         useLastYear = false
       }
     }
-    const activeSubAreaGeo =
-      isCounty || selectedLad === 'surrey-east' || selectedLad === 'surrey-west' ? cedGeo : wardGeo
+    const activeSubAreaGeo = isCounty ? cedGeo : wardGeo
     const visibleWardFeatures =
       activeSubAreaGeo && Array.isArray(activeSubAreaGeo.features)
         ? activeSubAreaGeo.features.filter(feature => {
             if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
+              const allowedCodes = selectedLad === 'surrey-east' ? surreyEastCodes : surreyWestCodes
               const code = getGeoWardCode(feature)
-              return Boolean(code && allWards.some(ward => ward.wardCode === code))
+              const baselineWard = allWards.find(ward => ward.wardCode === code)
+              return Boolean(baselineWard && allowedCodes.has(baselineWard.ladCode))
             }
             if (isCounty) {
               const code = getGeoWardCode(feature)
-              return Boolean(code && allWards.some(ward => ward.wardCode === code))
+              const wardName = normalizeSubAreaName(getGeoWardName(feature))
+              const selectedCountyCode = selectedLad
+              const selectedCountyName = normalizeName(String(selectedFeature.properties?.name || ''))
+              const props = feature.properties || {}
+              if (
+                (props.countyCode && props.countyCode === selectedCountyCode) ||
+                (props.countyName && normalizeName(props.countyName) === selectedCountyName)
+              ) {
+                return true
+              }
+              return Boolean(
+                (code && allWards.some(ward => ward.wardCode === code)) ||
+                  allWards.some(ward => normalizeSubAreaName(ward.wardName) === wardName)
+              )
             }
             const selectedName = selectedFeature.properties?.name
             if (selectedName) {
@@ -2078,7 +2001,7 @@ export default function Local2026Page() {
       allWards.map(ward => [`${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`, ward])
     )
     const contestedWardFeatures = visibleWardFeatures.filter(feature => {
-      const wardName = normalizeName(getGeoWardName(feature))
+      const wardName = normalizeSubAreaName(getGeoWardName(feature))
       if (shouldUseWardIncumbents) {
         return normalizedWardIncumbents.has(wardName)
       }
@@ -2087,15 +2010,85 @@ export default function Local2026Page() {
       const baselineWard = (code ? baselineByCode.get(code) : null) || baselineByName.get(nameKey)
       if (!baselineWard) return cycle === 'all_out'
       if (cycle === 'all_out') return true
-      const lastYear = baselineWard.lastYear || 2026
+      const lastYear = baselineWard.lastYear || ELECTION_YEAR
       if (cycle === 'thirds') {
-        return (2026 - lastYear) % 3 === 0
+        return (ELECTION_YEAR - lastYear) % 3 === 0
       }
       if (cycle === 'halves') {
-        return (2026 - lastYear) % 2 === 0
+        return (ELECTION_YEAR - lastYear) % 2 === 0
       }
       return true
     })
+    const canUseFullCountyFeatureSet =
+      isCounty && cycle === 'all_out' && visibleWardFeatures.length === seatsUp
+    if (canUseFullCountyFeatureSet) {
+      const featureTotals: Record<string, number> = {}
+      const featurePreviousTotals: Record<string, number> = {}
+      visibleWardFeatures.forEach(feature => {
+        const projection =
+          wardMap.get(getGeoWardCode(feature) || '') ||
+          wardMapByName.get(getGeoWardNameKey(feature) || '') ||
+          wardMapByWardName.get(normalizeSubAreaName(getGeoWardName(feature))) ||
+          ladFallbackProjection
+        if (!projection) return
+        const code = getGeoWardCode(feature)
+        const nameKey = getGeoWardNameKey(feature) || ''
+        const baselineWard = (code ? baselineByCode.get(code) : null) || baselineByName.get(nameKey)
+        const seatsUpCount = baselineWard
+          ? getSeatsPerWardForPopup(allWards, seatRow, baselineWard, wardVacancyLookup)
+          : 1
+        const projectedSeatAllocation = allocateProjectedSeats(projection.shares || {}, seatsUpCount)
+        Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
+          const projectedWinner = canonicalizePartyLabel(party)
+          featureTotals[projectedWinner] = (featureTotals[projectedWinner] || 0) + allocatedSeats
+        })
+        const previousShares: Record<string, number> = baselineWard
+          ? { ...baselineWard.nationalShares, ...baselineWard.localShares }
+          : {}
+        let prevWinner: string | null =
+          (shouldUseWardIncumbents
+            ? normalizedWardIncumbents.get(normalizeSubAreaName(getGeoWardName(feature)))
+            : null) || canonicalizePartyLabel(projection.prevWinner || '')
+        let prevTop = -1
+        if (!prevWinner && baselineWard) {
+          Object.entries(previousShares).forEach(([party, value]) => {
+            const numericValue = Number(value)
+            if (!Number.isFinite(numericValue)) return
+            if (numericValue > prevTop) {
+              prevTop = numericValue
+              prevWinner = party
+            }
+          })
+        }
+        if (prevWinner) {
+          const prevKey = canonicalizePartyLabel(prevWinner)
+          featurePreviousTotals[prevKey] = (featurePreviousTotals[prevKey] || 0) + seatsUpCount
+        }
+      })
+      const projectedTotals = normalizeTotalsToTotal(totalSeats, featureTotals)
+      const projectedPreviousTotals =
+        !shouldUseWardIncumbents && previousRow?.lastElection && Object.keys(previousRow.lastElection).length
+          ? normalizeTotalsToTotal(totalSeats, previousRow.lastElection)
+          : normalizeTotalsToTotal(totalSeats, featurePreviousTotals)
+      let projectedControl: string | null = null
+      Object.entries(projectedTotals).forEach(([party, seats]) => {
+        if (seats > totalSeats / 2) projectedControl = party
+      })
+      const controlLabel = projectedControl ? `${projectedControl} majority` : 'No overall control'
+      return {
+        council: seatRow.council,
+        control: seatRow.control,
+        seatsUp,
+        totalSeats,
+        cycle,
+        totals: projectedTotals,
+        previousTotals: projectedPreviousTotals,
+        contestedTotals: { ...projectedTotals },
+        contestedPreviousTotals: { ...projectedPreviousTotals },
+        projectedControl: controlLabel,
+        previousSource: previousRow?.url || null,
+      }
+    }
     const useFeatureContested = contestedWardFeatures.length > 0
     wards.forEach(ward => {
       if (useFeatureContested) {
@@ -2133,13 +2126,13 @@ export default function Local2026Page() {
           }
         })
       }
-      const lastYear = ward.lastYear || 2026
+      const lastYear = ward.lastYear || ELECTION_YEAR
       let contested = shouldUseWardIncumbents ? Boolean(incumbentWinner) : true
       if (useLastYear) {
         if (cycle === 'thirds') {
-          contested = (2026 - lastYear) % 3 === 0
+          contested = (ELECTION_YEAR - lastYear) % 3 === 0
         } else if (cycle === 'halves') {
-          contested = (2026 - lastYear) % 2 === 0
+          contested = (ELECTION_YEAR - lastYear) % 2 === 0
         }
       }
       const fallbackProjectedWinner = canonicalizePartyLabel(
@@ -2170,7 +2163,7 @@ export default function Local2026Page() {
         const projection =
           wardMap.get(getGeoWardCode(feature) || '') ||
           wardMapByName.get(getGeoWardNameKey(feature) || '') ||
-          wardMapByWardName.get(normalizeName(getGeoWardName(feature))) ||
+          wardMapByWardName.get(normalizeSubAreaName(getGeoWardName(feature))) ||
           ladFallbackProjection
         if (!projection) return
         const code = getGeoWardCode(feature)
@@ -2182,7 +2175,7 @@ export default function Local2026Page() {
             ? getSeatsPerWardForPopup(wards, seatRow, baselineWard, wardVacancyLookup)
             : 1
         const seats = seatsUpCount * seatMultiplier
-        const wardName = normalizeName(getGeoWardName(feature))
+        const wardName = normalizeSubAreaName(getGeoWardName(feature))
         const prevWinner =
           (shouldUseWardIncumbents ? normalizedWardIncumbents.get(wardName) : null) ||
           canonicalizePartyLabel(projection.prevWinner || '')
@@ -2290,6 +2283,7 @@ export default function Local2026Page() {
   }, [
     baseline,
     selectedLad,
+    selectedBaselineWards,
     councilSeats,
     wardMap,
     wardMapByWardName,
@@ -2298,28 +2292,36 @@ export default function Local2026Page() {
     wardGeo,
     cedGeo,
     surreyOverlay,
-    selectedBaselineWards,
+    surreyEastCodes,
+    surreyWestCodes,
   ])
 
   const showNoComposition =
     Boolean(selectedLad) && (!councilComposition || !Object.keys(councilComposition.totals).length)
 
+  const selectedActualRow = useMemo(() => {
+    if (!selectedLad || !actualResults?.councils?.length) return null
+    const selectedFeature =
+      councilGeo?.features.find(feature => feature.properties?.reference === selectedLad) || null
+    const selectedName = String(selectedFeature?.properties?.name || '')
+    const normalizedSelectedCouncil = normalizeCouncilName(selectedName)
+    return (
+      actualResults.councils.find(
+        row => normalizeCouncilName(row.council) === normalizedSelectedCouncil
+      ) || null
+    )
+  }, [selectedLad, actualResults, councilGeo])
+
   const selectedLadFeature = useMemo(() => {
     if (!selectedLad || !councilGeo) return null
-    if (
-      selectedLad === 'surrey-east' ||
-      selectedLad === 'surrey-west' ||
-      selectedLad === 'E07000245'
-    ) {
+    if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
       return (
-        syntheticCouncilOverlay?.features.find(
-          feature => feature.properties?.reference === selectedLad
-        ) ??
+        surreyOverlay?.features.find(feature => feature.properties?.reference === selectedLad) ??
         null
       )
     }
     return councilGeo.features.find(feature => feature.properties?.reference === selectedLad) ?? null
-  }, [selectedLad, councilGeo, syntheticCouncilOverlay])
+  }, [selectedLad, councilGeo, surreyOverlay])
 
   const selectedCouncilName = useMemo(() => {
     if (!selectedLadFeature) return null
@@ -2329,7 +2331,7 @@ export default function Local2026Page() {
     if (selectedLad === 'surrey-east') return 'East Surrey Council'
     if (selectedLad === 'surrey-west') return 'West Surrey Council'
     const normalized = normalizeName(name)
-    if (COUNTY_ELECTIONS_2026.has(normalized)) {
+    if (COUNTY_ELECTIONS_2025.has(normalized)) {
       return `${name} County Council`
     }
     if (LONDON_BOROUGHS.has(normalized)) {
@@ -2341,33 +2343,52 @@ export default function Local2026Page() {
   }, [selectedLadFeature])
 
   const isCountySelection = useMemo(() => {
-    if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') return true
     const name = selectedLadFeature?.properties?.name
-    return COUNTY_ELECTIONS_2026.has(normalizeName(name))
-  }, [selectedLad, selectedLadFeature])
+    return COUNTY_ELECTIONS_2025.has(normalizeName(name))
+  }, [selectedLadFeature])
 
   const wardFeatures = useMemo(() => {
     if (!selectedLad || !baseline) return []
     const activeGeo = isCountySelection ? cedGeo : wardGeo
     if (!activeGeo || !Array.isArray(activeGeo.features)) return []
+    const selectedName = selectedLadFeature?.properties?.name
     let wardCodes: Set<string>
-    if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
-      wardCodes = new Set(selectedBaselineWards.map(ward => ward.wardCode))
-      return activeGeo.features.filter(feature => {
-        const code = getGeoWardCode(feature)
-        return Boolean(code && wardCodes.has(code))
-      })
-    }
     if (isCountySelection) {
+      const selectedCountyCode = selectedLad
+      const selectedCountyName = normalizeName(selectedName || selectedLadFeature?.properties?.name)
+      wardCodes = new Set(selectedBaselineWards.map(ward => ward.wardCode))
+      const wardNames = new Set(selectedBaselineWards.map(ward => normalizeSubAreaName(ward.wardName)))
+      return activeGeo.features.filter(feature => {
+        const props: any = feature.properties || {}
+        if (
+          (props.countyCode && props.countyCode === selectedCountyCode) ||
+          (props.countyName && normalizeName(props.countyName) === selectedCountyName)
+        ) {
+          return true
+        }
+        const code = getGeoWardCode(feature)
+        if (code && wardCodes.has(code)) return true
+        return wardNames.has(normalizeSubAreaName(getGeoWardName(feature)))
+      }).map(feature => ({
+        ...feature,
+        properties: {
+          ...(feature.properties || {}),
+          ladName: selectedName || selectedLadFeature?.properties?.name || '',
+        },
+      }))
+    }
+    if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
+      const allowedCodes = selectedLad === 'surrey-east' ? surreyEastCodes : surreyWestCodes
       wardCodes = new Set(
-        baseline.wards.filter(ward => ward.ladCode === selectedLad).map(ward => ward.wardCode)
+        baseline.wards.filter(ward => allowedCodes.has(ward.ladCode)).map(ward => ward.wardCode)
       )
       return activeGeo.features.filter(feature => {
-        const code = getGeoWardCode(feature)
-        return Boolean(code && wardCodes.has(code))
+        const props: any = feature.properties || {}
+        const code = props.reference || props.WD25CD || props.WD23CD || props.WD22CD
+        return wardCodes.has(code)
       })
     }
-    const selectedName = selectedLadFeature?.properties?.name
+
     if (selectedName) {
       const normalized = normalizeName(selectedName)
       const nameMatches = activeGeo.features.filter(feature => {
@@ -2380,20 +2401,14 @@ export default function Local2026Page() {
     }
 
     {
-      wardCodes = new Set(
-        baseline.wards.filter(ward => ward.ladCode === selectedLad).map(ward => ward.wardCode)
-      )
+      wardCodes = new Set(selectedBaselineWards.map(ward => ward.wardCode))
     }
-    const wardNameSet = new Set(
-      baseline.wards
-        .filter(ward => ward.ladCode === selectedLad)
-        .map(ward => normalizeName(ward.wardName))
-    )
+    const wardNameSet = new Set(selectedBaselineWards.map(ward => normalizeSubAreaName(ward.wardName)))
     return activeGeo.features.filter(feature => {
       const props: any = feature.properties || {}
       const code = props.reference || props.WD25CD || props.WD23CD || props.WD22CD
       if (wardCodes.has(code)) return true
-      const name = normalizeName(props.WD25NM || props.WD23NM || props.WD22NM || props.name)
+      const name = normalizeSubAreaName(props.WD25NM || props.WD23NM || props.WD22NM || props.name)
       return wardNameSet.has(name)
     })
   }, [
@@ -2402,6 +2417,8 @@ export default function Local2026Page() {
     selectedLad,
     baseline,
     selectedLadFeature,
+    surreyEastCodes,
+    surreyWestCodes,
     isCountySelection,
     selectedBaselineWards,
   ])
@@ -2417,12 +2434,18 @@ export default function Local2026Page() {
           marginBottom: '0.25rem',
         }}
       >
-        <h1 style={{ margin: 0 }}>Local Elections 2026</h1>
+        <h1 style={{ margin: 0 }}>May 2025 Simulation</h1>
         <Link href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           National Polling Average
         </Link>
         <Link href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           Recent UK Polls
+        </Link>
+        <Link href="/may-2025-simulation" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          May 2025 Simulation
+        </Link>
+        <Link href="/may-2025-council-projections" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
+          May 2025 Council Projections
         </Link>
         <Link href="/local-2026" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
           May 2026 Local Elections Projections
@@ -2596,13 +2619,9 @@ export default function Local2026Page() {
             {councilGeo ? (
             <LocalMap
               ladGeo={councilGeo}
-              overlayAreas={syntheticCouncilOverlay}
-              boundaryAreas={surreyBoundary}
-              overlayAreaCodes={new Set(['surrey-east', 'surrey-west', 'E07000245'])}
-              hiddenLadCodes={surreyLadCodes}
               wardFeatures={wardFeatures}
-              contestedWardCodes={contestedWardKeys.codes}
-              contestedWardNameKeys={contestedWardKeys.names}
+              contestedWardCodes={isCountySelection ? undefined : contestedWardKeys.codes}
+              contestedWardNameKeys={isCountySelection ? undefined : contestedWardKeys.names}
               wardVacancies={wardVacancies}
               wardVacanciesByName={wardVacanciesByName}
               wardMap={wardMap}
@@ -2614,11 +2633,7 @@ export default function Local2026Page() {
               onSelectLad={setSelectedLad}
               eligibleLads={eligibleLads}
               ladCategoryByCode={ladCategoryByCode}
-              previousWinnerLabel={
-                selectedLad === 'surrey-east' || selectedLad === 'surrey-west'
-                  ? 'Previous winner of Surrey County Council Division'
-                  : 'Previous winner'
-              }
+              nonContestedLabel="Not contested in 2025"
             />
             ) : (
               <div style={{ padding: '1rem' }}>Loading map data...</div>
@@ -2667,6 +2682,8 @@ export default function Local2026Page() {
                 {councilComposition.cycle})
               </div>
               <div style={{ color: '#555', marginBottom: '0.5rem' }}>
+                Actual result: {selectedActualRow?.actualControl || 'Unknown'}
+                <br />
                 Projected control: {councilComposition.projectedControl}
                 {councilComposition.previousSource ? (
                   <>
@@ -2678,23 +2695,23 @@ export default function Local2026Page() {
               {Object.entries(councilComposition.totals)
                 .sort((a, b) => b[1] - a[1])
                 .map(([party, seats]) => {
-                  const previous = councilComposition.previousTotals[party] || 0
-                  const delta = seats - previous
-                  const showArrow =
-                    selectedLad !== 'surrey-east' && selectedLad !== 'surrey-west'
+                  const actualSeats = selectedActualRow?.actualSeats?.[party] || 0
+                  const delta = seats - actualSeats
                   const deltaLabel =
-                    delta === 0 ? '0' : delta > 0 ? `↑ ${delta}` : `↓ ${Math.abs(delta)}`
+                    delta === 0
+                      ? '-'
+                      : delta > 0
+                        ? `↑ ${delta}`
+                        : `↓ ${Math.abs(delta)}`
                   const deltaColor = delta > 0 ? '#1B8A3A' : delta < 0 ? '#B02A37' : '#666'
                   return (
                   <div key={party} style={{ display: 'flex', justifyContent: 'space-between' }}>
                     <span>{party}</span>
                     <span>
-                      {seats}
-                      {showArrow ? (
-                        <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
-                          ({deltaLabel})
-                        </span>
-                      ) : null}
+                      {seats}{' '}
+                      <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
+                        ({deltaLabel})
+                      </span>
                     </span>
                   </div>
                   )
