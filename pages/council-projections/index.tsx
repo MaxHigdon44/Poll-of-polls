@@ -411,10 +411,19 @@ function computeWardProjection(
   tenureStrength: number,
   ruralUrbanStrength: number
 ) {
-  const labourDeltaMultiplier =
-    ward.lastYear === 2021 ? 1.4 : ward.lastYear === 2022 ? 1.3 : ward.lastYear === 2024 ? 1.15 : 1
-  const labourBaselineCarry =
-    ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024
+  const labourStronghold = (ward.nationalShares['Labour'] ?? 0) > 70
+  const labourDeltaMultiplier = labourStronghold
+    ? 1
+    : ward.lastYear === 2021
+      ? 1.4
+      : ward.lastYear === 2022
+        ? 1.3
+        : ward.lastYear === 2024
+          ? 1.15
+          : 1
+  const labourBaselineCarry = labourStronghold
+    ? 1
+    : ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024
       ? 0.93
       : 1
   const nationalParties = [
@@ -475,7 +484,15 @@ function computeWardProjection(
     }
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
-    const regionAdj = getRegionAdjustment(party, regionName)
+    let regionAdj = getRegionAdjustment(party, regionName)
+    if (
+      party === 'Reform' &&
+      regionName === 'London' &&
+      adjustedLeaveShare > 0.5 &&
+      regionAdj < 0
+    ) {
+      regionAdj = 0
+    }
     const nssecAdj = getNssecAdjustment(party, nssecShare, nssecBaseline)
     const degreeAdj = getDegreeAdjustment(party, degreeShare, degreeBaseline)
     const tenureAdj = getTenureAdjustment(party, tenureShare, tenureBaseline)
@@ -637,6 +654,28 @@ const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
     'sutton vesey': 2,
     'sutton walmley and minworth': 2,
     'weoley and selly oak': 2,
+  },
+  thurrock: {
+    'aveley and uplands': 3,
+    belhus: 3,
+    'chadwell saint mary': 3,
+    'grays riverside': 3,
+    'grays thurrock': 3,
+    ockendon: 3,
+    'stanford east and corringham town': 3,
+    'the homesteads': 3,
+    'west thurrock and south stifford': 3,
+    'chafford and north stifford': 2,
+    'corringham and fobbing': 2,
+    'east tilbury': 2,
+    'little thurrock blackshots': 2,
+    'little thurrock rectory': 2,
+    orsett: 2,
+    'south chafford': 2,
+    'stanford le hope west': 2,
+    'stifford clays': 2,
+    'tilbury riverside and thurrock park': 2,
+    'tilbury saint chads': 2,
   },
 }
 

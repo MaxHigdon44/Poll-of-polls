@@ -392,10 +392,19 @@ function computeWardProjection(
   tenureStrength: number,
   ruralUrbanStrength: number
 ) {
-  const labourDeltaMultiplier =
-    ward.lastYear === 2021 ? 1.4 : ward.lastYear === 2022 ? 1.3 : ward.lastYear === 2024 ? 1.15 : 1
-  const labourBaselineCarry =
-    ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024
+  const labourStronghold = (ward.nationalShares['Labour'] ?? 0) > 70
+  const labourDeltaMultiplier = labourStronghold
+    ? 1
+    : ward.lastYear === 2021
+      ? 1.4
+      : ward.lastYear === 2022
+        ? 1.3
+        : ward.lastYear === 2024
+          ? 1.15
+          : 1
+  const labourBaselineCarry = labourStronghold
+    ? 1
+    : ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024
       ? 0.93
       : 1
   const nationalParties = [
@@ -456,7 +465,15 @@ function computeWardProjection(
     }
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
-    const regionAdj = getRegionAdjustment(party, regionName)
+    let regionAdj = getRegionAdjustment(party, regionName)
+    if (
+      party === 'Reform' &&
+      regionName === 'London' &&
+      adjustedLeaveShare > 0.5 &&
+      regionAdj < 0
+    ) {
+      regionAdj = 0
+    }
     const nssecAdj = getNssecAdjustment(party, nssecShare, nssecBaseline)
     const degreeAdj = getDegreeAdjustment(party, degreeShare, degreeBaseline)
     const tenureAdj = getTenureAdjustment(party, tenureShare, tenureBaseline)

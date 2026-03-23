@@ -43,5 +43,6 @@ export function blendShare(wardShare: number, geShare: number | undefined, weigh
 export function getRelativeGeShare(party: string, geShare: number | undefined) {
   const numeric = Number(geShare)
   if (!Number.isFinite(numeric)) return 0
+  if (party === 'Reform' && numeric === 0) return 0
   return numeric - (GE2024_NATIONAL_SHARES[party] ?? 0)
 }

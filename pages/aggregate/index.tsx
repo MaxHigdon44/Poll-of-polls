@@ -30,7 +30,14 @@ type AggregateSeriesRow = {
   others: number | string | null
 }
 
-type TrendParty = 'labour' | 'conservative' | 'reform' | 'libdem' | 'green'
+type TrendParty =
+  | 'labour'
+  | 'conservative'
+  | 'reform'
+  | 'libdem'
+  | 'green'
+  | 'snp'
+  | 'pc'
 
 const TREND_PARTIES: Array<{ key: TrendParty; label: string; color: string }> = [
   { key: 'labour', label: 'Labour', color: '#E4003B' },
@@ -38,6 +45,8 @@ const TREND_PARTIES: Array<{ key: TrendParty; label: string; color: string }> = 
   { key: 'reform', label: 'Reform', color: '#12B6CF' },
   { key: 'libdem', label: 'Liberal Democrat', color: '#FAA61A' },
   { key: 'green', label: 'Green', color: '#02A95B' },
+  { key: 'snp', label: 'SNP', color: '#FDF38E' },
+  { key: 'pc', label: 'Plaid Cymru', color: '#008672' },
 ]
 
 function normalizeSeriesValue(value: number | string | null): number | null {
@@ -385,7 +394,7 @@ export default function AggregatePage() {
         )}
       </div>
       <div className="poll-card poll-stack poll-card--spaced">
-        <div className="poll-section-title">Aggregate Trend Over Time for Major National Parties</div>
+        <div className="poll-section-title">Aggregate Trend Over Time for Major Parties</div>
         {trendChart ? (
           <>
             <div className="poll-trend-legend">

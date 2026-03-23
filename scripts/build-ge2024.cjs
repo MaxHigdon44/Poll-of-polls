@@ -7,21 +7,141 @@ const OUT_DIR = path.join(ROOT, 'public/data')
 const GE_CSV_FILE = 'HoC-GE2024-results-by-constituency.csv'
 const WARD_PCON_FILE = 'ward_to_pcon_2024.csv'
 const PCON_GEOJSON_FILE = 'pcon24.geojson'
-const CED_GEOJSON_FILE = 'ced.geojson'
+const CED_GEOJSON_FILES = ['ced-all.geojson', 'ced.geojson']
+const BASELINE_FILE = path.join(OUT_DIR, 'ward-baseline.json')
 const CED_PCON_OVERRIDES = {
   E58000988: 'E14001256',
   E58000994: 'E14001396',
 }
+const BASELINE_PCON_NAME_OVERRIDES = {
+  'gloucestershire|blakeney and bream': 'E14001240',
+  'oxfordshire|barton/ sandhills and risinghurst': 'E14001419',
+  'oxfordshire|thame and chinnor': 'E14001280',
+  'oxfordshire|university parks': 'E14001420',
+}
 
 function normalize(value) {
   return String(value || '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/'s\b/gi, 's')
     .toLowerCase()
-    .replace(/&/g, 'and')
+    .replace(/&/g, ' and ')
+    .replace(/\//g, ' and ')
     .replace(/[\u2019']/g, '')
-    .replace(/\s+and\s+/g, ' and ')
-    .replace(/[^\w\s-]/g, ' ')
+    .replace(/[,.]/g, ' ')
+    .replace(/\bbeneden\b/g, 'benenden')
     .replace(/\s+/g, ' ')
     .trim()
+}
+
+function getCedNameAliases(value) {
+  const raw = String(value || '').trim()
+  if (!raw) return []
+  const aliases = new Set([raw])
+  aliases.add(raw.replace(/\bED\b/gi, '').trim())
+  aliases.add(raw.replace(/\bElectoral Division\b/gi, '').trim())
+  return [...aliases].filter(Boolean)
+}
+
+function aggressiveNormalize(value) {
+  return normalize(value)
+    .replace(/\bed\b/g, ' ')
+    .replace(/\bwith\b/g, ' ')
+    .replace(/\bthe\b/g, ' ')
+    .replace(/\bst\b/g, 'saint')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function getMeaningfulTokens(value) {
+  return aggressiveNormalize(value)
+    .split(' ')
+    .map(token => token.trim())
+    .filter(token => token && token !== 'and')
+}
+
+function buildAreaNameIndex(nameMap) {
+  const index = new Map()
+  Object.entries(nameMap).forEach(([key, pconCode]) => {
+    const parts = String(key || '').split('|')
+    if (parts.length < 2 || !pconCode) return
+    const areaName = parts[0]
+    const itemName = parts.slice(1).join('|')
+    if (!index.has(areaName)) index.set(areaName, [])
+    index.get(areaName).push({ name: itemName, pconCode })
+  })
+  return index
+}
+
+function buildBaselineAliases(wardNames, cedNames) {
+  if (!fs.existsSync(BASELINE_FILE)) {
+    return { wardAliases: 0, cedAliases: 0 }
+  }
+
+  const baseline = JSON.parse(fs.readFileSync(BASELINE_FILE, 'utf8'))
+  const rows = Array.isArray(baseline?.wards) ? baseline.wards : []
+  const wardIndex = buildAreaNameIndex(wardNames)
+  const cedIndex = buildAreaNameIndex(cedNames)
+  let wardAliases = 0
+  let cedAliases = 0
+
+  rows.forEach(row => {
+    const isCed = /^E580|^W580/.test(String(row.wardCode || ''))
+    const targetMap = isCed ? cedNames : wardNames
+    const candidateIndex = isCed ? cedIndex : wardIndex
+    const areaKey = normalize(row.ladName)
+    const baselineKey = normalize(`${row.ladName}|${row.wardName}`)
+    const manualOverride = BASELINE_PCON_NAME_OVERRIDES[baselineKey]
+    if (manualOverride) {
+      targetMap[baselineKey] = manualOverride
+      if (isCed) cedAliases += 1
+      else wardAliases += 1
+      return
+    }
+    if (targetMap[baselineKey]) return
+
+    const candidates = candidateIndex.get(areaKey) || []
+    if (!candidates.length) return
+
+    const baselineTokens = getMeaningfulTokens(row.wardName)
+    if (!baselineTokens.length) return
+
+    const matches = candidates.filter(candidate => {
+      const candidateTokens = getMeaningfulTokens(candidate.name)
+      if (!candidateTokens.length) return false
+      const shorter = baselineTokens.length <= candidateTokens.length ? baselineTokens : candidateTokens
+      const longer = baselineTokens.length <= candidateTokens.length ? candidateTokens : baselineTokens
+      return shorter.every(token => longer.includes(token))
+    })
+
+    let chosen = null
+    if (matches.length === 1) {
+      chosen = matches[0]
+    } else if (!matches.length) {
+      const ranked = candidates
+        .map(candidate => {
+          const candidateTokens = getMeaningfulTokens(candidate.name)
+          const overlap = baselineTokens.filter(token => candidateTokens.includes(token)).length
+          return { ...candidate, overlap }
+        })
+        .filter(candidate => candidate.overlap > 0)
+        .sort((a, b) => b.overlap - a.overlap)
+      const topOverlap = ranked[0]?.overlap || 0
+      const topMatches = ranked.filter(candidate => candidate.overlap === topOverlap)
+      const pconCodes = [...new Set(topMatches.map(candidate => candidate.pconCode))]
+      if (topOverlap > 0 && pconCodes.length === 1) {
+        chosen = topMatches[0]
+      }
+    }
+
+    if (!chosen) return
+
+    targetMap[baselineKey] = chosen.pconCode
+    if (isCed) cedAliases += 1
+    else wardAliases += 1
+  })
+
+  return { wardAliases, cedAliases }
 }
 
 function parseCsvLine(line) {
@@ -271,9 +391,11 @@ async function buildWardToPcon() {
 }
 
 async function buildCedToPcon() {
-  const cedPath = path.join(OUT_DIR, CED_GEOJSON_FILE)
+  const cedPath = CED_GEOJSON_FILES.map(file => path.join(OUT_DIR, file)).find(file =>
+    fs.existsSync(file)
+  )
   const pconPath = path.join(RAW_DIR, PCON_GEOJSON_FILE)
-  if (!fs.existsSync(cedPath) || !fs.existsSync(pconPath)) {
+  if (!cedPath || !fs.existsSync(pconPath)) {
     return { cedToPcon: {}, cedNames: {}, unmatched: [] }
   }
 
@@ -292,7 +414,11 @@ async function buildCedToPcon() {
   ;(cedGeo.features || []).forEach(feature => {
     const cedCode = feature.properties?.reference || feature.properties?.CED25CD
     const cedName = feature.properties?.name || feature.properties?.CED25NM
-    const ladName = feature.properties?.ladName
+    const areaName =
+      feature.properties?.ladName ||
+      feature.properties?.countyName ||
+      feature.properties?.CTY25NM ||
+      feature.properties?.CTY24NM
     if (!cedCode || !cedName) return
     const point = getRepresentativePoint(feature)
     if (!point) {
@@ -308,9 +434,11 @@ async function buildCedToPcon() {
       return
     }
     cedToPcon[cedCode] = pconCode
-    if (ladName) {
-      const key = normalize(`${ladName}|${cedName}`)
-      if (!cedNames[key]) cedNames[key] = pconCode
+    if (areaName) {
+      getCedNameAliases(cedName).forEach(alias => {
+        const key = normalize(`${areaName}|${alias}`)
+        if (!cedNames[key]) cedNames[key] = pconCode
+      })
     }
   })
 
@@ -378,6 +506,7 @@ async function run() {
   const { wardToPcon, wardNames } = await buildWardToPcon()
   const { cedToPcon, cedNames, unmatched } = await buildCedToPcon()
   const results = await buildGe2024ByPcon()
+  const aliasCounts = buildBaselineAliases(wardNames, cedNames)
   const missing = Array.from(new Set(Object.values(wardToPcon).filter(code => !results[code])))
   await fs.promises.writeFile(
     path.join(OUT_DIR, 'ward-to-pcon.json'),
@@ -399,6 +528,7 @@ async function run() {
     `Wrote ward-to-pcon.json (${Object.keys(wardToPcon).length}) and ge2024-pcon.json (${Object.keys(results).length})`
   )
   console.log(`Wrote ced-to-pcon.json (${Object.keys(cedToPcon).length}), unmatched: ${unmatched.length}`)
+  console.log(`Added baseline aliases: ward=${aliasCounts.wardAliases}, ced=${aliasCounts.cedAliases}`)
   console.log(`Missing constituency matches: ${missing.length}`)
 }
 
