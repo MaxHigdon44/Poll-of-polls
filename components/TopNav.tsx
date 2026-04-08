@@ -40,8 +40,8 @@ export const MAIN_TOPNAV_ITEMS: TopNavItem[] = [
     label: 'Election Projections',
     children: [
       { href: '/council-projections', label: 'English Local Elections' },
-      { href: '/scottish-parliament-projection', label: 'Scottish Parliament' },
-      { href: '/senedd-projection', label: 'Senedd' },
+      { href: '/scottish-parliament-projection', label: 'Scottish Parliamentary Elections' },
+      { href: '/senedd-projection', label: 'Senedd Elections' },
     ],
   },
   { href: '/methodology', label: 'Methodology' },

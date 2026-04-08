@@ -2299,11 +2299,11 @@ export default function Local2026Page() {
       adjustedTotals = normalizeTotalsToTotal(totalSeats, totals)
       adjustedPreviousTotals = normalizeTotalsToTotal(totalSeats, previousTotals)
     }
-    if (
+    const hasLastElectionBaseline =
       !shouldUseWardIncumbents &&
       previousRow?.lastElection &&
       Object.keys(previousRow.lastElection).length
-    ) {
+    if (hasLastElectionBaseline) {
       adjustedPreviousTotals = normalizeTotalsToTotal(totalSeats, previousRow.lastElection)
     }
     const normalizeContested = !useFeatureContested && !useLastYear && !shouldUseWardIncumbents
@@ -2319,7 +2319,9 @@ export default function Local2026Page() {
     let projectedPreviousTotals = adjustedPreviousTotals
     if (cycle === 'all_out') {
       projectedTotals = normalizeTotalsToTotal(totalSeats, adjustedContestedTotals)
-      if (Object.keys(adjustedContestedPreviousTotals).length) {
+      if (hasLastElectionBaseline) {
+        projectedPreviousTotals = { ...adjustedPreviousTotals }
+      } else if (Object.keys(adjustedContestedPreviousTotals).length) {
         projectedPreviousTotals = normalizeTotalsToTotal(
           totalSeats,
           adjustedContestedPreviousTotals

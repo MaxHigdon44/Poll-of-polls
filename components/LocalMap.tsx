@@ -461,7 +461,9 @@ export default function LocalMap({
       (wardCode ? contestedWardCodes?.has(wardCode) : false) ||
       (wardNameKey ? contestedWardNameKeys?.has(wardNameKey) : false)
     if (!isContested) {
-      layer.bindPopup(`<strong>${wardName}</strong><br/>${nonContestedLabel}`)
+      layer.bindPopup(`<strong>${wardName}</strong><br/>${nonContestedLabel}`, {
+        autoPan: false,
+      })
       return
     }
     const projection =
@@ -501,7 +503,8 @@ export default function LocalMap({
     layer.bindPopup(
       `<strong>${wardName}</strong><br/>${popupLines}<br/>Seats up: ${vacancies}${
         prev ? `<br/>${prev}` : ''
-      }`
+      }`,
+      { autoPan: false }
     )
   }
 

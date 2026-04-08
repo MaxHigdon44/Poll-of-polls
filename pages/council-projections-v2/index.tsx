@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import Link from 'next/link'
 import { useRouter } from 'next/router'
+import PageShell from '../../components/PageShell'
+import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import {
   LEAVE_EFFECT_STRENGTH,
   NATIONAL_LEAVE_SHARE,
@@ -41,8 +42,8 @@ import {
   getGeWeightForParty,
   getRelativeGeShare,
 } from '@/lib/local2026/ge'
+import { getConcentrationMultiplier } from '@/lib/local2026/concentration'
 import { allocateProjectedSeats } from '@/lib/local2026/multiMember'
-import { computeOlsWardProjection, type OlsResults } from '@/lib/local2026/ols'
 
 const COUNTY_REGION_LOOKUP: Record<string, string> = {
   E10000011: 'South East',
@@ -184,6 +185,11 @@ type AggregateResponse = {
   aggregates: AggregateRow[]
 }
 
+type WardVacancyLookup = {
+  wards?: Record<string, number>
+  wardNames?: Record<string, number>
+}
+
 type GeoFeature = {
   type: 'Feature'
   properties: Record<string, any>
@@ -244,6 +250,97 @@ function normalizeCouncilName(name: string) {
     .trim()
 }
 
+const SURREY_EAST_DIVISIONS = new Set(
+  [
+    'E58001472',
+    'E58001478',
+    'E58001501',
+    'E58001502',
+    'E58001527',
+    'E58001528',
+    'E58001529',
+    'E58001534',
+    'E58001535',
+    'E58001481',
+    'E58001482',
+    'E58001484',
+    'E58001483',
+    'E58001533',
+    'E58001463',
+    'E58001466',
+    'E58001474',
+    'E58001475',
+    'E58001476',
+    'E58001508',
+    'E58001465',
+    'E58001477',
+    'E58001503',
+    'E58001504',
+    'E58001513',
+    'E58001514',
+    'E58001516',
+    'E58001517',
+    'E58001518',
+    'E58001525',
+    'E58001469',
+    'E58001470',
+    'E58001492',
+    'E58001511',
+    'E58001515',
+    'E58001530',
+  ]
+)
+
+const SURREY_WEST_DIVISIONS = new Set(
+  [
+    'E58001461',
+    'E58001494',
+    'E58001495',
+    'E58001496',
+    'E58001497',
+    'E58001498',
+    'E58001505',
+    'E58001519',
+    'E58001520',
+    'E58001541',
+    'E58001460',
+    'E58001471',
+    'E58001479',
+    'E58001480',
+    'E58001488',
+    'E58001540',
+    'E58001462',
+    'E58001507',
+    'E58001512',
+    'E58001521',
+    'E58001522',
+    'E58001523',
+    'E58001524',
+    'E58001464',
+    'E58001467',
+    'E58001468',
+    'E58001489',
+    'E58001500',
+    'E58001509',
+    'E58001473',
+    'E58001485',
+    'E58001486',
+    'E58001487',
+    'E58001490',
+    'E58001491',
+    'E58001499',
+    'E58001531',
+    'E58001532',
+    'E58001493',
+    'E58001506',
+    'E58001526',
+    'E58001536',
+    'E58001538',
+    'E58001537',
+    'E58001539',
+  ]
+)
+
 function mapControlToParty(label: string | null) {
   if (!label) return null
   const normalized = normalizeName(label)
@@ -285,6 +382,28 @@ function canonicalizePartyLabel(party: string | null | undefined) {
   return party || 'Other'
 }
 
+function isNationalOrStandardParty(party: string) {
+  return new Set([
+    'Labour',
+    'Conservative',
+    'Reform',
+    'Liberal Democrat',
+    'Green',
+    'SNP',
+    'Plaid Cymru',
+    'Independent',
+    'Other',
+  ]).has(party)
+}
+
+function resolvePreviousSeatBucket(party: string, currentTotals: Record<string, number>) {
+  if (party in currentTotals) return party
+  if (!isNationalOrStandardParty(party) && 'Independent' in currentTotals) {
+    return 'Independent'
+  }
+  return party
+}
+
 function sumShares(shares: Record<string, number>) {
   return Object.values(shares).reduce((acc, value) => acc + (value || 0), 0)
 }
@@ -312,6 +431,21 @@ function computeWardProjection(
   tenureStrength: number,
   ruralUrbanStrength: number
 ) {
+  const labourStronghold = (ward.nationalShares['Labour'] ?? 0) > 70
+  const labourDeltaMultiplier = labourStronghold
+    ? 1
+    : ward.lastYear === 2021
+      ? 1.4
+      : ward.lastYear === 2022
+        ? 1.3
+        : ward.lastYear === 2024
+          ? 1.15
+          : 1
+  const labourBaselineCarry = labourStronghold
+    ? 1
+    : ward.lastYear === 2021 || ward.lastYear === 2022 || ward.lastYear === 2024
+      ? 0.93
+      : 1
   const nationalParties = [
     'Labour',
     'Conservative',
@@ -323,7 +457,7 @@ function computeWardProjection(
   ]
 
   const aggregateMap: Record<string, number> = {
-    Labour: (aggregate.labour ?? 0) - 2,
+    Labour: aggregate.labour ?? 0,
     Conservative: aggregate.conservative ?? 0,
     Reform: aggregate.reform ?? 0,
     'Liberal Democrat': aggregate.libdem ?? 0,
@@ -341,20 +475,52 @@ function computeWardProjection(
   const adjustedNational: Record<string, number> = {}
   let sumNational = 0
   const adjustedLeaveShare = clampLeaveShare(leaveShare)
+  let baselineWinner: string | null = null
+  let baselineTop = -1
+  Object.entries({ ...ward.nationalShares, ...ward.localShares }).forEach(([party, value]) => {
+    if ((value ?? 0) > baselineTop) {
+      baselineTop = value ?? 0
+      baselineWinner = party
+    }
+  })
   nationalParties.forEach(party => {
     if (!partyAllowedInRegion(party, regionName)) {
       adjustedNational[party] = 0
       return
     }
-    const base = ward.nationalShares[party] ?? 0
-    const delta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
+    const base = (ward.nationalShares[party] ?? 0) * (party === 'Labour' ? labourBaselineCarry : 1)
+    const rawDelta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
+    let delta = party === 'Labour' && rawDelta < 0 ? rawDelta * labourDeltaMultiplier : rawDelta
+    if (party === 'Conservative' && ward.lastYear === 2021 && delta < 0) {
+      delta *= 0.9
+    }
+    if (
+      party === 'Reform' &&
+      delta > 0 &&
+      ward.lastYear === 2021 &&
+      canonicalizePartyLabel(baselineWinner) === 'Conservative'
+    ) {
+      delta *= 0.95
+    }
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
-    const regionAdj = getRegionAdjustment(party, regionName)
+    let regionAdj = getRegionAdjustment(party, regionName)
+    if (
+      party === 'Reform' &&
+      regionName === 'London' &&
+      adjustedLeaveShare > 0.5 &&
+      regionAdj < 0
+    ) {
+      regionAdj = 0
+    }
     const nssecAdj = getNssecAdjustment(party, nssecShare, nssecBaseline)
     const degreeAdj = getDegreeAdjustment(party, degreeShare, degreeBaseline)
     const tenureAdj = getTenureAdjustment(party, tenureShare, tenureBaseline)
     const ruralUrbanAdj = getRuralUrbanAdjustment(party, ruralUrbanShare, ruralUrbanBaseline)
+    const concentrationMultiplier = getConcentrationMultiplier(
+      party,
+      ward.nationalShares[party] ?? 0
+    )
     const value = Math.max(
       0,
       base +
@@ -366,7 +532,7 @@ function computeWardProjection(
         degreeStrength * degreeAdj +
         tenureStrength * tenureAdj +
         ruralUrbanStrength * ruralUrbanAdj
-    )
+    ) * concentrationMultiplier
     adjustedNational[party] = value
     sumNational += value
   })
@@ -517,7 +683,8 @@ const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
 function getSeatsPerWard(
   wards: WardBaseline[],
   seatRow: CouncilSeatRow | null | undefined,
-  ward: WardBaseline
+  ward: WardBaseline,
+  wardVacancyLookup?: WardVacancyLookup | null
 ) {
   const councilKey = normalizeCouncilName(ward.ladName)
   const wardKey = normalizeName(ward.wardName)
@@ -532,16 +699,38 @@ function getSeatsPerWard(
     else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
     else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
   }
-  if (cycle !== 'all_out') return Math.max(ward.vacancies || 0, 1)
+  if (cycle !== 'all_out') return 1
+
+  const explicitVacancy =
+    wardVacancyLookup?.wards?.[ward.wardCode] ||
+    wardVacancyLookup?.wardNames?.[`${normalizeName(ward.ladName)}|${wardKey}`]
 
   const vacancySum = wards.reduce((acc, entry) => acc + Math.max(entry.vacancies || 0, 1), 0)
   if (vacancySum === totalSeats) {
     return Math.max(ward.vacancies || 0, 1)
   }
 
+  if (explicitVacancy) {
+    const explicitSum = wards.reduce((acc, entry) => {
+      const entryWardKey = normalizeName(entry.wardName)
+      const value =
+        wardVacancyLookup?.wards?.[entry.wardCode] ||
+        wardVacancyLookup?.wardNames?.[
+          `${normalizeName(entry.ladName)}|${entryWardKey}`
+        ] ||
+        0
+      return acc + value
+    }, 0)
+    if (explicitSum === totalSeats) {
+      return explicitVacancy
+    }
+  }
+
   if (wards.length && totalSeats % wards.length === 0) {
     return Math.max(1, Math.round(totalSeats / wards.length))
   }
+
+  if (explicitVacancy) return explicitVacancy
 
   return Math.max(ward.vacancies || 0, 1)
 }
@@ -557,15 +746,15 @@ export default function CouncilProjectionsPage() {
   const [degreeLookup, setDegreeLookup] = useState<DegreeLookup | null>(null)
   const [tenureLookup, setTenureLookup] = useState<TenureLookup | null>(null)
   const [ruralUrbanLookup, setRuralUrbanLookup] = useState<RuralUrbanLookup | null>(null)
+  const [wardVacancyLookup, setWardVacancyLookup] = useState<WardVacancyLookup | null>(null)
   const [wardToPcon, setWardToPcon] = useState<WardToPconLookup | null>(null)
   const [cedToPcon, setCedToPcon] = useState<CedToPconLookup | null>(null)
   const [geLookup, setGeLookup] = useState<GePconLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
-  const [olsResults, setOlsResults] = useState<OlsResults | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
   const [countyGeo, setCountyGeo] = useState<GeoCollection | null>(null)
-  const [hasMounted, setHasMounted] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
@@ -576,10 +765,6 @@ export default function CouncilProjectionsPage() {
   const [geReformWeight, setGeReformWeight] = useState(GE_WEIGHT_REFORM)
   const [geGreenWeight, setGeGreenWeight] = useState(GE_WEIGHT_GREEN)
   const [geMajorWeight, setGeMajorWeight] = useState(GE_WEIGHT_MAJOR)
-  useEffect(() => {
-    setHasMounted(true)
-  }, [])
-
   useEffect(() => {
     router.prefetch('/local-2026-v2')
     fetch('/data/ward-baseline.json')
@@ -614,6 +799,10 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setRuralUrbanLookup)
       .catch(() => setRuralUrbanLookup(null))
+    fetch('/data/ward-vacancies.json')
+      .then(res => res.json())
+      .then(setWardVacancyLookup)
+      .catch(() => setWardVacancyLookup(null))
     fetch('/data/ward-to-pcon.json')
       .then(res => res.json())
       .then(setWardToPcon)
@@ -635,10 +824,6 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setCouncilPrevious)
       .catch(() => setCouncilPrevious(null))
-    fetch('/data/ols-results.json')
-      .then(res => res.json())
-      .then(setOlsResults)
-      .catch(() => setOlsResults(null))
     fetch('/data/lads.geojson')
       .then(res => res.json())
       .then(setLadGeo)
@@ -838,8 +1023,7 @@ export default function CouncilProjectionsPage() {
   }
 
   const rows = useMemo<CouncilProjectionRow[]>(() => {
-    if (!baseline || !aggregate || !councilSeats || !ladGeo || !olsResults) return []
-    const olsCoefficients = olsResults.scenarios?.inSampleAllYears?.coefficients || null
+    if (!baseline || !aggregate || !councilSeats || !ladGeo) return []
     const byLad = new Map<string, WardBaseline[]>()
     baseline.wards.forEach(ward => {
       const list = byLad.get(ward.ladCode) || []
@@ -847,9 +1031,57 @@ export default function CouncilProjectionsPage() {
       byLad.set(ward.ladCode, list)
     })
 
+    const ladBaselineMap = new Map<
+      string,
+      { totalVotes: number; national: Record<string, number>; local: Record<string, number> }
+    >()
+    baseline.wards.forEach(ward => {
+      const entry = ladBaselineMap.get(ward.ladCode) || {
+        totalVotes: 0,
+        national: {},
+        local: {},
+      }
+      const weight = ward.totalVotes || 0
+      if (weight > 0) {
+        Object.entries(ward.nationalShares || {}).forEach(([party, share]) => {
+          entry.national[party] = (entry.national[party] || 0) + share * weight
+        })
+        Object.entries(ward.localShares || {}).forEach(([party, share]) => {
+          entry.local[party] = (entry.local[party] || 0) + share * weight
+        })
+        entry.totalVotes += weight
+      }
+      ladBaselineMap.set(ward.ladCode, entry)
+    })
+
     const rawProjectionByCode = new Map<string, { winner: string; shares: Record<string, number> }>()
+    const rawProjectionByName = new Map<string, { winner: string; shares: Record<string, number> }>()
     baseline.wards.forEach(ward => {
       let adjustedWard = ward
+      const nationalSum = sumShares(ward.nationalShares || {})
+      const localSum = sumShares(ward.localShares || {})
+      if (nationalSum + localSum === 0) {
+        const ladBaseline = ladBaselineMap.get(ward.ladCode)
+        if (ladBaseline && ladBaseline.totalVotes > 0) {
+          const national = Object.fromEntries(
+            Object.entries(ladBaseline.national).map(([party, value]) => [
+              party,
+              value / ladBaseline.totalVotes,
+            ])
+          )
+          const local = Object.fromEntries(
+            Object.entries(ladBaseline.local).map(([party, value]) => [
+              party,
+              value / ladBaseline.totalVotes,
+            ])
+          )
+          adjustedWard = {
+            ...ward,
+            nationalShares: national,
+            localShares: local,
+          }
+        }
+      }
       const geWeights = {
         reform: geReformWeight,
         green: geGreenWeight,
@@ -922,47 +1154,58 @@ export default function CouncilProjectionsPage() {
         ward.wardName,
         ward.ladName
       )
-      const projection = computeOlsWardProjection(
+      const ageStrengthEffective =
+        ageShare.source === 'lad' ? Math.min(ageStrength, 0.6) : ageStrength
+      const nssecStrengthEffective =
+        nssecShare.source === 'lad' ? Math.min(nssecStrength, 0.6) : nssecStrength
+      const degreeStrengthEffective =
+        degreeShare.source === 'lad' ? Math.min(degreeStrength, 0.6) : degreeStrength
+      const tenureStrengthEffective =
+        tenureShare.source === 'lad' ? Math.min(tenureStrength, 0.6) : tenureStrength
+      const ruralUrbanStrengthEffective =
+        ruralUrbanShare.source === 'lad'
+          ? Math.min(ruralUrbanStrength, 0.6)
+          : ruralUrbanStrength
+      const projection = computeWardProjection(
         adjustedWard,
         getBaselineNationalForYear(baseline, adjustedWard.lastYear),
-        {
-          Labour: aggregate.labour ?? 0,
-          Conservative: aggregate.conservative ?? 0,
-          Reform: aggregate.reform ?? 0,
-          'Liberal Democrat': aggregate.libdem ?? 0,
-          Green: aggregate.green ?? 0,
-          SNP: aggregate.snp ?? 0,
-          'Plaid Cymru': aggregate.pc ?? 0,
-        },
-        {
-          leaveShare,
-          age18_35: ageShare.share.age18_35,
-          age35_55: ageShare.share.age35_55,
-          nssecHigher: nssecShare.share.higher,
-          nssecIntermediate: nssecShare.share.intermediate,
-          degree: degreeShare.share.degree,
-          ownedOutright: tenureShare.share.ownedOutright,
-          ownsWithMortgage: tenureShare.share.ownsWithMortgage,
-          socialRented: tenureShare.share.socialRented,
-          ruralConurbation: ruralUrbanShare.share.conurbation,
-          ruralCityTown: ruralUrbanShare.share.cityTown,
-          ruralTownFringe: ruralUrbanShare.share.ruralTownFringe,
-          geLabour: geShares?.Labour ?? 0,
-          geConservative: geShares?.Conservative ?? 0,
-          geReform: geShares?.Reform ?? 0,
-          geLibDem: geShares?.['Liberal Democrat'] ?? 0,
-          geGreen: geShares?.Green ?? 0,
-          regionName,
-          isCountyDivision: ward.wardCode.startsWith('E58') || ward.wardCode.startsWith('W58'),
-          gapYears: Math.max(1, 2026 - (adjustedWard.lastYear || 2025)),
-        },
-        olsCoefficients
+        aggregate,
+        leaveShare,
+        ageShare.share,
+        regionName,
+        nssecShare.share,
+        getNssecBaseline(),
+        degreeShare.share,
+        getDegreeBaseline(),
+        tenureShare.share,
+        getTenureBaseline(),
+        ruralUrbanShare.share,
+        getRuralUrbanBaseline(),
+        leaveStrength,
+        ageStrengthEffective,
+        regionStrength,
+        nssecStrengthEffective,
+        degreeStrengthEffective,
+        tenureStrengthEffective,
+        ruralUrbanStrengthEffective
       )
       rawProjectionByCode.set(ward.wardCode, projection)
+      const nameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+      if (!rawProjectionByName.has(nameKey)) {
+        rawProjectionByName.set(nameKey, projection)
+      }
     })
 
     const projections: CouncilProjectionRow[] = []
-    const councilFeatures = [...(countyGeo?.features || []), ...ladGeo.features]
+    const surreyCouncilFeatures = [
+      { properties: { reference: 'surrey-east', name: 'East Surrey' } },
+      { properties: { reference: 'surrey-west', name: 'West Surrey' } },
+    ]
+    const councilFeatures = [
+      ...(countyGeo?.features || []),
+      ...ladGeo.features,
+      ...surreyCouncilFeatures,
+    ]
     councilFeatures.forEach(feature => {
       const ladCode = feature.properties?.reference
       const ladName = feature.properties?.name
@@ -976,6 +1219,12 @@ export default function CouncilProjectionsPage() {
         row => normalizeCouncilName(row.council) === normalized
       )
       const wardIncumbents = previousRow?.wardIncumbents || null
+      const normalizedWardIncumbents = new Map<string, string>(
+        Object.entries(wardIncumbents || {}).map(([wardName, party]) => [
+          normalizeName(wardName),
+          canonicalizePartyLabel(party),
+        ])
+      )
 
       const seatsUp = seatRow.seatsUp
       const totalSeats = seatRow.totalSeats
@@ -993,7 +1242,16 @@ export default function CouncilProjectionsPage() {
         else cycle = 'all_out'
       }
 
-      const allWards = byLad.get(ladCode) || []
+      const allWards =
+        ladCode === 'surrey-east'
+          ? baseline.wards.filter(
+              ward => ward.ladCode === 'E10000030' && SURREY_EAST_DIVISIONS.has(ward.wardCode)
+            )
+          : ladCode === 'surrey-west'
+            ? baseline.wards.filter(
+                ward => ward.ladCode === 'E10000030' && SURREY_WEST_DIVISIONS.has(ward.wardCode)
+              )
+            : byLad.get(ladCode) || []
       const inferredContestedSeats = allWards.reduce((acc, ward) => {
         const lastYear = ward.lastYear || 2026
         let contested = true
@@ -1006,14 +1264,52 @@ export default function CouncilProjectionsPage() {
         return acc + Math.max(ward.vacancies || 0, 1)
       }, 0)
       const incumbentMatchedWards = wardIncumbents
-        ? allWards.filter(ward => wardIncumbents[normalizeName(ward.wardName)])
+        ? allWards.filter(ward => normalizedWardIncumbents.has(normalizeName(ward.wardName)))
         : []
       const incumbentMatchedSeats = incumbentMatchedWards.length
       const shouldUseWardIncumbents =
         incumbentMatchedWards.length > 0 &&
-        Math.abs(incumbentMatchedSeats - seatsUp) < Math.abs(inferredContestedSeats - seatsUp)
+        Math.abs(incumbentMatchedSeats - seatsUp) <= Math.abs(inferredContestedSeats - seatsUp)
       const wards = shouldUseWardIncumbents ? incumbentMatchedWards : allWards
       if (!wards.length) return
+
+      const ladFallbackProjection = (() => {
+        let weightSum = 0
+        const totals: Record<string, number> = {}
+        wards.forEach(ward => {
+          const nameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+          const projection =
+            rawProjectionByCode.get(ward.wardCode) || rawProjectionByName.get(nameKey)
+          if (!projection) return
+          const weight = ward.totalVotes || 0
+          if (!weight) return
+          weightSum += weight
+          Object.entries(projection.shares).forEach(([party, value]) => {
+            const numericValue = Number(value)
+            if (!Number.isFinite(numericValue)) return
+            totals[party] = (totals[party] || 0) + numericValue * weight
+          })
+        })
+        if (!weightSum) return null
+        const shares: Record<string, number> = {}
+        Object.entries(totals).forEach(([party, value]) => {
+          shares[party] = value / weightSum
+        })
+        let winner = 'Other'
+        let topValue = -1
+        Object.entries(shares).forEach(([party, value]) => {
+          if (value > topValue) {
+            topValue = value
+            winner = party
+          }
+        })
+        return {
+          winner,
+          shares,
+          color: PARTY_COLORS[winner] || '#ccc',
+          prevWinner: null,
+        }
+      })()
 
       let useLastYear = !shouldUseWardIncumbents && cycle !== 'all_out'
       if (useLastYear) {
@@ -1035,10 +1331,17 @@ export default function CouncilProjectionsPage() {
 
       const contestedTotals: Record<string, number> = {}
       const contestedPreviousTotals: Record<string, number> = {}
+      const seatChangeEvents: Array<{ prevWinner: string; projectedWinner: string; seats: number }> = []
 
       wards.forEach(ward => {
-        const seatsUpCount = shouldUseWardIncumbents ? 1 : getSeatsPerWard(wards, seatRow, ward)
-        const projection = rawProjectionByCode.get(ward.wardCode)
+        const seatsUpCount = shouldUseWardIncumbents
+          ? 1
+          : getSeatsPerWard(wards, seatRow, ward, wardVacancyLookup)
+        const nameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+        const projection =
+          rawProjectionByCode.get(ward.wardCode) ||
+          rawProjectionByName.get(nameKey) ||
+          ladFallbackProjection
         if (!projection) return
         const previousShares: Record<string, number> = {
           ...ward.nationalShares,
@@ -1046,7 +1349,7 @@ export default function CouncilProjectionsPage() {
         }
         let prevWinner: string | null = null
         const incumbentWinner = shouldUseWardIncumbents
-          ? wardIncumbents?.[normalizeName(ward.wardName)]
+          ? normalizedWardIncumbents.get(normalizeName(ward.wardName))
           : null
         if (incumbentWinner) {
           prevWinner = canonicalizePartyLabel(incumbentWinner)
@@ -1072,12 +1375,24 @@ export default function CouncilProjectionsPage() {
           }
         }
         if (contested) {
-          const projectedSeatAllocation = allocateProjectedSeats(projection.shares || {}, seatsUpCount)
+          const projectedSeatAllocation = allocateProjectedSeats(
+            projection.shares || ladFallbackProjection?.shares || {},
+            seatsUpCount
+          )
           Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
             const projectedKey = canonicalizePartyLabel(party)
             contestedTotals[projectedKey] = (contestedTotals[projectedKey] || 0) + allocatedSeats
+            seatChangeEvents.push({
+              prevWinner: canonicalizePartyLabel(
+                prevWinner || projection.winner || ladFallbackProjection?.winner || 'Other'
+              ),
+              projectedWinner: projectedKey,
+              seats: allocatedSeats,
+            })
           })
-          const contestedPrev = canonicalizePartyLabel(prevWinner || projection.winner)
+          const contestedPrev = canonicalizePartyLabel(
+            prevWinner || projection.winner || ladFallbackProjection?.winner || 'Other'
+          )
           contestedPreviousTotals[contestedPrev] =
             (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
         }
@@ -1092,7 +1407,9 @@ export default function CouncilProjectionsPage() {
         : { ...contestedPreviousTotals }
 
       let projectedTotals: Record<string, number> = {}
-      if (previousRow?.seatsBefore && Object.keys(previousRow.seatsBefore).length) {
+      if (cycle === 'all_out') {
+        projectedTotals = normalizeTotalsToTotal(totalSeats, adjustedContestedTotals)
+      } else if (previousRow?.seatsBefore && Object.keys(previousRow.seatsBefore).length) {
         const currentTotals = { ...previousRow.seatsBefore }
         const currentSum = Object.values(currentTotals).reduce(
           (acc, value) => acc + (value || 0),
@@ -1101,19 +1418,29 @@ export default function CouncilProjectionsPage() {
         if (currentSum && currentSum < totalSeats) {
           currentTotals.Other = (currentTotals.Other || 0) + (totalSeats - currentSum)
         }
-        const projected: Record<string, number> = { ...currentTotals }
-        const parties = new Set<string>([
-          ...Object.keys(adjustedContestedTotals),
-          ...Object.keys(currentTotals),
-        ])
-        parties.forEach(party => {
-          const currentSeats = currentTotals[party] || 0
-          const lastSeats = adjustedContestedPreviousTotals[party] || 0
-          const projectedSeats = adjustedContestedTotals[party] || 0
-          const next = currentSeats + (projectedSeats - lastSeats)
-          projected[party] = Math.max(0, Math.round(next))
-        })
-        projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+        if (seatChangeEvents.length) {
+          const projected: Record<string, number> = { ...currentTotals }
+          seatChangeEvents.forEach(({ prevWinner, projectedWinner, seats }) => {
+            const prevBucket = resolvePreviousSeatBucket(prevWinner, projected)
+            projected[prevBucket] = Math.max(0, (projected[prevBucket] || 0) - seats)
+            projected[projectedWinner] = (projected[projectedWinner] || 0) + seats
+          })
+          projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+        } else {
+          const projected: Record<string, number> = { ...currentTotals }
+          const parties = new Set<string>([
+            ...Object.keys(adjustedContestedTotals),
+            ...Object.keys(currentTotals),
+          ])
+          parties.forEach(party => {
+            const currentSeats = currentTotals[party] || 0
+            const lastSeats = adjustedContestedPreviousTotals[party] || 0
+            const projectedSeats = adjustedContestedTotals[party] || 0
+            const next = currentSeats + (projectedSeats - lastSeats)
+            projected[party] = Math.max(0, Math.round(next))
+          })
+          projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+        }
       } else {
         projectedTotals = normalizeTotalsToTotal(totalSeats, adjustedContestedTotals)
       }
@@ -1138,7 +1465,6 @@ export default function CouncilProjectionsPage() {
   }, [
     baseline,
     aggregate,
-    olsResults,
     councilSeats,
     councilPrevious,
     ladGeo,
@@ -1149,6 +1475,8 @@ export default function CouncilProjectionsPage() {
     nssecLookup,
     degreeLookup,
     tenureLookup,
+    ruralUrbanLookup,
+    wardVacancyLookup,
     wardToPcon,
     cedToPcon,
     geLookup,
@@ -1208,269 +1536,149 @@ export default function CouncilProjectionsPage() {
       .sort((a, b) => b.seats - a.seats)
   }, [rows])
 
+  const filteredRows = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase()
+    if (!term) return rows
+    return rows.filter(row => {
+      const councilMatch = row.council.toLowerCase().includes(term)
+      const projectedParty = mapControlToParty(row.projectedControl)
+      const projectedMatch = projectedParty?.toLowerCase().includes(term)
+      return Boolean(councilMatch || projectedMatch)
+    })
+  }, [rows, searchTerm])
+
+
   return (
-    <div style={{ padding: '2rem', maxWidth: 1100, margin: '0 auto' }}>
-      <header style={{ marginBottom: '1.5rem' }}>
-        <div
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'baseline',
-            gap: '1rem',
-            marginBottom: '0.25rem',
-          }}
-        >
-          <h1 style={{ margin: 0 }}>Council Projections V2</h1>
-          <Link href="/aggregate" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            National Polling Average
-          </Link>
-          <Link href="/polls" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            Recent UK Polls
-          </Link>
-          <Link href="/local-2026-v2" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            May 2026 Local Elections Projections V2
-          </Link>
-          <Link href="/council-projections-v2" style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}>
-            Council Projections V2
-          </Link>
-          <Link
-            href="/may-2025-simulation-v2"
-            style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}
-          >
-            May 2025 Simulation V2
-          </Link>
-          <Link
-            href="/may-2025-council-projections-v2"
-            style={{ padding: '0.15rem 0.35rem', display: 'inline-block' }}
-          >
-            May 2025 Council Projections V2
-          </Link>
-        </div>
-        <p style={{ margin: '0.35rem 0 0', color: '#555' }}>
-          Councils up for election in 2026 with previous and projected control under the V2 model.
-        </p>
-      </header>
+    <PageShell>
+      <TopNav title="English Local Elections Projections" items={MAIN_TOPNAV_ITEMS} />
 
-      {hasMounted && process.env.NODE_ENV !== 'production' && (
-        <div
+      <div className="poll-card" style={{ marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 700, fontSize: '1.15rem' }}>
+          English Local Elections Projections
+        </div>
+      </div>
+
+      <div className="poll-card" style={{ marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Overall Council Totals</div>
+        {summary.map(item => {
+          const isNoc = item.party === 'No overall control'
+          const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
+          const width = (item.projected / Math.max(1, ...summary.map(row => row.projected))) * 100
+          const deltaLabel =
+            item.delta === 0 ? '0' : item.delta > 0 ? `+${item.delta}` : `${item.delta}`
+          const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+          return (
+            <div
+              key={`council-delta-${item.party}`}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '180px 1fr 100px',
+                gap: '0.75rem',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <div style={{ fontWeight: 600, color }}>{item.party}</div>
+              <div
+                style={{
+                  position: 'relative',
+                  height: '12px',
+                  background: '#f0f0f0',
+                  borderRadius: '999px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: `${Math.max(width, 2)}%`,
+                    background: color,
+                  }}
+                />
+              </div>
+              <div style={{ textAlign: 'right', color }}>
+                {item.projected}{' '}
+                <span style={{ color: deltaColor, fontWeight: 500 }}>({deltaLabel})</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="poll-card" style={{ marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Overall Seat Totals</div>
+        {seatsUpSummary.map(item => {
+          const isNoc = item.party === 'No overall control'
+          const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
+          const width = (item.seats / Math.max(1, ...seatsUpSummary.map(row => row.seats))) * 100
+          const deltaLabel =
+            item.delta === 0 ? '0' : item.delta > 0 ? `+${item.delta}` : `${item.delta}`
+          const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+          return (
+            <div
+              key={`seats-delta-${item.party}`}
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '180px 1fr 100px',
+                gap: '0.75rem',
+                alignItems: 'center',
+                marginBottom: '0.5rem',
+              }}
+            >
+              <div style={{ fontWeight: 600, color }}>{item.party}</div>
+              <div
+                style={{
+                  position: 'relative',
+                  height: '12px',
+                  background: '#f0f0f0',
+                  borderRadius: '999px',
+                  overflow: 'hidden',
+                }}
+              >
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    width: `${Math.max(width, 2)}%`,
+                    background: color,
+                  }}
+                />
+              </div>
+              <div style={{ textAlign: 'right', color }}>
+                {item.seats}{' '}
+                <span style={{ color: deltaColor, fontWeight: 500 }}>({deltaLabel})</span>
+              </div>
+            </div>
+          )
+        })}
+      </div>
+
+      <div className="poll-card" style={{ marginBottom: '1rem' }}>
+        <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Search Elections</div>
+        <input
+          type="text"
+          value={searchTerm}
+          onChange={event => setSearchTerm(event.target.value)}
+          placeholder="Search councils"
           style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '1.5rem',
-            marginBottom: '1.5rem',
-            padding: '0.75rem 1rem',
-            border: '1px solid #eee',
+            width: '100%',
+            padding: '0.65rem 0.75rem',
             borderRadius: 8,
-            background: '#fafafa',
+            border: '1px solid #d7dce5',
+            boxSizing: 'border-box',
           }}
-        >
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Leave/Remain Strength: {leaveStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={leaveStrength}
-              onChange={event => setLeaveStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Age Strength: {ageStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={ageStrength}
-              onChange={event => setAgeStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Region Strength: {regionStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={regionStrength}
-              onChange={event => setRegionStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            NS-SEC Strength: {nssecStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={nssecStrength}
-              onChange={event => setNssecStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Degree Strength: {degreeStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={degreeStrength}
-              onChange={event => setDegreeStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Tenure Strength: {tenureStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={tenureStrength}
-              onChange={event => setTenureStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Rural/Urban Strength: {ruralUrbanStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={ruralUrbanStrength}
-              onChange={event => setRuralUrbanStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            GE Weight (Reform): {geReformWeight.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={geReformWeight}
-              onChange={event => setGeReformWeight(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            GE Weight (Green): {geGreenWeight.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={geGreenWeight}
-              onChange={event => setGeGreenWeight(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            GE Weight (Other Major): {geMajorWeight.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={geMajorWeight}
-              onChange={event => setGeMajorWeight(Number(event.target.value))}
-            />
-          </label>
-        </div>
-      )}
+        />
+      </div>
 
-      {summary.length > 0 && (
-        <>
-          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Council Projections V2</div>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '0.75rem',
-              marginBottom: '1rem',
-            }}
-          >
-            {summary.map(item => {
-              const isNoc = item.party === 'No overall control'
-              const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
-              const deltaLabel =
-                item.delta === 0
-                  ? '-'
-                  : item.delta > 0
-                    ? `↑ ${item.delta}`
-                    : `↓ ${Math.abs(item.delta)}`
-              const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
-              return (
-                <div
-                  key={item.party}
-                  style={{
-                    border: '1px solid #eee',
-                    borderRadius: 999,
-                    padding: '0.4rem 0.75rem',
-                    display: 'flex',
-                    gap: '0.5rem',
-                    alignItems: 'center',
-                    background: '#fafafa',
-                  }}
-                >
-                  <span style={{ fontWeight: 600, color }}>{item.party}</span>
-                  <span style={{ color }}>{item.projected}</span>
-                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {seatsUpSummary.length > 0 && (
-        <>
-          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>
-            Seat Change from the previous election wards were contested
-          </div>
-          <div
-            style={{
-              display: 'flex',
-              flexWrap: 'wrap',
-              gap: '0.75rem',
-              marginBottom: '1.5rem',
-            }}
-          >
-            {seatsUpSummary.map(item => {
-              const isNoc = item.party === 'No overall control'
-              const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
-              const deltaLabel =
-                item.delta === 0
-                  ? '-'
-                  : item.delta > 0
-                    ? `↑ ${item.delta}`
-                    : `↓ ${Math.abs(item.delta)}`
-              const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
-              return (
-                <div
-                  key={`seats-up-${item.party}`}
-                  style={{
-                    border: '1px solid #eee',
-                    borderRadius: 999,
-                    padding: '0.4rem 0.75rem',
-                    display: 'flex',
-                    gap: '0.5rem',
-                    alignItems: 'center',
-                    background: '#fafafa',
-                  }}
-                >
-                  <span style={{ fontWeight: 600, color }}>{item.party}</span>
-                  <span style={{ color }}>{item.seats}</span>
-                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
-                </div>
-              )
-            })}
-          </div>
-        </>
-      )}
-
-      {!rows.length ? (
-        <div style={{ color: '#777' }}>Loading council projections…</div>
+      {!filteredRows.length ? (
+        <div style={{ color: '#777' }}>No councils match that search.</div>
       ) : (
-        <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="poll-card" style={{ padding: 0, overflow: 'hidden' }}>
           <div
             style={{
               display: 'grid',
@@ -1484,50 +1692,46 @@ export default function CouncilProjectionsPage() {
             <span>Previous Control</span>
             <span>Projected Control</span>
           </div>
-          {rows.map(row => {
-                const projectedLabel = row.projectedControl.replace(' majority', '')
-                const projectedParty = mapControlToParty(projectedLabel)
-                const previousLabel = row.previousControl || 'Unknown'
-                const previousParty = mapControlToParty(previousLabel)
-                const projectedColor =
-                  projectedLabel === 'No overall control'
-                    ? '#111'
-                    : PARTY_COLORS[projectedParty || 'Other'] || '#333'
-                const previousIsNoc = normalizeName(previousLabel).includes('no overall control')
-                const previousColor =
-                  previousIsNoc ? '#111' : PARTY_COLORS[previousParty || 'Other'] || '#333'
-                return (
-            <a
-              key={row.ladCode}
-              href={`/local-2026-v2?council=${encodeURIComponent(row.ladCode)}`}
-              style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
-            >
-              <div
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '2fr 1fr 1fr',
-                  padding: '0.75rem 1rem',
-                  borderTop: '1px solid #eee',
-                  cursor: 'pointer',
-                }}
+          {filteredRows.map(row => {
+            const projectedLabel = row.projectedControl.replace(' majority', '')
+            const projectedParty = mapControlToParty(projectedLabel)
+            const previousLabel = row.previousControl || 'Unknown'
+            const previousParty = mapControlToParty(previousLabel)
+            const projectedColor =
+              projectedLabel === 'No overall control'
+                ? '#111'
+                : PARTY_COLORS[projectedParty || 'Other'] || '#333'
+            const previousIsNoc = normalizeName(previousLabel).includes('no overall control')
+            const previousColor =
+              previousIsNoc ? '#111' : PARTY_COLORS[previousParty || 'Other'] || '#333'
+            return (
+              <a
+                key={row.ladCode}
+                href={`/local-2026-v2?council=${encodeURIComponent(row.ladCode)}`}
+                style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
               >
-                <span style={{ fontWeight: 500 }}>{row.council}</span>
-                <span style={{ color: previousColor }}>
-                  {row.previousControl || 'Unknown'}
-                </span>
-                <span
+                <div
                   style={{
-                    color: projectedColor,
-                    fontWeight: 500,
+                    display: 'grid',
+                    gridTemplateColumns: '2fr 1fr 1fr',
+                    padding: '0.75rem 1rem',
+                    borderTop: '1px solid #eee',
+                    cursor: 'pointer',
                   }}
                 >
-                  {projectedLabel}
-                </span>
-              </div>
-            </a>
-          )})}
+                  <span style={{ fontWeight: 500 }}>{row.council}</span>
+                  <span style={{ color: previousColor }}>
+                    {row.previousControl || 'Unknown'}
+                  </span>
+                  <span style={{ color: projectedColor, fontWeight: 500 }}>
+                    {projectedLabel}
+                  </span>
+                </div>
+              </a>
+            )
+          })}
         </div>
       )}
-    </div>
+    </PageShell>
   )
 }
