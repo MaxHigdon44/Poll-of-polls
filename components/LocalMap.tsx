@@ -158,6 +158,19 @@ function PatternDefs() {
   return null
 }
 
+function BasePanes() {
+  const map = useMap()
+
+  useEffect(() => {
+    const basePane = map.getPane('basePane') || map.createPane('basePane')
+    const outlinePane = map.getPane('outlinePane') || map.createPane('outlinePane')
+    basePane.style.zIndex = '200'
+    outlinePane.style.zIndex = '210'
+  }, [map])
+
+  return null
+}
+
 function InvalidateSize({ deps }: { deps: Array<unknown> }) {
   const map = useMap()
   useEffect(() => {
@@ -589,19 +602,21 @@ export default function LocalMap({
       inertia={false}
     >
       <InvalidateSize deps={[selectedLad, wardFeatures?.length || 0, ladGeo?.features?.length || 0]} />
+      <BasePanes />
       <PatternDefs />
       <TileLayer
         attribution='&copy; OpenStreetMap contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
       {baseGeo?.features?.length ? (
-        <GeoJSON data={baseGeo as GeoJsonObject} style={baseStyle} interactive={false} />
+        <GeoJSON data={baseGeo as GeoJsonObject} style={baseStyle} interactive={false} pane="basePane" />
       ) : null}
       {countriesGeo?.features?.length ? (
         <GeoJSON
           data={countriesGeo as GeoJsonObject}
           style={overlayStyleForCountries}
           interactive={false}
+          pane="outlinePane"
         />
       ) : null}
       {!selectedLad && (
