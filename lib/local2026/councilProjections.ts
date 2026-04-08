@@ -289,6 +289,65 @@ const SURREY_WEST_DIVISIONS = new Set(
   ]
 )
 
+const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
+  birmingham: {
+    'acocks green': 2,
+    'alum rock': 2,
+    aston: 2,
+    'bartley green': 2,
+    billesley: 2,
+    'bournbrook and selly park': 2,
+    'bournville and cotteridge': 2,
+    'brandwood and kings heath': 2,
+    'bromford and hodge hill': 2,
+    edgbaston: 2,
+    erdington: 2,
+    'glebe farm and tile cross': 2,
+    'hall green north': 2,
+    'handsworth wood': 2,
+    harborne: 2,
+    kingstanding: 2,
+    ladywood: 2,
+    'longbridge and west heath': 2,
+    moseley: 2,
+    'north edgbaston': 2,
+    oscott: 2,
+    'perry barr': 2,
+    quinton: 2,
+    sheldon: 2,
+    'small heath': 2,
+    'soho and jewellery quarter': 2,
+    'sparkbrook and balsall heath east': 2,
+    sparkhill: 2,
+    'stockland green': 2,
+    'sutton vesey': 2,
+    'sutton walmley and minworth': 2,
+    'weoley and selly oak': 2,
+  },
+  thurrock: {
+    'aveley and uplands': 3,
+    belhus: 3,
+    'chadwell saint mary': 3,
+    'grays riverside': 3,
+    'grays thurrock': 3,
+    ockendon: 3,
+    'stanford east and corringham town': 3,
+    'the homesteads': 3,
+    'west thurrock and south stifford': 3,
+    'chafford and north stifford': 2,
+    'corringham and fobbing': 2,
+    'east tilbury': 2,
+    'little thurrock blackshots': 2,
+    'little thurrock rectory': 2,
+    orsett: 2,
+    'south chafford': 2,
+    'stanford le hope west': 2,
+    'stifford clays': 2,
+    'tilbury riverside and thurrock park': 2,
+    'tilbury saint chads': 2,
+  },
+}
+
 function normalizeName(name: string) {
   return String(name || '')
     .toLowerCase()
@@ -361,6 +420,37 @@ function resolvePreviousSeatBucket(party: string, currentTotals: Record<string, 
     return 'Independent'
   }
   return party
+}
+
+function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, number>) {
+  const entries = Object.entries(totals).map(([party, seats]) => ({
+    party,
+    seats,
+  }))
+  const sum = entries.reduce((acc, entry) => acc + entry.seats, 0)
+  if (!sum || sum === targetTotal) {
+    return Object.fromEntries(entries.map(entry => [entry.party, Math.round(entry.seats)]))
+  }
+  const scale = targetTotal / sum
+  const scaled = entries.map(entry => ({
+    party: entry.party,
+    scaled: entry.seats * scale,
+  }))
+  const floored = scaled.map(entry => ({
+    party: entry.party,
+    seats: Math.floor(entry.scaled),
+    frac: entry.scaled - Math.floor(entry.scaled),
+  }))
+  let assigned = floored.reduce((acc, entry) => acc + entry.seats, 0)
+  let remaining = targetTotal - assigned
+  floored
+    .sort((a, b) => b.frac - a.frac)
+    .forEach(entry => {
+      if (remaining <= 0) return
+      entry.seats += 1
+      remaining -= 1
+    })
+  return Object.fromEntries(floored.map(entry => [entry.party, entry.seats]))
 }
 
 function sumShares(shares: Record<string, number>) {
