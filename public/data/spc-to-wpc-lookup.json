@@ -1,0 +1,1520 @@
+{
+  "source": {
+    "spc": "scotland-constituencies.geojson",
+    "wpc": "wpc-2024-scotland.geojson"
+  },
+  "method": "Monte Carlo point-in-polygon overlap estimate",
+  "sampleSize": 500,
+  "results": [
+    {
+      "spcCode": "S16000074",
+      "spcName": "Aberdeen Central",
+      "primaryWpcCode": "S14000061",
+      "primaryWpcName": "Aberdeen South",
+      "overlapShare": 0.582,
+      "overlaps": [
+        {
+          "code": "S14000061",
+          "name": "Aberdeen South",
+          "share": 0.582
+        },
+        {
+          "code": "S14000060",
+          "name": "Aberdeen North",
+          "share": 0.416
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000075",
+      "spcName": "Aberdeen Donside",
+      "primaryWpcCode": "S14000060",
+      "primaryWpcName": "Aberdeen North",
+      "overlapShare": 0.996,
+      "overlaps": [
+        {
+          "code": "S14000060",
+          "name": "Aberdeen North",
+          "share": 0.996
+        },
+        {
+          "code": "S14000061",
+          "name": "Aberdeen South",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000076",
+      "spcName": "Aberdeen South and North Kincardine",
+      "primaryWpcCode": "S14000111",
+      "primaryWpcName": "West Aberdeenshire and Kincardine",
+      "overlapShare": 0.552,
+      "overlaps": [
+        {
+          "code": "S14000111",
+          "name": "West Aberdeenshire and Kincardine",
+          "share": 0.552
+        },
+        {
+          "code": "S14000061",
+          "name": "Aberdeen South",
+          "share": 0.448
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000077",
+      "spcName": "Aberdeenshire East",
+      "primaryWpcCode": "S14000091",
+      "primaryWpcName": "Gordon and Buchan",
+      "overlapShare": 0.824,
+      "overlaps": [
+        {
+          "code": "S14000091",
+          "name": "Gordon and Buchan",
+          "share": 0.824
+        },
+        {
+          "code": "S14000062",
+          "name": "Aberdeenshire North and Moray East",
+          "share": 0.176
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000078",
+      "spcName": "Aberdeenshire West",
+      "primaryWpcCode": "S14000111",
+      "primaryWpcName": "West Aberdeenshire and Kincardine",
+      "overlapShare": 0.724,
+      "overlaps": [
+        {
+          "code": "S14000111",
+          "name": "West Aberdeenshire and Kincardine",
+          "share": 0.724
+        },
+        {
+          "code": "S14000091",
+          "name": "Gordon and Buchan",
+          "share": 0.276
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000079",
+      "spcName": "Airdrie and Shotts",
+      "primaryWpcCode": "S14000063",
+      "primaryWpcName": "Airdrie and Shotts",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000063",
+          "name": "Airdrie and Shotts",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000080",
+      "spcName": "Almond Valley",
+      "primaryWpcCode": "S14000095",
+      "primaryWpcName": "Livingston",
+      "overlapShare": 0.964,
+      "overlaps": [
+        {
+          "code": "S14000095",
+          "name": "Livingston",
+          "share": 0.964
+        },
+        {
+          "code": "S14000068",
+          "name": "Bathgate and Linlithgow",
+          "share": 0.034
+        },
+        {
+          "code": "S14000081",
+          "name": "Edinburgh South West",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000081",
+      "spcName": "Angus North and Mearns",
+      "primaryWpcCode": "S14000065",
+      "primaryWpcName": "Angus and Perthshire Glens",
+      "overlapShare": 0.602,
+      "overlaps": [
+        {
+          "code": "S14000065",
+          "name": "Angus and Perthshire Glens",
+          "share": 0.602
+        },
+        {
+          "code": "S14000111",
+          "name": "West Aberdeenshire and Kincardine",
+          "share": 0.396
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000082",
+      "spcName": "Angus South",
+      "primaryWpcCode": "S14000065",
+      "primaryWpcName": "Angus and Perthshire Glens",
+      "overlapShare": 0.692,
+      "overlaps": [
+        {
+          "code": "S14000065",
+          "name": "Angus and Perthshire Glens",
+          "share": 0.692
+        },
+        {
+          "code": "S14000066",
+          "name": "Arbroath and Broughty Ferry",
+          "share": 0.308
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000083",
+      "spcName": "Argyll and Bute",
+      "primaryWpcCode": "S14000067",
+      "primaryWpcName": "Argyll, Bute and South Lochaber",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000067",
+          "name": "Argyll, Bute and South Lochaber",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000084",
+      "spcName": "Ayr",
+      "primaryWpcCode": "S14000109",
+      "primaryWpcName": "Central Ayrshire",
+      "overlapShare": 0.536,
+      "overlaps": [
+        {
+          "code": "S14000109",
+          "name": "Central Ayrshire",
+          "share": 0.536
+        },
+        {
+          "code": "S14000107",
+          "name": "Ayr, Carrick and Cumnock",
+          "share": 0.464
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000085",
+      "spcName": "Banffshire and Buchan Coast",
+      "primaryWpcCode": "S14000062",
+      "primaryWpcName": "Aberdeenshire North and Moray East",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000062",
+          "name": "Aberdeenshire North and Moray East",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000086",
+      "spcName": "Caithness, Sutherland and Ross",
+      "primaryWpcCode": "S14000069",
+      "primaryWpcName": "Caithness, Sutherland and Easter Ross",
+      "overlapShare": 0.888,
+      "overlaps": [
+        {
+          "code": "S14000069",
+          "name": "Caithness, Sutherland and Easter Ross",
+          "share": 0.888
+        },
+        {
+          "code": "S14000094",
+          "name": "Inverness, Skye and West Ross-shire",
+          "share": 0.112
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000087",
+      "spcName": "Carrick, Cumnock and Doon Valley",
+      "primaryWpcCode": "S14000107",
+      "primaryWpcName": "Ayr, Carrick and Cumnock",
+      "overlapShare": 0.744,
+      "overlaps": [
+        {
+          "code": "S14000107",
+          "name": "Ayr, Carrick and Cumnock",
+          "share": 0.744
+        },
+        {
+          "code": "S14000110",
+          "name": "Kilmarnock and Loudoun",
+          "share": 0.178
+        },
+        {
+          "code": "S14000109",
+          "name": "Central Ayrshire",
+          "share": 0.078
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000088",
+      "spcName": "Clackmannanshire and Dunblane",
+      "primaryWpcCode": "S14000064",
+      "primaryWpcName": "Alloa and Grangemouth",
+      "overlapShare": 0.394,
+      "overlaps": [
+        {
+          "code": "S14000064",
+          "name": "Alloa and Grangemouth",
+          "share": 0.394
+        },
+        {
+          "code": "S14000105",
+          "name": "Stirling and Strathallan",
+          "share": 0.36
+        },
+        {
+          "code": "S14000076",
+          "name": "Dunfermline and Dollar",
+          "share": 0.246
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000089",
+      "spcName": "Clydebank and Milngavie",
+      "primaryWpcCode": "S14000106",
+      "primaryWpcName": "West Dunbartonshire",
+      "overlapShare": 0.566,
+      "overlaps": [
+        {
+          "code": "S14000106",
+          "name": "West Dunbartonshire",
+          "share": 0.566
+        },
+        {
+          "code": "S14000097",
+          "name": "Mid Dunbartonshire",
+          "share": 0.43
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000090",
+      "spcName": "Clydesdale",
+      "primaryWpcCode": "S14000074",
+      "primaryWpcName": "Dumfriesshire, Clydesdale and Tweeddale",
+      "overlapShare": 0.65,
+      "overlaps": [
+        {
+          "code": "S14000074",
+          "name": "Dumfriesshire, Clydesdale and Tweeddale",
+          "share": 0.65
+        },
+        {
+          "code": "S14000077",
+          "name": "East Kilbride and Strathaven",
+          "share": 0.14
+        },
+        {
+          "code": "S14000092",
+          "name": "Hamilton and Clyde Valley",
+          "share": 0.106
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000092",
+      "spcName": "Cowdenbeath",
+      "primaryWpcCode": "S14000071",
+      "primaryWpcName": "Cowdenbeath and Kirkcaldy",
+      "overlapShare": 0.548,
+      "overlaps": [
+        {
+          "code": "S14000071",
+          "name": "Cowdenbeath and Kirkcaldy",
+          "share": 0.548
+        },
+        {
+          "code": "S14000090",
+          "name": "Glenrothes and Mid Fife",
+          "share": 0.368
+        },
+        {
+          "code": "S14000076",
+          "name": "Dunfermline and Dollar",
+          "share": 0.084
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000093",
+      "spcName": "Cumbernauld and Kilsyth",
+      "primaryWpcCode": "S14000072",
+      "primaryWpcName": "Cumbernauld and Kirkintilloch",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000072",
+          "name": "Cumbernauld and Kirkintilloch",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000094",
+      "spcName": "Cunninghame North",
+      "primaryWpcCode": "S14000048",
+      "primaryWpcName": "North Ayrshire and Arran",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000048",
+          "name": "North Ayrshire and Arran",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000095",
+      "spcName": "Cunninghame South",
+      "primaryWpcCode": "S14000109",
+      "primaryWpcName": "Central Ayrshire",
+      "overlapShare": 0.57,
+      "overlaps": [
+        {
+          "code": "S14000109",
+          "name": "Central Ayrshire",
+          "share": 0.57
+        },
+        {
+          "code": "S14000048",
+          "name": "North Ayrshire and Arran",
+          "share": 0.428
+        },
+        {
+          "code": "S14000110",
+          "name": "Kilmarnock and Loudoun",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000096",
+      "spcName": "Dumbarton",
+      "primaryWpcCode": "S14000067",
+      "primaryWpcName": "Argyll, Bute and South Lochaber",
+      "overlapShare": 0.746,
+      "overlaps": [
+        {
+          "code": "S14000067",
+          "name": "Argyll, Bute and South Lochaber",
+          "share": 0.746
+        },
+        {
+          "code": "S14000106",
+          "name": "West Dunbartonshire",
+          "share": 0.248
+        },
+        {
+          "code": "S14000105",
+          "name": "Stirling and Strathallan",
+          "share": 0.004
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000097",
+      "spcName": "Dumfriesshire",
+      "primaryWpcCode": "S14000074",
+      "primaryWpcName": "Dumfriesshire, Clydesdale and Tweeddale",
+      "overlapShare": 0.892,
+      "overlaps": [
+        {
+          "code": "S14000074",
+          "name": "Dumfriesshire, Clydesdale and Tweeddale",
+          "share": 0.892
+        },
+        {
+          "code": "S14000073",
+          "name": "Dumfries and Galloway",
+          "share": 0.108
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000098",
+      "spcName": "Dundee City East",
+      "primaryWpcCode": "S14000066",
+      "primaryWpcName": "Arbroath and Broughty Ferry",
+      "overlapShare": 0.664,
+      "overlaps": [
+        {
+          "code": "S14000066",
+          "name": "Arbroath and Broughty Ferry",
+          "share": 0.664
+        },
+        {
+          "code": "S14000075",
+          "name": "Dundee Central",
+          "share": 0.336
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000099",
+      "spcName": "Dundee City West",
+      "primaryWpcCode": "S14000075",
+      "primaryWpcName": "Dundee Central",
+      "overlapShare": 0.948,
+      "overlaps": [
+        {
+          "code": "S14000075",
+          "name": "Dundee Central",
+          "share": 0.948
+        },
+        {
+          "code": "S14000066",
+          "name": "Arbroath and Broughty Ferry",
+          "share": 0.05
+        },
+        {
+          "code": "S14000065",
+          "name": "Angus and Perthshire Glens",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000100",
+      "spcName": "Dunfermline",
+      "primaryWpcCode": "S14000076",
+      "primaryWpcName": "Dunfermline and Dollar",
+      "overlapShare": 0.984,
+      "overlaps": [
+        {
+          "code": "S14000076",
+          "name": "Dunfermline and Dollar",
+          "share": 0.984
+        },
+        {
+          "code": "S14000071",
+          "name": "Cowdenbeath and Kirkcaldy",
+          "share": 0.016
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000101",
+      "spcName": "East Kilbride",
+      "primaryWpcCode": "S14000077",
+      "primaryWpcName": "East Kilbride and Strathaven",
+      "overlapShare": 0.998,
+      "overlaps": [
+        {
+          "code": "S14000077",
+          "name": "East Kilbride and Strathaven",
+          "share": 0.998
+        },
+        {
+          "code": "S14000104",
+          "name": "Rutherglen",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000102",
+      "spcName": "East Lothian",
+      "primaryWpcCode": "S14000096",
+      "primaryWpcName": "Lothian East",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000096",
+          "name": "Lothian East",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000103",
+      "spcName": "Eastwood",
+      "primaryWpcCode": "S14000021",
+      "primaryWpcName": "East Renfrewshire",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000021",
+          "name": "East Renfrewshire",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000104",
+      "spcName": "Edinburgh Central",
+      "primaryWpcCode": "S14000082",
+      "primaryWpcName": "Edinburgh West",
+      "overlapShare": 0.338,
+      "overlaps": [
+        {
+          "code": "S14000082",
+          "name": "Edinburgh West",
+          "share": 0.338
+        },
+        {
+          "code": "S14000079",
+          "name": "Edinburgh North and Leith",
+          "share": 0.274
+        },
+        {
+          "code": "S14000078",
+          "name": "Edinburgh East and Musselburgh",
+          "share": 0.184
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000105",
+      "spcName": "Edinburgh Eastern",
+      "primaryWpcCode": "S14000078",
+      "primaryWpcName": "Edinburgh East and Musselburgh",
+      "overlapShare": 0.634,
+      "overlaps": [
+        {
+          "code": "S14000078",
+          "name": "Edinburgh East and Musselburgh",
+          "share": 0.634
+        },
+        {
+          "code": "S14000080",
+          "name": "Edinburgh South",
+          "share": 0.366
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000106",
+      "spcName": "Edinburgh Northern and Leith",
+      "primaryWpcCode": "S14000079",
+      "primaryWpcName": "Edinburgh North and Leith",
+      "overlapShare": 0.93,
+      "overlaps": [
+        {
+          "code": "S14000079",
+          "name": "Edinburgh North and Leith",
+          "share": 0.93
+        },
+        {
+          "code": "S14000078",
+          "name": "Edinburgh East and Musselburgh",
+          "share": 0.07
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000107",
+      "spcName": "Edinburgh Pentlands",
+      "primaryWpcCode": "S14000081",
+      "primaryWpcName": "Edinburgh South West",
+      "overlapShare": 0.734,
+      "overlaps": [
+        {
+          "code": "S14000081",
+          "name": "Edinburgh South West",
+          "share": 0.734
+        },
+        {
+          "code": "S14000082",
+          "name": "Edinburgh West",
+          "share": 0.212
+        },
+        {
+          "code": "S14000080",
+          "name": "Edinburgh South",
+          "share": 0.05
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000108",
+      "spcName": "Edinburgh Southern",
+      "primaryWpcCode": "S14000080",
+      "primaryWpcName": "Edinburgh South",
+      "overlapShare": 0.714,
+      "overlaps": [
+        {
+          "code": "S14000080",
+          "name": "Edinburgh South",
+          "share": 0.714
+        },
+        {
+          "code": "S14000081",
+          "name": "Edinburgh South West",
+          "share": 0.268
+        },
+        {
+          "code": "S14000078",
+          "name": "Edinburgh East and Musselburgh",
+          "share": 0.018
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000109",
+      "spcName": "Edinburgh Western",
+      "primaryWpcCode": "S14000082",
+      "primaryWpcName": "Edinburgh West",
+      "overlapShare": 0.966,
+      "overlaps": [
+        {
+          "code": "S14000082",
+          "name": "Edinburgh West",
+          "share": 0.966
+        },
+        {
+          "code": "S14000079",
+          "name": "Edinburgh North and Leith",
+          "share": 0.018
+        },
+        {
+          "code": "S14000081",
+          "name": "Edinburgh South West",
+          "share": 0.014
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000110",
+      "spcName": "Na h-Eileanan an Iar",
+      "primaryWpcCode": "S14000027",
+      "primaryWpcName": "Na h-Eileanan an Iar",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000027",
+          "name": "Na h-Eileanan an Iar",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000111",
+      "spcName": "Ettrick, Roxburgh and Berwickshire",
+      "primaryWpcCode": "S14000108",
+      "primaryWpcName": "Berwickshire, Roxburgh and Selkirk",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000108",
+          "name": "Berwickshire, Roxburgh and Selkirk",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000112",
+      "spcName": "Falkirk East",
+      "primaryWpcCode": "S14000083",
+      "primaryWpcName": "Falkirk",
+      "overlapShare": 0.548,
+      "overlaps": [
+        {
+          "code": "S14000083",
+          "name": "Falkirk",
+          "share": 0.548
+        },
+        {
+          "code": "S14000064",
+          "name": "Alloa and Grangemouth",
+          "share": 0.318
+        },
+        {
+          "code": "S14000068",
+          "name": "Bathgate and Linlithgow",
+          "share": 0.13
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000113",
+      "spcName": "Falkirk West",
+      "primaryWpcCode": "S14000083",
+      "primaryWpcName": "Falkirk",
+      "overlapShare": 0.824,
+      "overlaps": [
+        {
+          "code": "S14000083",
+          "name": "Falkirk",
+          "share": 0.824
+        },
+        {
+          "code": "S14000064",
+          "name": "Alloa and Grangemouth",
+          "share": 0.176
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000114",
+      "spcName": "Galloway and West Dumfries",
+      "primaryWpcCode": "S14000073",
+      "primaryWpcName": "Dumfries and Galloway",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000073",
+          "name": "Dumfries and Galloway",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000115",
+      "spcName": "Glasgow Anniesland",
+      "primaryWpcCode": "S14000089",
+      "primaryWpcName": "Glasgow West",
+      "overlapShare": 0.962,
+      "overlaps": [
+        {
+          "code": "S14000089",
+          "name": "Glasgow West",
+          "share": 0.962
+        },
+        {
+          "code": "S14000106",
+          "name": "West Dunbartonshire",
+          "share": 0.038
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000116",
+      "spcName": "Glasgow Cathcart",
+      "primaryWpcCode": "S14000087",
+      "primaryWpcName": "Glasgow South",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000087",
+          "name": "Glasgow South",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000117",
+      "spcName": "Glasgow Kelvin",
+      "primaryWpcCode": "S14000085",
+      "primaryWpcName": "Glasgow North",
+      "overlapShare": 0.654,
+      "overlaps": [
+        {
+          "code": "S14000085",
+          "name": "Glasgow North",
+          "share": 0.654
+        },
+        {
+          "code": "S14000089",
+          "name": "Glasgow West",
+          "share": 0.214
+        },
+        {
+          "code": "S14000086",
+          "name": "Glasgow North East",
+          "share": 0.07
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000118",
+      "spcName": "Glasgow Maryhill and Springburn",
+      "primaryWpcCode": "S14000085",
+      "primaryWpcName": "Glasgow North",
+      "overlapShare": 0.752,
+      "overlaps": [
+        {
+          "code": "S14000085",
+          "name": "Glasgow North",
+          "share": 0.752
+        },
+        {
+          "code": "S14000086",
+          "name": "Glasgow North East",
+          "share": 0.246
+        },
+        {
+          "code": "S14000089",
+          "name": "Glasgow West",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000119",
+      "spcName": "Glasgow Pollok",
+      "primaryWpcCode": "S14000088",
+      "primaryWpcName": "Glasgow South West",
+      "overlapShare": 0.864,
+      "overlaps": [
+        {
+          "code": "S14000088",
+          "name": "Glasgow South West",
+          "share": 0.864
+        },
+        {
+          "code": "S14000101",
+          "name": "Paisley and Renfrewshire North",
+          "share": 0.134
+        },
+        {
+          "code": "S14000087",
+          "name": "Glasgow South",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000121",
+      "spcName": "Glasgow Shettleston",
+      "primaryWpcCode": "S14000084",
+      "primaryWpcName": "Glasgow East",
+      "overlapShare": 0.942,
+      "overlaps": [
+        {
+          "code": "S14000084",
+          "name": "Glasgow East",
+          "share": 0.942
+        },
+        {
+          "code": "S14000086",
+          "name": "Glasgow North East",
+          "share": 0.056
+        },
+        {
+          "code": "S14000070",
+          "name": "Coatbridge and Bellshill",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000122",
+      "spcName": "Glasgow Southside",
+      "primaryWpcCode": "S14000088",
+      "primaryWpcName": "Glasgow South West",
+      "overlapShare": 0.54,
+      "overlaps": [
+        {
+          "code": "S14000088",
+          "name": "Glasgow South West",
+          "share": 0.54
+        },
+        {
+          "code": "S14000084",
+          "name": "Glasgow East",
+          "share": 0.258
+        },
+        {
+          "code": "S14000087",
+          "name": "Glasgow South",
+          "share": 0.202
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000123",
+      "spcName": "Greenock and Inverclyde",
+      "primaryWpcCode": "S14000093",
+      "primaryWpcName": "Inverclyde and Renfrewshire West",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000093",
+          "name": "Inverclyde and Renfrewshire West",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000124",
+      "spcName": "Hamilton, Larkhall and Stonehouse",
+      "primaryWpcCode": "S14000092",
+      "primaryWpcName": "Hamilton and Clyde Valley",
+      "overlapShare": 0.884,
+      "overlaps": [
+        {
+          "code": "S14000092",
+          "name": "Hamilton and Clyde Valley",
+          "share": 0.884
+        },
+        {
+          "code": "S14000077",
+          "name": "East Kilbride and Strathaven",
+          "share": 0.116
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000125",
+      "spcName": "Inverness and Nairn",
+      "primaryWpcCode": "S14000098",
+      "primaryWpcName": "Moray West, Nairn and Strathspey",
+      "overlapShare": 0.676,
+      "overlaps": [
+        {
+          "code": "S14000098",
+          "name": "Moray West, Nairn and Strathspey",
+          "share": 0.676
+        },
+        {
+          "code": "S14000094",
+          "name": "Inverness, Skye and West Ross-shire",
+          "share": 0.324
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000126",
+      "spcName": "Kilmarnock and Irvine Valley",
+      "primaryWpcCode": "S14000110",
+      "primaryWpcName": "Kilmarnock and Loudoun",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000110",
+          "name": "Kilmarnock and Loudoun",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000127",
+      "spcName": "Kirkcaldy",
+      "primaryWpcCode": "S14000071",
+      "primaryWpcName": "Cowdenbeath and Kirkcaldy",
+      "overlapShare": 0.762,
+      "overlaps": [
+        {
+          "code": "S14000071",
+          "name": "Cowdenbeath and Kirkcaldy",
+          "share": 0.762
+        },
+        {
+          "code": "S14000090",
+          "name": "Glenrothes and Mid Fife",
+          "share": 0.238
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000128",
+      "spcName": "Linlithgow",
+      "primaryWpcCode": "S14000068",
+      "primaryWpcName": "Bathgate and Linlithgow",
+      "overlapShare": 0.832,
+      "overlaps": [
+        {
+          "code": "S14000068",
+          "name": "Bathgate and Linlithgow",
+          "share": 0.832
+        },
+        {
+          "code": "S14000095",
+          "name": "Livingston",
+          "share": 0.166
+        },
+        {
+          "code": "S14000063",
+          "name": "Airdrie and Shotts",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000129",
+      "spcName": "Mid Fife and Glenrothes",
+      "primaryWpcCode": "S14000090",
+      "primaryWpcName": "Glenrothes and Mid Fife",
+      "overlapShare": 0.642,
+      "overlaps": [
+        {
+          "code": "S14000090",
+          "name": "Glenrothes and Mid Fife",
+          "share": 0.642
+        },
+        {
+          "code": "S14000100",
+          "name": "North East Fife",
+          "share": 0.358
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000130",
+      "spcName": "Midlothian North and Musselburgh",
+      "primaryWpcCode": "S14000045",
+      "primaryWpcName": "Midlothian",
+      "overlapShare": 0.87,
+      "overlaps": [
+        {
+          "code": "S14000045",
+          "name": "Midlothian",
+          "share": 0.87
+        },
+        {
+          "code": "S14000096",
+          "name": "Lothian East",
+          "share": 0.07
+        },
+        {
+          "code": "S14000078",
+          "name": "Edinburgh East and Musselburgh",
+          "share": 0.06
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000131",
+      "spcName": "Midlothian South, Tweeddale and Lauderdale",
+      "primaryWpcCode": "S14000074",
+      "primaryWpcName": "Dumfriesshire, Clydesdale and Tweeddale",
+      "overlapShare": 0.514,
+      "overlaps": [
+        {
+          "code": "S14000074",
+          "name": "Dumfriesshire, Clydesdale and Tweeddale",
+          "share": 0.514
+        },
+        {
+          "code": "S14000108",
+          "name": "Berwickshire, Roxburgh and Selkirk",
+          "share": 0.356
+        },
+        {
+          "code": "S14000045",
+          "name": "Midlothian",
+          "share": 0.13
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000132",
+      "spcName": "Moray",
+      "primaryWpcCode": "S14000098",
+      "primaryWpcName": "Moray West, Nairn and Strathspey",
+      "overlapShare": 0.92,
+      "overlaps": [
+        {
+          "code": "S14000098",
+          "name": "Moray West, Nairn and Strathspey",
+          "share": 0.92
+        },
+        {
+          "code": "S14000062",
+          "name": "Aberdeenshire North and Moray East",
+          "share": 0.08
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000133",
+      "spcName": "Motherwell and Wishaw",
+      "primaryWpcCode": "S14000099",
+      "primaryWpcName": "Motherwell, Wishaw and Carluke",
+      "overlapShare": 0.796,
+      "overlaps": [
+        {
+          "code": "S14000099",
+          "name": "Motherwell, Wishaw and Carluke",
+          "share": 0.796
+        },
+        {
+          "code": "S14000063",
+          "name": "Airdrie and Shotts",
+          "share": 0.202
+        },
+        {
+          "code": "S14000092",
+          "name": "Hamilton and Clyde Valley",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000134",
+      "spcName": "North East Fife",
+      "primaryWpcCode": "S14000100",
+      "primaryWpcName": "North East Fife",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000100",
+          "name": "North East Fife",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000135",
+      "spcName": "Orkney Islands",
+      "primaryWpcCode": "S14000051",
+      "primaryWpcName": "Orkney and Shetland",
+      "overlapShare": 0.998,
+      "overlaps": [
+        {
+          "code": "S14000051",
+          "name": "Orkney and Shetland",
+          "share": 0.998
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000136",
+      "spcName": "Paisley",
+      "primaryWpcCode": "S14000102",
+      "primaryWpcName": "Paisley and Renfrewshire South",
+      "overlapShare": 0.774,
+      "overlaps": [
+        {
+          "code": "S14000102",
+          "name": "Paisley and Renfrewshire South",
+          "share": 0.774
+        },
+        {
+          "code": "S14000101",
+          "name": "Paisley and Renfrewshire North",
+          "share": 0.224
+        },
+        {
+          "code": "S14000021",
+          "name": "East Renfrewshire",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000137",
+      "spcName": "Perthshire North",
+      "primaryWpcCode": "S14000065",
+      "primaryWpcName": "Angus and Perthshire Glens",
+      "overlapShare": 0.952,
+      "overlaps": [
+        {
+          "code": "S14000065",
+          "name": "Angus and Perthshire Glens",
+          "share": 0.952
+        },
+        {
+          "code": "S14000103",
+          "name": "Perth and Kinross-shire",
+          "share": 0.048
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000138",
+      "spcName": "Perthshire South and Kinross-shire",
+      "primaryWpcCode": "S14000103",
+      "primaryWpcName": "Perth and Kinross-shire",
+      "overlapShare": 0.83,
+      "overlaps": [
+        {
+          "code": "S14000103",
+          "name": "Perth and Kinross-shire",
+          "share": 0.83
+        },
+        {
+          "code": "S14000105",
+          "name": "Stirling and Strathallan",
+          "share": 0.17
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000139",
+      "spcName": "Renfrewshire North and West",
+      "primaryWpcCode": "S14000093",
+      "primaryWpcName": "Inverclyde and Renfrewshire West",
+      "overlapShare": 0.522,
+      "overlaps": [
+        {
+          "code": "S14000093",
+          "name": "Inverclyde and Renfrewshire West",
+          "share": 0.522
+        },
+        {
+          "code": "S14000101",
+          "name": "Paisley and Renfrewshire North",
+          "share": 0.478
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000140",
+      "spcName": "Renfrewshire South",
+      "primaryWpcCode": "S14000102",
+      "primaryWpcName": "Paisley and Renfrewshire South",
+      "overlapShare": 0.74,
+      "overlaps": [
+        {
+          "code": "S14000102",
+          "name": "Paisley and Renfrewshire South",
+          "share": 0.74
+        },
+        {
+          "code": "S14000021",
+          "name": "East Renfrewshire",
+          "share": 0.246
+        },
+        {
+          "code": "S14000093",
+          "name": "Inverclyde and Renfrewshire West",
+          "share": 0.014
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000141",
+      "spcName": "Rutherglen",
+      "primaryWpcCode": "S14000104",
+      "primaryWpcName": "Rutherglen",
+      "overlapShare": 0.982,
+      "overlaps": [
+        {
+          "code": "S14000104",
+          "name": "Rutherglen",
+          "share": 0.982
+        },
+        {
+          "code": "S14000092",
+          "name": "Hamilton and Clyde Valley",
+          "share": 0.014
+        },
+        {
+          "code": "S14000084",
+          "name": "Glasgow East",
+          "share": 0.002
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000142",
+      "spcName": "Shetland Islands",
+      "primaryWpcCode": "S14000051",
+      "primaryWpcName": "Orkney and Shetland",
+      "overlapShare": 0.994,
+      "overlaps": [
+        {
+          "code": "S14000051",
+          "name": "Orkney and Shetland",
+          "share": 0.994
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000143",
+      "spcName": "Skye, Lochaber and Badenoch",
+      "primaryWpcCode": "S14000094",
+      "primaryWpcName": "Inverness, Skye and West Ross-shire",
+      "overlapShare": 0.62,
+      "overlaps": [
+        {
+          "code": "S14000094",
+          "name": "Inverness, Skye and West Ross-shire",
+          "share": 0.62
+        },
+        {
+          "code": "S14000067",
+          "name": "Argyll, Bute and South Lochaber",
+          "share": 0.164
+        },
+        {
+          "code": "S14000098",
+          "name": "Moray West, Nairn and Strathspey",
+          "share": 0.152
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000144",
+      "spcName": "Stirling",
+      "primaryWpcCode": "S14000105",
+      "primaryWpcName": "Stirling and Strathallan",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000105",
+          "name": "Stirling and Strathallan",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000146",
+      "spcName": "Uddingston and Bellshill",
+      "primaryWpcCode": "S14000070",
+      "primaryWpcName": "Coatbridge and Bellshill",
+      "overlapShare": 0.424,
+      "overlaps": [
+        {
+          "code": "S14000070",
+          "name": "Coatbridge and Bellshill",
+          "share": 0.424
+        },
+        {
+          "code": "S14000063",
+          "name": "Airdrie and Shotts",
+          "share": 0.26
+        },
+        {
+          "code": "S14000104",
+          "name": "Rutherglen",
+          "share": 0.146
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000148",
+      "spcName": "Strathkelvin and Bearsden",
+      "primaryWpcCode": "S14000097",
+      "primaryWpcName": "Mid Dunbartonshire",
+      "overlapShare": 0.848,
+      "overlaps": [
+        {
+          "code": "S14000097",
+          "name": "Mid Dunbartonshire",
+          "share": 0.848
+        },
+        {
+          "code": "S14000072",
+          "name": "Cumbernauld and Kirkintilloch",
+          "share": 0.152
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000149",
+      "spcName": "Coatbridge and Chryston",
+      "primaryWpcCode": "S14000070",
+      "primaryWpcName": "Coatbridge and Bellshill",
+      "overlapShare": 0.712,
+      "overlaps": [
+        {
+          "code": "S14000070",
+          "name": "Coatbridge and Bellshill",
+          "share": 0.712
+        },
+        {
+          "code": "S14000072",
+          "name": "Cumbernauld and Kirkintilloch",
+          "share": 0.28
+        },
+        {
+          "code": "S14000063",
+          "name": "Airdrie and Shotts",
+          "share": 0.004
+        }
+      ],
+      "sampleSize": 500
+    },
+    {
+      "spcCode": "S16000150",
+      "spcName": "Glasgow Provan",
+      "primaryWpcCode": "S14000086",
+      "primaryWpcName": "Glasgow North East",
+      "overlapShare": 1,
+      "overlaps": [
+        {
+          "code": "S14000086",
+          "name": "Glasgow North East",
+          "share": 1
+        }
+      ],
+      "sampleSize": 500
+    }
+  ]
+}

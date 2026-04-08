@@ -135,6 +135,24 @@ function PatternDefs() {
   return null
 }
 
+function InvalidateSize({ deps }: { deps: Array<unknown> }) {
+  const map = useMap()
+  useEffect(() => {
+    const id = window.setTimeout(() => {
+      try {
+        if (!map || !(map as any)._loaded) return
+        const container = map.getContainer?.()
+        if (!container) return
+        map.invalidateSize()
+      } catch {
+        // ignore transient leaflet unmount errors
+      }
+    }, 0)
+    return () => window.clearTimeout(id)
+  }, [map, ...deps])
+  return null
+}
+
 function getWardCode(feature: GeoFeature) {
   const props: any = feature.properties || {}
   return (
@@ -489,6 +507,7 @@ export default function LocalMap({
 
   return (
     <MapContainer center={[53.7, -1.4]} zoom={6} style={{ height: '100%', width: '100%' }}>
+      <InvalidateSize deps={[selectedLad, wardFeatures?.length || 0, ladGeo?.features?.length || 0]} />
       <PatternDefs />
       <TileLayer
         attribution='&copy; OpenStreetMap contributors'

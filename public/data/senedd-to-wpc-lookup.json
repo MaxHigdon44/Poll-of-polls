@@ -1,0 +1,383 @@
+{
+  "source": {
+    "senedd": "senedd_2026_wfs_epsg4326",
+    "wpc": "Westminster_Parliamentary_Constituencies_July_2024_Boundaries_UK_BFC_4397668680939121965.geojson"
+  },
+  "method": "Monte Carlo point-in-polygon overlap estimate",
+  "sampleSize": 800,
+  "results": [
+    {
+      "seneddCode": 9,
+      "seneddName": "Afan Ogwr Rhondda",
+      "primaryWpcCode": "W07000081",
+      "primaryWpcName": "Aberafan Maesteg",
+      "primaryShare": 0.5425,
+      "secondaryWpcCode": "W07000107",
+      "secondaryWpcName": "Rhondda and Ogmore",
+      "secondaryShare": 0.43875,
+      "overlaps": [
+        {
+          "code": "W07000081",
+          "name": "Aberafan Maesteg",
+          "share": 0.5425
+        },
+        {
+          "code": "W07000107",
+          "name": "Rhondda and Ogmore",
+          "share": 0.43875
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 3,
+      "seneddName": "Fflint Wrecsam",
+      "primaryWpcCode": "W07000111",
+      "primaryWpcName": "Wrexham",
+      "primaryShare": 0.5625,
+      "secondaryWpcCode": "W07000082",
+      "secondaryWpcName": "Alyn and Deeside",
+      "secondaryShare": 0.39125,
+      "overlaps": [
+        {
+          "code": "W07000111",
+          "name": "Wrexham",
+          "share": 0.5625
+        },
+        {
+          "code": "W07000082",
+          "name": "Alyn and Deeside",
+          "share": 0.39125
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 1,
+      "seneddName": "Bangor Conwy Môn",
+      "primaryWpcCode": "W07000083",
+      "primaryWpcName": "Bangor Aberconwy",
+      "primaryShare": 0.6525,
+      "secondaryWpcCode": "W07000112",
+      "secondaryWpcName": "Ynys Môn",
+      "secondaryShare": 0.3125,
+      "overlaps": [
+        {
+          "code": "W07000083",
+          "name": "Bangor Aberconwy",
+          "share": 0.6525
+        },
+        {
+          "code": "W07000112",
+          "name": "Ynys Môn",
+          "share": 0.3125
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 11,
+      "seneddName": "Blaenau Gwent Caerffili Rhymni",
+      "primaryWpcCode": "W07000084",
+      "primaryWpcName": "Blaenau Gwent and Rhymney",
+      "primaryShare": 0.56125,
+      "secondaryWpcCode": "W07000088",
+      "secondaryWpcName": "Caerphilly",
+      "secondaryShare": 0.43875,
+      "overlaps": [
+        {
+          "code": "W07000084",
+          "name": "Blaenau Gwent and Rhymney",
+          "share": 0.56125
+        },
+        {
+          "code": "W07000088",
+          "name": "Caerphilly",
+          "share": 0.43875
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 8,
+      "seneddName": "Brycheiniog Tawe Nedd",
+      "primaryWpcCode": "W07000085",
+      "primaryWpcName": "Brecon, Radnor and Cwm Tawe",
+      "primaryShare": 0.92625,
+      "secondaryWpcCode": "W07000103",
+      "secondaryWpcName": "Neath and Swansea East",
+      "secondaryShare": 0.07375,
+      "overlaps": [
+        {
+          "code": "W07000085",
+          "name": "Brecon, Radnor and Cwm Tawe",
+          "share": 0.92625
+        },
+        {
+          "code": "W07000103",
+          "name": "Neath and Swansea East",
+          "share": 0.07375
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 15,
+      "seneddName": "Caerdydd Ffynnon Taf",
+      "primaryWpcCode": "W07000090",
+      "primaryWpcName": "Cardiff North",
+      "primaryShare": 0.5675,
+      "secondaryWpcCode": "W07000089",
+      "secondaryWpcName": "Cardiff East",
+      "secondaryShare": 0.39375,
+      "overlaps": [
+        {
+          "code": "W07000090",
+          "name": "Cardiff North",
+          "share": 0.5675
+        },
+        {
+          "code": "W07000089",
+          "name": "Cardiff East",
+          "share": 0.39375
+        },
+        {
+          "code": "W07000092",
+          "name": "Cardiff West",
+          "share": 0.00125
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 14,
+      "seneddName": "Caerdydd Penarth",
+      "primaryWpcCode": "W07000092",
+      "primaryWpcName": "Cardiff West",
+      "primaryShare": 0.50625,
+      "secondaryWpcCode": "W07000091",
+      "secondaryWpcName": "Cardiff South and Penarth",
+      "secondaryShare": 0.45125,
+      "overlaps": [
+        {
+          "code": "W07000092",
+          "name": "Cardiff West",
+          "share": 0.50625
+        },
+        {
+          "code": "W07000091",
+          "name": "Cardiff South and Penarth",
+          "share": 0.45125
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 6,
+      "seneddName": "Sir Gaerfyrddin",
+      "primaryWpcCode": "W07000087",
+      "primaryWpcName": "Caerfyrddin",
+      "primaryShare": 0.81625,
+      "secondaryWpcCode": "W07000098",
+      "secondaryWpcName": "Llanelli",
+      "secondaryShare": 0.15625,
+      "overlaps": [
+        {
+          "code": "W07000087",
+          "name": "Caerfyrddin",
+          "share": 0.81625
+        },
+        {
+          "code": "W07000098",
+          "name": "Llanelli",
+          "share": 0.15625
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 5,
+      "seneddName": "Ceredigion Penfro",
+      "primaryWpcCode": "W07000093",
+      "primaryWpcName": "Ceredigion Preseli",
+      "primaryShare": 0.72375,
+      "secondaryWpcCode": "W07000100",
+      "secondaryWpcName": "Mid and South Pembrokeshire",
+      "secondaryShare": 0.2625,
+      "overlaps": [
+        {
+          "code": "W07000093",
+          "name": "Ceredigion Preseli",
+          "share": 0.72375
+        },
+        {
+          "code": "W07000100",
+          "name": "Mid and South Pembrokeshire",
+          "share": 0.2625
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 2,
+      "seneddName": "Clwyd",
+      "primaryWpcCode": "W07000094",
+      "primaryWpcName": "Clwyd East",
+      "primaryShare": 0.74875,
+      "secondaryWpcCode": "W07000095",
+      "secondaryWpcName": "Clwyd North",
+      "secondaryShare": 0.19375,
+      "overlaps": [
+        {
+          "code": "W07000094",
+          "name": "Clwyd East",
+          "share": 0.74875
+        },
+        {
+          "code": "W07000095",
+          "name": "Clwyd North",
+          "share": 0.19375
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 4,
+      "seneddName": "Gwynedd Maldwyn",
+      "primaryWpcCode": "W07000096",
+      "primaryWpcName": "Dwyfor Meirionnydd",
+      "primaryShare": 0.51375,
+      "secondaryWpcCode": "W07000102",
+      "secondaryWpcName": "Montgomeryshire and Glyndwr",
+      "secondaryShare": 0.47375,
+      "overlaps": [
+        {
+          "code": "W07000096",
+          "name": "Dwyfor Meirionnydd",
+          "share": 0.51375
+        },
+        {
+          "code": "W07000102",
+          "name": "Montgomeryshire and Glyndwr",
+          "share": 0.47375
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 7,
+      "seneddName": "Gŵyr Abertawe",
+      "primaryWpcCode": "W07000097",
+      "primaryWpcName": "Gower",
+      "primaryShare": 0.785,
+      "secondaryWpcCode": "W07000108",
+      "secondaryWpcName": "Swansea West",
+      "secondaryShare": 0.1025,
+      "overlaps": [
+        {
+          "code": "W07000097",
+          "name": "Gower",
+          "share": 0.785
+        },
+        {
+          "code": "W07000108",
+          "name": "Swansea West",
+          "share": 0.1025
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 10,
+      "seneddName": "Pontypridd Cynon Merthyr",
+      "primaryWpcCode": "W07000099",
+      "primaryWpcName": "Merthyr Tydfil and Aberdare",
+      "primaryShare": 0.64625,
+      "secondaryWpcCode": "W07000106",
+      "secondaryWpcName": "Pontypridd",
+      "secondaryShare": 0.35375,
+      "overlaps": [
+        {
+          "code": "W07000099",
+          "name": "Merthyr Tydfil and Aberdare",
+          "share": 0.64625
+        },
+        {
+          "code": "W07000106",
+          "name": "Pontypridd",
+          "share": 0.35375
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 12,
+      "seneddName": "Sir Fynwy Torfaen",
+      "primaryWpcCode": "W07000101",
+      "primaryWpcName": "Monmouthshire",
+      "primaryShare": 0.835,
+      "secondaryWpcCode": "W07000109",
+      "secondaryWpcName": "Torfaen",
+      "secondaryShare": 0.11875,
+      "overlaps": [
+        {
+          "code": "W07000101",
+          "name": "Monmouthshire",
+          "share": 0.835
+        },
+        {
+          "code": "W07000109",
+          "name": "Torfaen",
+          "share": 0.11875
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 13,
+      "seneddName": "Casnewydd Islwyn",
+      "primaryWpcCode": "W07000105",
+      "primaryWpcName": "Newport West and Islwyn",
+      "primaryShare": 0.51375,
+      "secondaryWpcCode": "W07000104",
+      "secondaryWpcName": "Newport East",
+      "secondaryShare": 0.4025,
+      "overlaps": [
+        {
+          "code": "W07000105",
+          "name": "Newport West and Islwyn",
+          "share": 0.51375
+        },
+        {
+          "code": "W07000104",
+          "name": "Newport East",
+          "share": 0.4025
+        }
+      ],
+      "sampleSize": 800
+    },
+    {
+      "seneddCode": 16,
+      "seneddName": "Pen-y-bont Bro Morgannwg",
+      "primaryWpcCode": "W07000110",
+      "primaryWpcName": "Vale of Glamorgan",
+      "primaryShare": 0.69,
+      "secondaryWpcCode": "W07000086",
+      "secondaryWpcName": "Bridgend",
+      "secondaryShare": 0.285,
+      "overlaps": [
+        {
+          "code": "W07000110",
+          "name": "Vale of Glamorgan",
+          "share": 0.69
+        },
+        {
+          "code": "W07000086",
+          "name": "Bridgend",
+          "share": 0.285
+        }
+      ],
+      "sampleSize": 800
+    }
+  ]
+}

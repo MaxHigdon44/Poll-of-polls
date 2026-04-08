@@ -1,0 +1,82 @@
+council,ward,code,lastYear,pcon,reformGE,reformBaseline
+Cambridge,Abbey,E05013050,2024,E14001149,0,0
+Cambridge,Arbury,E05013051,2024,E14001149,0,0
+Cambridge,Castle,E05013052,2024,E14001149,0,0
+Cambridge,Coleridge,E05013054,2024,E14001149,0,0
+Cambridge,East Chesterton,E05013055,2024,E14001149,0,0
+Cambridge,King's Hedges,E05013056,2024,E14001149,0,0
+Cambridge,Market,E05013057,2024,E14001149,0,0
+Cambridge,Newnham,E05013058,2024,E14001149,0,0
+Cambridge,Petersfield,E05013059,2024,E14001149,0,0
+Cambridge,Romsey,E05013061,2024,E14001149,0,0
+Cambridge,Trumpington,E05013062,2024,E14001149,0,0
+Cambridge,West Chesterton,E05013063,2024,E14001149,0,0
+Epping Forest,Buckhurst Hill East and Whitebridge,E05015724,2024,E14001226,0,0
+Epping Forest,Buckhurst Hill West,E05015725,2024,E14001226,0,0
+Epping Forest,Chigwell with Lambourne,E05015726,2024,E14001226,0,0
+Epping Forest,Epping East,E05015727,2024,E14001226,0,0
+Epping Forest,Epping West and Rural,E05015728,2024,E14001226,0,0
+Epping Forest,Grange Hill,E05015729,2024,E14001226,0,0
+Epping Forest,Loughton Fairmead,E05015730,2024,E14001226,0,0
+Epping Forest,Loughton Forest,E05015731,2024,E14001226,0,0
+Epping Forest,Loughton Roding,E05015732,2024,E14001226,0,0
+Epping Forest,Loughton St John's,E05015733,2024,E14001226,0,0
+Epping Forest,Theydon Bois with Passingford,E05015738,2024,E14001226,0,0
+Epping Forest,Waltham Abbey North,E05015739,2024,E14001226,0,0
+Epping Forest,Waltham Abbey South and Rural,E05015740,2024,E14001226,0,0
+Epping Forest,Waltham Abbey West,E05015741,2024,E14001226,0,0
+Leeds,Beeston and Holbeck,E05012647,2024,E14001323,0,0
+Leeds,Burmantofts and Richmond Hill,E05011388,2024,E14001323,0,0
+Leeds,Hunslet and Riverside,E05011399,2024,E14001323,0,0
+Leeds,Middleton Park,E05011404,2024,E14001323,0,0
+Oxford,Barton and Sandhills,E05013096,2024,E14001419,0,0
+Oxford,Blackbird Leys,E05013097,2024,E14001419,0,0
+Oxford,Churchill,E05013099,2024,E14001419,0,0
+Oxford,Cowley,E05013100,2024,E14001419,0,0
+Oxford,Donnington,E05013102,2024,E14001419,0,0
+Oxford,Headington,E05013103,2024,E14001419,0,0
+Oxford,Headington Hill and Northway,E05013104,2024,E14001419,0,0
+Oxford,Hinksey Park,E05013105,2024,E14001419,0,0
+Oxford,Littlemore,E05013107,2024,E14001419,0,0
+Oxford,Lye Valley,E05013108,2024,E14001419,0,0
+Oxford,Marston,E05013109,2024,E14001419,0,0
+Oxford,Northfield Brook,E05013110,2024,E14001419,0,0
+Oxford,Quarry and Risinghurst,E05013112,2024,E14001419,0,0
+Oxford,Rose Hill and Iffley,E05013113,2024,E14001419,0,0
+Oxford,St Clement's,E05013114,2024,E14001419,0,0
+Oxford,St Mary's,E05013115,2024,E14001419,0,0
+Oxford,Temple Cowley,E05013117,2024,E14001419,0,0
+Reading,Church,E05013868,2024,E14001210,0,0
+Reading,Whitley,E05013879,2024,E14001210,0,0
+Sheffield,Beauchief and Greenhill,E05010857,2024,E14001469,0,0
+Sheffield,Beighton,E05010858,2024,E14001470,0,0
+Sheffield,Birley,E05010859,2024,E14001470,0,0
+Sheffield,Broomhill and Sharrow Vale,E05010860,2024,E14001467,0,0
+Sheffield,Burngreave,E05010861,2024,E14001466,0,0
+Sheffield,City,E05010862,2024,E14001467,0,0
+Sheffield,Crookes and Crosspool,E05010863,2024,E14001468,0,0
+Sheffield,Darnall,E05010864,2024,E14001470,0,0
+Sheffield,Dore and Totley,E05010865,2024,E14001468,0,0
+Sheffield,Ecclesall,E05010867,2024,E14001468,0,0
+Sheffield,Firth Park,E05010868,2024,E14001466,0,0
+Sheffield,Fulwood,E05010869,2024,E14001468,0,0
+Sheffield,Gleadless Valley,E05010870,2024,E14001469,0,0
+Sheffield,Graves Park,E05010871,2024,E14001469,0,0
+Sheffield,Hillsborough,E05010872,2024,E14001466,0,0
+Sheffield,Manor Castle,E05010873,2024,E14001469,0,0
+Sheffield,Mosborough,E05010874,2024,E14001470,0,0
+Sheffield,Nether Edge and Sharrow,E05010875,2024,E14001467,0,0
+Sheffield,Park and Arbourthorne,E05010876,2024,E14001469,0,0
+Sheffield,Richmond,E05010877,2024,E14001470,0,15.59975139838409
+Sheffield,Shiregreen and Brightside,E05010878,2024,E14001466,0,0
+Sheffield,Southey,E05010879,2024,E14001466,0,0
+Sheffield,Stannington,E05010880,2024,E14001468,0,0
+Sheffield,Walkley,E05010882,2024,E14001467,0,0
+Sheffield,Woodhouse,E05010884,2024,E14001470,0,0
+Wokingham,Bulmershe and Coronation,E05015784,2024,E14001210,0,0
+Wokingham,Hawkedon,E05015788,2024,E14001210,0,0
+Wokingham,Hillside,E05015789,2024,E14001210,0,0
+Wokingham,Loddon,E05015790,2024,E14001210,0,0
+Wokingham,Maiden Erlegh and Whitegates,E05015791,2024,E14001210,0,0
+Wokingham,Shinfield,E05015793,2024,E14001210,0,0
+Wokingham,South Lake,E05015794,2024,E14001210,0,0

@@ -16,8 +16,12 @@ export type ScrapedPoll = {
   others: number | null
 }
 
-const SOURCE_URL =
+const UK_SOURCE_URL =
   'https://en.wikipedia.org/wiki/Opinion_polling_for_the_next_United_Kingdom_general_election'
+const SCOTTISH_SOURCE_URL =
+  'https://en.wikipedia.org/wiki/Opinion_polling_for_the_2026_Scottish_Parliament_election'
+const WELSH_SOURCE_URL =
+  'https://en.wikipedia.org/wiki/Opinion_polling_for_the_2026_Senedd_election'
 
 function parsePollDate(dateText: string, fallbackYear?: number): Date | null {
   const cleaned = dateText.replace(/\[\d+\]/g, '').trim()
@@ -110,6 +114,50 @@ function selectNationalYearTables($: ReturnType<typeof load>, year: number) {
     .toArray()
 }
 
+function selectSectionTables($: ReturnType<typeof load>, sectionTitle: string) {
+  const heading = $('h2')
+    .filter((_, el) =>
+      $(el)
+        .text()
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase()
+        .includes(sectionTitle.toLowerCase())
+    )
+    .first()
+  if (heading.length === 0) return []
+
+  const headingWrapper = heading.closest('div.mw-heading')
+  if (headingWrapper.length > 0) {
+    return headingWrapper.nextUntil('div.mw-heading2').filter('table.wikitable').toArray()
+  }
+
+  return heading.nextUntil('h2').filter('table.wikitable').toArray()
+}
+
+function selectSubsectionTables($: ReturnType<typeof load>, sectionTitle: string) {
+  const heading = $('h3, h4')
+    .filter((_, el) =>
+      $(el)
+        .text()
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase()
+        .includes(sectionTitle.toLowerCase())
+    )
+    .first()
+  if (heading.length === 0) return []
+
+  const headingWrapper = heading.closest('div.mw-heading')
+  if (headingWrapper.length > 0) {
+    return headingWrapper.nextUntil('div.mw-heading3, div.mw-heading4, div.mw-heading2')
+      .filter('table.wikitable')
+      .toArray()
+  }
+
+  return heading.nextUntil('h3, h4, h2').filter('table.wikitable').toArray()
+}
+
 function hasNationalPollHeaders(columnMap: Record<string, number>) {
   return (
     Number.isFinite(columnMap.date) &&
@@ -149,6 +197,7 @@ function buildColumnIndexMap($: ReturnType<typeof load>, table: CheerioElement) 
     else if (header.includes('green') || header === 'grn') map.green = index
     else if (header.includes('snp')) map.snp = index
     else if (header.includes('pc') || header.includes('plaid')) map.pc = index
+    else if (header.includes('awa') || header.includes('abolish')) map.abolish = index
     else if (header.includes('other')) map.others = index
   })
 
@@ -159,7 +208,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
   sourceUrl: string
   polls: ScrapedPoll[]
 }> {
-  const response = await fetch(SOURCE_URL)
+  const response = await fetch(UK_SOURCE_URL)
   if (!response.ok) {
     throw new Error(`Failed to fetch source: ${response.status} ${response.statusText}`)
   }
@@ -178,7 +227,7 @@ export async function scrapePolls(lastMonths = 2): Promise<{
   const tablesToParse = candidateTables
 
   if (tablesToParse.length === 0) {
-    return { sourceUrl: SOURCE_URL, polls }
+    return { sourceUrl: UK_SOURCE_URL, polls }
   }
 
   tablesToParse.forEach(table => {
@@ -259,5 +308,171 @@ export async function scrapePolls(lastMonths = 2): Promise<{
       })
   })
 
-  return { sourceUrl: SOURCE_URL, polls }
+  return { sourceUrl: UK_SOURCE_URL, polls }
+}
+
+function parsePollTable(
+  $: ReturnType<typeof load>,
+  tables: CheerioElement[],
+  cutoffDate: Date,
+  fallbackYear?: number
+) {
+  const polls: ScrapedPoll[] = []
+  const seen = new Set<string>()
+
+  tables.forEach(table => {
+    const columnMap = buildColumnIndexMap($, table)
+    if (!hasNationalPollHeaders(columnMap)) return
+
+    $(table)
+      .find('tbody tr')
+      .each((_, el) => {
+        const tds = $(el).find('td')
+        if (tds.length === 0) return
+
+        const dateCell = $(tds[columnMap.date])
+        const dateText = cleanDateLabel(dateCell.text())
+        const pollster = cleanPollster($(tds[columnMap.pollster]).text())
+        if (!dateText || !pollster) return
+
+        const sortValue =
+          dateCell.attr('data-sort-value') ?? dateCell.find('[data-sort-value]').attr('data-sort-value')
+        const parsedDate =
+          (sortValue ? parseSortDate(sortValue) : null) ??
+          parsePollDate(dateText, fallbackYear)
+        if (!parsedDate) return
+        if (parsedDate < cutoffDate) return
+
+        const areaIndex = columnMap.area ?? -1
+        const sampleIndex = columnMap.sampleSize ?? -1
+
+        const abolishValue =
+          (columnMap as any).abolish != null
+            ? toNumber($(tds[(columnMap as any).abolish]).text())
+            : null
+        const poll = {
+          pollDate: parsedDate.toISOString().slice(0, 10),
+          pollDateLabel: dateText,
+          pollster,
+          sampleSize: sampleIndex >= 0 ? toSampleSize($(tds[sampleIndex]).text()) : null,
+          area: areaIndex >= 0 ? $(tds[areaIndex]).text().trim() || null : null,
+          labour: columnMap.labour != null ? toNumber($(tds[columnMap.labour]).text()) : null,
+          conservative:
+            columnMap.conservative != null ? toNumber($(tds[columnMap.conservative]).text()) : null,
+          libdem: columnMap.libdem != null ? toNumber($(tds[columnMap.libdem]).text()) : null,
+          green: columnMap.green != null ? toNumber($(tds[columnMap.green]).text()) : null,
+          reform: columnMap.reform != null ? toNumber($(tds[columnMap.reform]).text()) : null,
+          snp: columnMap.snp != null ? toNumber($(tds[columnMap.snp]).text()) : null,
+          pc: columnMap.pc != null ? toNumber($(tds[columnMap.pc]).text()) : null,
+          others: columnMap.others != null ? toNumber($(tds[columnMap.others]).text()) : null,
+        }
+        if (abolishValue != null) {
+          poll.others = (poll.others ?? 0) + abolishValue
+        }
+
+        const hasPartyData =
+          poll.labour != null ||
+          poll.conservative != null ||
+          poll.libdem != null ||
+          poll.green != null ||
+          poll.reform != null ||
+          poll.snp != null ||
+          poll.pc != null ||
+          poll.others != null
+
+        if (!hasPartyData) return
+
+        const dedupeKey = [
+          poll.pollDate,
+          poll.pollster,
+          poll.sampleSize ?? '',
+          poll.area ?? '',
+          poll.labour ?? '',
+          poll.conservative ?? '',
+          poll.libdem ?? '',
+          poll.green ?? '',
+          poll.reform ?? '',
+          poll.snp ?? '',
+          poll.pc ?? '',
+          poll.others ?? '',
+        ].join('|')
+
+        if (seen.has(dedupeKey)) return
+        seen.add(dedupeKey)
+
+        polls.push(poll)
+      })
+  })
+
+  return polls
+}
+
+export async function scrapeScottishPolls(lastDays = 90): Promise<{
+  sourceUrl: string
+  constituencyPolls: ScrapedPoll[]
+  regionalPolls: ScrapedPoll[]
+}> {
+  const response = await fetch(SCOTTISH_SOURCE_URL, {
+    headers: { 'User-Agent': 'PollOfPollsBot/1.0 (contact: local-dev)' },
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch source: ${response.status} ${response.statusText}`)
+  }
+
+  const html = await response.text()
+  const $ = load(html)
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - lastDays)
+  const fallbackYear = new Date().getFullYear()
+
+  const constituencyPolls = parsePollTable(
+    $,
+    selectSectionTables($, 'Constituency vote'),
+    cutoffDate,
+    fallbackYear
+  )
+  const regionalPolls = parsePollTable(
+    $,
+    selectSectionTables($, 'Regional vote'),
+    cutoffDate,
+    fallbackYear
+  )
+
+  return {
+    sourceUrl: SCOTTISH_SOURCE_URL,
+    constituencyPolls,
+    regionalPolls,
+  }
+}
+
+export async function scrapeWelshPolls(lastDays = 90): Promise<{
+  sourceUrl: string
+  polls: ScrapedPoll[]
+}> {
+  const response = await fetch(WELSH_SOURCE_URL, {
+    headers: { 'User-Agent': 'PollOfPollsBot/1.0 (contact: local-dev)' },
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch source: ${response.status} ${response.statusText}`)
+  }
+
+  const html = await response.text()
+  const $ = load(html)
+  const cutoffDate = new Date()
+  cutoffDate.setDate(cutoffDate.getDate() - lastDays)
+  const fallbackYear = new Date().getFullYear()
+
+  const primaryTables = selectSubsectionTables($, 'Polling using the 2026 electoral system')
+  const fallbackTables = selectSectionTables($, 'Polling using the 2026 electoral system')
+  const polls = parsePollTable(
+    $,
+    primaryTables.length ? primaryTables : fallbackTables,
+    cutoffDate,
+    fallbackYear
+  )
+
+  return {
+    sourceUrl: WELSH_SOURCE_URL,
+    polls,
+  }
 }

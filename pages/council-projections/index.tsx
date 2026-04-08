@@ -384,6 +384,28 @@ function canonicalizePartyLabel(party: string | null | undefined) {
   return party || 'Other'
 }
 
+function isNationalOrStandardParty(party: string) {
+  return new Set([
+    'Labour',
+    'Conservative',
+    'Reform',
+    'Liberal Democrat',
+    'Green',
+    'SNP',
+    'Plaid Cymru',
+    'Independent',
+    'Other',
+  ]).has(party)
+}
+
+function resolvePreviousSeatBucket(party: string, currentTotals: Record<string, number>) {
+  if (party in currentTotals) return party
+  if (!isNationalOrStandardParty(party) && 'Independent' in currentTotals) {
+    return 'Independent'
+  }
+  return party
+}
+
 function sumShares(shares: Record<string, number>) {
   return Object.values(shares).reduce((acc, value) => acc + (value || 0), 0)
 }
@@ -698,7 +720,7 @@ function getSeatsPerWard(
     else if (totalSeats % 3 === 0 && seatsUp === Math.round(totalSeats / 3)) cycle = 'thirds'
     else if (totalSeats % 2 === 0 && seatsUp === Math.round(totalSeats / 2)) cycle = 'halves'
   }
-  if (cycle !== 'all_out') return Math.max(ward.vacancies || 0, 1)
+  if (cycle !== 'all_out') return 1
 
   const explicitVacancy =
     wardVacancyLookup?.wards?.[ward.wardCode] ||
@@ -1034,9 +1056,57 @@ export default function CouncilProjectionsPage() {
       byLad.set(ward.ladCode, list)
     })
 
+    const ladBaselineMap = new Map<
+      string,
+      { totalVotes: number; national: Record<string, number>; local: Record<string, number> }
+    >()
+    baseline.wards.forEach(ward => {
+      const entry = ladBaselineMap.get(ward.ladCode) || {
+        totalVotes: 0,
+        national: {},
+        local: {},
+      }
+      const weight = ward.totalVotes || 0
+      if (weight > 0) {
+        Object.entries(ward.nationalShares || {}).forEach(([party, share]) => {
+          entry.national[party] = (entry.national[party] || 0) + share * weight
+        })
+        Object.entries(ward.localShares || {}).forEach(([party, share]) => {
+          entry.local[party] = (entry.local[party] || 0) + share * weight
+        })
+        entry.totalVotes += weight
+      }
+      ladBaselineMap.set(ward.ladCode, entry)
+    })
+
     const rawProjectionByCode = new Map<string, { winner: string; shares: Record<string, number> }>()
+    const rawProjectionByName = new Map<string, { winner: string; shares: Record<string, number> }>()
     baseline.wards.forEach(ward => {
       let adjustedWard = ward
+      const nationalSum = sumShares(ward.nationalShares || {})
+      const localSum = sumShares(ward.localShares || {})
+      if (nationalSum + localSum === 0) {
+        const ladBaseline = ladBaselineMap.get(ward.ladCode)
+        if (ladBaseline && ladBaseline.totalVotes > 0) {
+          const national = Object.fromEntries(
+            Object.entries(ladBaseline.national).map(([party, value]) => [
+              party,
+              value / ladBaseline.totalVotes,
+            ])
+          )
+          const local = Object.fromEntries(
+            Object.entries(ladBaseline.local).map(([party, value]) => [
+              party,
+              value / ladBaseline.totalVotes,
+            ])
+          )
+          adjustedWard = {
+            ...ward,
+            nationalShares: national,
+            localShares: local,
+          }
+        }
+      }
       const geWeights = {
         reform: geReformWeight,
         green: geGreenWeight,
@@ -1145,6 +1215,10 @@ export default function CouncilProjectionsPage() {
         ruralUrbanStrengthEffective
       )
       rawProjectionByCode.set(ward.wardCode, projection)
+      const nameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+      if (!rawProjectionByName.has(nameKey)) {
+        rawProjectionByName.set(nameKey, projection)
+      }
     })
 
     const projections: CouncilProjectionRow[] = []
@@ -1166,6 +1240,12 @@ export default function CouncilProjectionsPage() {
         row => normalizeCouncilName(row.council) === normalized
       )
       const wardIncumbents = previousRow?.wardIncumbents || null
+      const normalizedWardIncumbents = new Map<string, string>(
+        Object.entries(wardIncumbents || {}).map(([wardName, party]) => [
+          normalizeName(wardName),
+          canonicalizePartyLabel(party),
+        ])
+      )
 
       const seatsUp = seatRow.seatsUp
       const totalSeats = seatRow.totalSeats
@@ -1205,14 +1285,52 @@ export default function CouncilProjectionsPage() {
         return acc + Math.max(ward.vacancies || 0, 1)
       }, 0)
       const incumbentMatchedWards = wardIncumbents
-        ? allWards.filter(ward => wardIncumbents[normalizeName(ward.wardName)])
+        ? allWards.filter(ward => normalizedWardIncumbents.has(normalizeName(ward.wardName)))
         : []
       const incumbentMatchedSeats = incumbentMatchedWards.length
       const shouldUseWardIncumbents =
         incumbentMatchedWards.length > 0 &&
-        Math.abs(incumbentMatchedSeats - seatsUp) < Math.abs(inferredContestedSeats - seatsUp)
+        Math.abs(incumbentMatchedSeats - seatsUp) <= Math.abs(inferredContestedSeats - seatsUp)
       const wards = shouldUseWardIncumbents ? incumbentMatchedWards : allWards
       if (!wards.length) return
+
+      const ladFallbackProjection = (() => {
+        let weightSum = 0
+        const totals: Record<string, number> = {}
+        wards.forEach(ward => {
+          const nameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+          const projection =
+            rawProjectionByCode.get(ward.wardCode) || rawProjectionByName.get(nameKey)
+          if (!projection) return
+          const weight = ward.totalVotes || 0
+          if (!weight) return
+          weightSum += weight
+          Object.entries(projection.shares).forEach(([party, value]) => {
+            const numericValue = Number(value)
+            if (!Number.isFinite(numericValue)) return
+            totals[party] = (totals[party] || 0) + numericValue * weight
+          })
+        })
+        if (!weightSum) return null
+        const shares: Record<string, number> = {}
+        Object.entries(totals).forEach(([party, value]) => {
+          shares[party] = value / weightSum
+        })
+        let winner = 'Other'
+        let topValue = -1
+        Object.entries(shares).forEach(([party, value]) => {
+          if (value > topValue) {
+            topValue = value
+            winner = party
+          }
+        })
+        return {
+          winner,
+          shares,
+          color: PARTY_COLORS[winner] || '#ccc',
+          prevWinner: null,
+        }
+      })()
 
       let useLastYear = !shouldUseWardIncumbents && cycle !== 'all_out'
       if (useLastYear) {
@@ -1234,12 +1352,17 @@ export default function CouncilProjectionsPage() {
 
       const contestedTotals: Record<string, number> = {}
       const contestedPreviousTotals: Record<string, number> = {}
+      const seatChangeEvents: Array<{ prevWinner: string; projectedWinner: string; seats: number }> = []
 
       wards.forEach(ward => {
         const seatsUpCount = shouldUseWardIncumbents
           ? 1
           : getSeatsPerWard(wards, seatRow, ward, wardVacancyLookup)
-        const projection = rawProjectionByCode.get(ward.wardCode)
+        const nameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+        const projection =
+          rawProjectionByCode.get(ward.wardCode) ||
+          rawProjectionByName.get(nameKey) ||
+          ladFallbackProjection
         if (!projection) return
         const previousShares: Record<string, number> = {
           ...ward.nationalShares,
@@ -1247,7 +1370,7 @@ export default function CouncilProjectionsPage() {
         }
         let prevWinner: string | null = null
         const incumbentWinner = shouldUseWardIncumbents
-          ? wardIncumbents?.[normalizeName(ward.wardName)]
+          ? normalizedWardIncumbents.get(normalizeName(ward.wardName))
           : null
         if (incumbentWinner) {
           prevWinner = canonicalizePartyLabel(incumbentWinner)
@@ -1273,12 +1396,24 @@ export default function CouncilProjectionsPage() {
           }
         }
         if (contested) {
-          const projectedSeatAllocation = allocateProjectedSeats(projection.shares || {}, seatsUpCount)
+          const projectedSeatAllocation = allocateProjectedSeats(
+            projection.shares || ladFallbackProjection?.shares || {},
+            seatsUpCount
+          )
           Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
             const projectedKey = canonicalizePartyLabel(party)
             contestedTotals[projectedKey] = (contestedTotals[projectedKey] || 0) + allocatedSeats
+            seatChangeEvents.push({
+              prevWinner: canonicalizePartyLabel(
+                prevWinner || projection.winner || ladFallbackProjection?.winner || 'Other'
+              ),
+              projectedWinner: projectedKey,
+              seats: allocatedSeats,
+            })
           })
-          const contestedPrev = canonicalizePartyLabel(prevWinner || projection.winner)
+          const contestedPrev = canonicalizePartyLabel(
+            prevWinner || projection.winner || ladFallbackProjection?.winner || 'Other'
+          )
           contestedPreviousTotals[contestedPrev] =
             (contestedPreviousTotals[contestedPrev] || 0) + seatsUpCount
         }
@@ -1293,7 +1428,9 @@ export default function CouncilProjectionsPage() {
         : { ...contestedPreviousTotals }
 
       let projectedTotals: Record<string, number> = {}
-      if (previousRow?.seatsBefore && Object.keys(previousRow.seatsBefore).length) {
+      if (cycle === 'all_out') {
+        projectedTotals = normalizeTotalsToTotal(totalSeats, adjustedContestedTotals)
+      } else if (previousRow?.seatsBefore && Object.keys(previousRow.seatsBefore).length) {
         const currentTotals = { ...previousRow.seatsBefore }
         const currentSum = Object.values(currentTotals).reduce(
           (acc, value) => acc + (value || 0),
@@ -1302,19 +1439,29 @@ export default function CouncilProjectionsPage() {
         if (currentSum && currentSum < totalSeats) {
           currentTotals.Other = (currentTotals.Other || 0) + (totalSeats - currentSum)
         }
-        const projected: Record<string, number> = { ...currentTotals }
-        const parties = new Set<string>([
-          ...Object.keys(adjustedContestedTotals),
-          ...Object.keys(currentTotals),
-        ])
-        parties.forEach(party => {
-          const currentSeats = currentTotals[party] || 0
-          const lastSeats = adjustedContestedPreviousTotals[party] || 0
-          const projectedSeats = adjustedContestedTotals[party] || 0
-          const next = currentSeats + (projectedSeats - lastSeats)
-          projected[party] = Math.max(0, Math.round(next))
-        })
-        projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+        if (seatChangeEvents.length) {
+          const projected: Record<string, number> = { ...currentTotals }
+          seatChangeEvents.forEach(({ prevWinner, projectedWinner, seats }) => {
+            const prevBucket = resolvePreviousSeatBucket(prevWinner, projected)
+            projected[prevBucket] = Math.max(0, (projected[prevBucket] || 0) - seats)
+            projected[projectedWinner] = (projected[projectedWinner] || 0) + seats
+          })
+          projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+        } else {
+          const projected: Record<string, number> = { ...currentTotals }
+          const parties = new Set<string>([
+            ...Object.keys(adjustedContestedTotals),
+            ...Object.keys(currentTotals),
+          ])
+          parties.forEach(party => {
+            const currentSeats = currentTotals[party] || 0
+            const lastSeats = adjustedContestedPreviousTotals[party] || 0
+            const projectedSeats = adjustedContestedTotals[party] || 0
+            const next = currentSeats + (projectedSeats - lastSeats)
+            projected[party] = Math.max(0, Math.round(next))
+          })
+          projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+        }
       } else {
         projectedTotals = normalizeTotalsToTotal(totalSeats, adjustedContestedTotals)
       }

@@ -1041,6 +1041,8 @@ function getSeatsPerWardForPopup(
 
 export default function Local2026Page() {
   const router = useRouter()
+  const embedParam = router.query.embed
+  const isEmbed = embedParam === '1' || (Array.isArray(embedParam) && embedParam[0] === '1')
   const [wardGeo, setWardGeo] = useState<GeoCollection | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
   const [countyGeo, setCountyGeo] = useState<GeoCollection | null>(null)
@@ -1064,6 +1066,7 @@ export default function Local2026Page() {
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [selectedLad, setSelectedLad] = useState<string | null>(null)
   const [hasMounted, setHasMounted] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
@@ -1077,6 +1080,7 @@ export default function Local2026Page() {
   useEffect(() => {
     setHasMounted(true)
   }, [])
+
 
   useEffect(() => {
     fetch('/data/lads.geojson')
@@ -1929,6 +1933,50 @@ export default function Local2026Page() {
     return eligible
   }, [councilGeo])
 
+  const searchOptions = useMemo(() => {
+    if (!baseline?.wards?.length || eligibleLads.size === 0) return []
+    const councilMap = new Map<string, { ladCode: string; ladName: string }>()
+    const wardOptions = baseline.wards
+      .filter(ward => eligibleLads.has(ward.ladCode))
+      .map(ward => {
+        councilMap.set(ward.ladCode, { ladCode: ward.ladCode, ladName: ward.ladName })
+        return {
+          type: 'ward' as const,
+          ladCode: ward.ladCode,
+          wardName: ward.wardName,
+          label: `${ward.wardName} — ${ward.ladName}`,
+          searchKey: normalizeName(`${ward.wardName} ${ward.ladName}`),
+        }
+      })
+    const councilOptions = Array.from(councilMap.values()).map(council => ({
+      type: 'council' as const,
+      ladCode: council.ladCode,
+      label: council.ladName,
+      searchKey: normalizeName(council.ladName),
+    }))
+    const surreyOptions = [
+      {
+        type: 'council' as const,
+        ladCode: 'surrey-east',
+        label: 'East Surrey Council',
+        searchKey: normalizeName('East Surrey Council'),
+      },
+      {
+        type: 'council' as const,
+        ladCode: 'surrey-west',
+        label: 'West Surrey Council',
+        searchKey: normalizeName('West Surrey Council'),
+      },
+    ].filter(option => eligibleLads.has(option.ladCode))
+    return [...surreyOptions, ...councilOptions, ...wardOptions]
+  }, [baseline, eligibleLads])
+
+  const searchResults = useMemo(() => {
+    const query = normalizeName(searchQuery)
+    if (query.length < 2) return []
+    return searchOptions.filter(option => option.searchKey.includes(query)).slice(0, 5)
+  }, [searchOptions, searchQuery])
+
   const ladCategoryByCode = useMemo(() => {
     const mapping = new Map<string, 'county' | 'district' | 'london' | 'metro' | 'unitary'>()
     if (!councilGeo) return mapping
@@ -2449,166 +2497,163 @@ export default function Local2026Page() {
 
   return (
     <PageShell>
-      <TopNav
-        title="Local Elections 2026"
-        items={MAIN_TOPNAV_ITEMS}
-        subtitle={
-          selectedCouncilName ? (
-            <span style={{ fontSize: '1.1rem', color: '#333' }}>{selectedCouncilName}</span>
-          ) : undefined
-        }
-      />
-      {hasMounted && process.env.NODE_ENV !== 'production' && (
-        <div
-          className="poll-card poll-card--subtle"
-          style={{
-            display: 'flex',
-            flexWrap: 'wrap',
-            gap: '1.5rem',
-            marginBottom: '1.5rem',
-            alignItems: 'flex-end',
-          }}
-        >
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Leave/Remain Strength: {leaveStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={leaveStrength}
-              onChange={event => setLeaveStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Age Strength: {ageStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={ageStrength}
-              onChange={event => setAgeStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Region Strength: {regionStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={regionStrength}
-              onChange={event => setRegionStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            NS-SEC Strength: {nssecStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={nssecStrength}
-              onChange={event => setNssecStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Degree Strength: {degreeStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={degreeStrength}
-              onChange={event => setDegreeStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Tenure Strength: {tenureStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={tenureStrength}
-              onChange={event => setTenureStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            Rural/Urban Strength: {ruralUrbanStrength.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={ruralUrbanStrength}
-              onChange={event => setRuralUrbanStrength(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            GE Weight (Reform): {geReformWeight.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={geReformWeight}
-              onChange={event => setGeReformWeight(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            GE Weight (Green): {geGreenWeight.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={geGreenWeight}
-              onChange={event => setGeGreenWeight(Number(event.target.value))}
-            />
-          </label>
-          <label style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
-            GE Weight (Other Major): {geMajorWeight.toFixed(2)}
-            <input
-              type="range"
-              min={0}
-              max={1}
-              step={0.05}
-              value={geMajorWeight}
-              onChange={event => setGeMajorWeight(Number(event.target.value))}
-            />
-          </label>
+      {!isEmbed && (
+        <TopNav
+          title="Local Elections 2026"
+          items={MAIN_TOPNAV_ITEMS}
+          subtitle={
+            selectedCouncilName ? (
+              <span style={{ fontSize: '1.1rem', color: '#333' }}>{selectedCouncilName}</span>
+            ) : (
+              'English Local Elections Map'
+            )
+          }
+        />
+      )}
+      {!selectedLad && (
+        <div className="poll-card" style={{ marginBottom: '0.75rem' }}>
+          <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Search councils or wards</div>
+          <input
+            value={searchQuery}
+            onChange={event => setSearchQuery(event.target.value)}
+            placeholder="Start typing a council or ward name"
+            style={{
+              width: '100%',
+              padding: '0.6rem 0.75rem',
+              borderRadius: '10px',
+              border: '1px solid rgba(0,0,0,0.15)',
+              fontSize: '0.95rem',
+            }}
+          />
+          {searchResults.length > 0 && (
+            <div
+              style={{
+                marginTop: '0.5rem',
+                border: '1px solid rgba(0,0,0,0.08)',
+                borderRadius: '10px',
+                padding: '0.4rem',
+                display: 'grid',
+                gap: '0.25rem',
+                background: '#fff',
+              }}
+            >
+              {searchResults.map(option => (
+                <button
+                  key={`${option.type}-${option.label}`}
+                  onClick={() => {
+                    setSelectedLad(option.ladCode)
+                    setSearchQuery(option.label)
+                  }}
+                  style={{
+                    textAlign: 'left',
+                    padding: '0.5rem 0.65rem',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: 'transparent',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <div style={{ fontWeight: 600 }}>{option.label}</div>
+                  <div style={{ fontSize: '0.82rem', color: '#666' }}>
+                    {option.type === 'ward' ? 'Ward' : 'Council'}
+                  </div>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
-      <div className="poll-map-layout">
-        <div className="poll-card poll-map-sidebar">
-          <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Parties</div>
-          {Object.entries(PARTY_COLORS).map(([party, color]) => (
-            <div
-              key={party}
-              style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}
-            >
-              <span style={{ width: '12px', height: '12px', background: color }} />
-              <span>{party}</span>
-            </div>
-          ))}
-          {selectedLad && (
-            <button
-              style={{ marginTop: '1rem' }}
-              onClick={() => setSelectedLad(null)}
-            >
-              Back to councils
-            </button>
+      <div className="poll-card" style={{ height: '86vh', minHeight: '860px', overflow: 'hidden' }}>
+        <div className="poll-map-layout" style={{ height: '100%' }}>
+        <div className="poll-card poll-map-sidebar" style={{ maxHeight: '100%', overflow: 'auto' }}>
+          {selectedLad ? (
+            <>
+              <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Council Composition</div>
+              {councilComposition ? (
+                <>
+                  <div style={{ color: '#555', marginBottom: '0.5rem' }}>
+                    Previous control: {councilComposition.control || 'Unknown'}
+                    <br />
+                    Seats up: {councilComposition.seatsUp} of {councilComposition.totalSeats}
+                  </div>
+                  <div style={{ color: '#555', marginBottom: '0.5rem' }}>
+                    Projected control: {councilComposition.projectedControl}
+                  </div>
+                  {Object.entries(councilComposition.totals)
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([party, seats]) => {
+                      const previous = councilComposition.previousTotals[party] || 0
+                      const delta = seats - previous
+                      const showArrow =
+                        selectedLad !== 'surrey-east' && selectedLad !== 'surrey-west'
+                      const deltaLabel =
+                        delta === 0 ? '0' : delta > 0 ? `↑ ${delta}` : `↓ ${Math.abs(delta)}`
+                      const deltaColor = delta > 0 ? '#1B8A3A' : delta < 0 ? '#B02A37' : '#666'
+                      const partyColor = PARTY_COLORS[party] || '#999'
+                      return (
+                        <div key={party} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ width: '10px', height: '10px', background: partyColor }} />
+                            {party}
+                          </span>
+                          <span>
+                            {seats}
+                            {showArrow ? (
+                              <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
+                                ({deltaLabel})
+                              </span>
+                            ) : null}
+                          </span>
+                        </div>
+                      )
+                    })}
+                </>
+              ) : (
+                <div style={{ color: '#777', fontSize: '0.9rem' }}>
+                  No composition data available for this council.
+                </div>
+              )}
+              <button style={{ marginTop: '1rem' }} onClick={() => setSelectedLad(null)}>
+                Back to councils
+              </button>
+              <button style={{ marginTop: '0.75rem' }} onClick={() => (window.location.href = '/electoral-maps')}>
+                Back to UK overview
+              </button>
+            </>
+          ) : (
+            <>
+              <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Council Types</div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                <span style={{ width: '12px', height: '12px', background: '#2E8B57' }} />
+                <span>District Councils</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                <span style={{ width: '12px', height: '12px', background: '#E75480' }} />
+                <span>County Councils</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                <span style={{ width: '12px', height: '12px', background: '#6A1B9A' }} />
+                <span>London Boroughs</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                <span style={{ width: '12px', height: '12px', background: '#FB8C00' }} />
+                <span>Metropolitan Boroughs</span>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
+                <span style={{ width: '12px', height: '12px', background: '#1E88E5' }} />
+                <span>Unitary Authorities</span>
+              </div>
+              <div style={{ marginTop: '0.75rem', color: '#555' }}>
+                Click a council area to zoom into ward-level projections.
+              </div>
+              <button style={{ marginTop: '1rem' }} onClick={() => (window.location.href = '/electoral-maps')}>
+                Back to UK overview
+              </button>
+            </>
           )}
         </div>
-        <div className="poll-card poll-map-panel">
-          {!selectedLad && (
-            <div className="poll-note poll-inline-note">
-              Click a council area to zoom into ward-level projections.
-            </div>
-          )}
-          <div className="poll-map-frame">
+        <div className="poll-card poll-map-panel" style={{ height: '100%' }}>
+          <div className="poll-map-frame" style={{ height: '100%' }}>
             {councilGeo ? (
             <LocalMap
               ladGeo={councilGeo}
@@ -2640,83 +2685,21 @@ export default function Local2026Page() {
               <div style={{ padding: '1rem' }}>Loading map data...</div>
             )}
           </div>
-          <div className="poll-key-grid">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '14px', height: '14px', background: '#2E8B57' }} />
-              <span>District Councils</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '14px', height: '14px', background: '#E75480' }} />
-              <span>County Councils</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '14px', height: '14px', background: '#6A1B9A' }} />
-              <span>London Boroughs</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '14px', height: '14px', background: '#FB8C00' }} />
-              <span>Metropolitan Boroughs</span>
-            </div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ width: '14px', height: '14px', background: '#1E88E5' }} />
-              <span>Unitary Authorities</span>
-            </div>
-          </div>
-          {councilComposition && (
-            <div style={{ marginTop: '1rem', fontSize: '0.9rem' }}>
-              <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>
-                Council Composition
-              </div>
-              <div style={{ color: '#555', marginBottom: '0.5rem' }}>
-                Previous control: {councilComposition.control || 'Unknown'}
-                <br />
-                Seats up: {councilComposition.seatsUp} of {councilComposition.totalSeats} (
-                {councilComposition.cycle})
-              </div>
-              <div style={{ color: '#555', marginBottom: '0.5rem' }}>
-                Projected control: {councilComposition.projectedControl}
-                {councilComposition.previousSource ? (
-                  <>
-                    <br />
-                    Previous seats from Wikipedia.
-                  </>
-                ) : null}
-              </div>
-              {Object.entries(councilComposition.totals)
-                .sort((a, b) => b[1] - a[1])
-                .map(([party, seats]) => {
-                  const previous = councilComposition.previousTotals[party] || 0
-                  const delta = seats - previous
-                  const showArrow =
-                    selectedLad !== 'surrey-east' && selectedLad !== 'surrey-west'
-                  const deltaLabel =
-                    delta === 0 ? '0' : delta > 0 ? `↑ ${delta}` : `↓ ${Math.abs(delta)}`
-                  const deltaColor = delta > 0 ? '#1B8A3A' : delta < 0 ? '#B02A37' : '#666'
-                  return (
-                  <div key={party} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{party}</span>
-                    <span>
-                      {seats}
-                      {showArrow ? (
-                        <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
-                          ({deltaLabel})
-                        </span>
-                      ) : null}
-                    </span>
-                  </div>
-                  )
-                })}
-            </div>
-          )}
-          {showNoComposition && (
-            <div style={{ marginTop: '1rem', color: '#777', fontSize: '0.9rem' }}>
-              No composition data available for this council.
-            </div>
-          )}
-          <div style={{ marginTop: '0.75rem', fontSize: '0.85rem', color: '#666' }}>
-            For information about the model&apos;s approach and sources, please see the Methodology
-            page.
-          </div>
+        </div>
+      </div>
+      </div>
+      {showNoComposition && !selectedLad && (
+        <div style={{ marginTop: '1rem', color: '#777', fontSize: '0.9rem' }}>
+          No composition data available for this council.
+        </div>
+      )}
+      <div className="poll-card poll-stack" style={{ marginTop: '1.25rem' }}>
+        <div style={{ marginTop: '0.5rem', fontSize: '0.85rem', color: '#666' }}>
+          For a full list of council predictions and overall seat counts per party, please see the{' '}
+          <a href="/council-projections" style={{ color: '#172033' }}>
+            English Local Elections Projection Page
+          </a>
+          .
         </div>
       </div>
     </PageShell>

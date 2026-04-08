@@ -1,5 +1,5 @@
-import PollsPage from './polls'
+import ElectoralMapsPage from './electoral-maps'
 
 export default function Home() {
-  return <PollsPage />
+  return <ElectoralMapsPage />
 }
