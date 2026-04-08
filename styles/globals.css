@@ -72,6 +72,8 @@ button {
 .poll-map-sidebar {
   font-size: 0.9rem;
   min-height: 0;
+  position: relative;
+  z-index: 2;
 }
 
 .poll-map-panel {
@@ -79,6 +81,8 @@ button {
   flex-direction: column;
   gap: 0.75rem;
   min-height: 0;
+  position: relative;
+  z-index: 1;
 }
 
 .poll-map-frame {

@@ -29,11 +29,11 @@ export const MAIN_TOPNAV_ITEMS: TopNavItem[] = [
     label: 'Polling',
     children: [
       { href: '/aggregate', label: 'National Polling Average' },
-      { href: '/polls', label: 'Recent UK Polls' },
+      { href: '/polls', label: 'UK Polls' },
       { href: '/scottish-aggregate', label: 'Scottish Polling Average' },
-      { href: '/scottish-polls', label: 'Recent Scottish Polls' },
+      { href: '/scottish-polls', label: 'Scottish Polls' },
       { href: '/welsh-aggregate', label: 'Welsh Polling Average' },
-      { href: '/welsh-polls', label: 'Recent Welsh Polls' },
+      { href: '/welsh-polls', label: 'Welsh Polls' },
     ],
   },
   {

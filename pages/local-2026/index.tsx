@@ -1045,6 +1045,8 @@ export default function Local2026Page() {
   const isEmbed = embedParam === '1' || (Array.isArray(embedParam) && embedParam[0] === '1')
   const [wardGeo, setWardGeo] = useState<GeoCollection | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
+  const [countriesGeo, setCountriesGeo] = useState<GeoCollection | null>(null)
+  const [worldGeo, setWorldGeo] = useState<GeoCollection | null>(null)
   const [countyGeo, setCountyGeo] = useState<GeoCollection | null>(null)
   const [cedGeo, setCedGeo] = useState<GeoCollection | null>(null)
   const [surreyOverlay, setSurreyOverlay] = useState<GeoCollection | null>(null)
@@ -1086,6 +1088,12 @@ export default function Local2026Page() {
     fetch('/data/lads.geojson')
       .then(res => res.json())
       .then(setLadGeo)
+    fetch('/data/uk-countries-2022.geojson')
+      .then(res => res.json())
+      .then(setCountriesGeo)
+    fetch('/data/world-land-50m.geojson')
+      .then(res => res.json())
+      .then(setWorldGeo)
       .catch(() => setLadGeo(null))
 
     fetch('/data/counties.geojson')
@@ -2618,7 +2626,7 @@ export default function Local2026Page() {
               <button style={{ marginTop: '1rem' }} onClick={() => setSelectedLad(null)}>
                 Back to councils
               </button>
-              <button style={{ marginTop: '0.75rem' }} onClick={() => (window.location.href = '/electoral-maps')}>
+              <button style={{ marginTop: '0.75rem' }} onClick={() => router.push('/electoral-maps')}>
                 Back to UK overview
               </button>
             </>
@@ -2648,7 +2656,7 @@ export default function Local2026Page() {
               <div style={{ marginTop: '0.75rem', color: '#555' }}>
                 Click a council area to zoom into ward-level projections.
               </div>
-              <button style={{ marginTop: '1rem' }} onClick={() => (window.location.href = '/electoral-maps')}>
+              <button style={{ marginTop: '1rem' }} onClick={() => router.push('/electoral-maps')}>
                 Back to UK overview
               </button>
             </>
@@ -2659,6 +2667,8 @@ export default function Local2026Page() {
             {councilGeo ? (
             <LocalMap
               ladGeo={councilGeo}
+              baseGeo={worldGeo}
+              countriesGeo={countriesGeo}
               overlayAreas={syntheticCouncilOverlay}
               boundaryAreas={surreyBoundary}
               overlayAreaCodes={new Set(['surrey-east', 'surrey-west', 'E07000245'])}

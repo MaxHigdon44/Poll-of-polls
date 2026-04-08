@@ -22,6 +22,8 @@ const PARTY_COLORS: Record<string, string> = {
 }
 
 type LocalMapProps = {
+  baseGeo?: GeoCollection | null
+  countriesGeo?: GeoCollection | null
   ladGeo: GeoCollection
   overlayAreas?: GeoCollection | null
   boundaryAreas?: GeoCollection | null
@@ -82,10 +84,15 @@ function FitBounds({ feature }: { feature: GeoFeature | null }) {
   const map = useMap()
   useEffect(() => {
     if (!feature) return
-    const layer = L.geoJSON(feature as GeoJsonObject)
-    const bounds = layer.getBounds()
-    if (bounds) {
-      map.fitBounds(bounds, { padding: [20, 20] })
+    try {
+      if (!map || !(map as any)._loaded) return
+      const layer = L.geoJSON(feature as GeoJsonObject)
+      const bounds = layer.getBounds()
+      if (bounds && bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20] })
+      }
+    } catch {
+      // ignore transient leaflet unmount errors
     }
   }, [feature, map])
   return null
@@ -96,7 +103,10 @@ function PatternDefs() {
 
   useEffect(() => {
     const ensurePattern = () => {
-      const svg = map.getPanes().overlayPane.querySelector('svg')
+      const panes = map.getPanes?.()
+      const overlayPane = panes?.overlayPane
+      if (!overlayPane) return
+      const svg = overlayPane.querySelector('svg')
       if (!svg) return
       let defs = svg.querySelector('defs')
       if (!defs) {
@@ -126,10 +136,23 @@ function PatternDefs() {
       defs.appendChild(pattern)
     }
 
-    ensurePattern()
-    const observer = new MutationObserver(() => ensurePattern())
-    observer.observe(map.getPanes().overlayPane, { childList: true, subtree: true })
-    return () => observer.disconnect()
+    try {
+      ensurePattern()
+      const observer = new MutationObserver(() => {
+        try {
+          ensurePattern()
+        } catch {
+          // ignore transient leaflet unmount errors
+        }
+      })
+      const overlayPane = map.getPanes?.().overlayPane
+      if (overlayPane) {
+        observer.observe(overlayPane, { childList: true, subtree: true })
+      }
+      return () => observer.disconnect()
+    } catch {
+      return undefined
+    }
   }, [map])
 
   return null
@@ -266,6 +289,8 @@ function getElectedParties(
 
 export default function LocalMap({
   ladGeo,
+  baseGeo,
+  countriesGeo,
   overlayAreas,
   boundaryAreas,
   overlayAreaCodes,
@@ -287,6 +312,16 @@ export default function LocalMap({
   nonContestedLabel = 'Not contested',
   previousWinnerLabel = 'Previous winner',
 }: LocalMapProps) {
+  useEffect(() => {
+    const prevAutoPan = L.Popup.prototype.options.autoPan
+    const prevKeepInView = (L.Popup.prototype.options as any).keepInView
+    L.Popup.prototype.options.autoPan = false
+    ;(L.Popup.prototype.options as any).keepInView = false
+    return () => {
+      L.Popup.prototype.options.autoPan = prevAutoPan
+      ;(L.Popup.prototype.options as any).keepInView = prevKeepInView
+    }
+  }, [])
   const countyFeatures = ladGeo.features.filter(feature => {
     const code = feature.properties?.reference
     return code && ladCategoryByCode.get(code) === 'county'
@@ -297,9 +332,24 @@ export default function LocalMap({
     return !code || ladCategoryByCode.get(code) !== 'county'
   })
 
+  const eligibleCountyFeatures = countyFeatures.filter(feature => {
+    const code = feature.properties?.reference
+    return Boolean(code && eligibleLads.has(code))
+  })
+
+  const nonEligibleCountyFeatures = countyFeatures.filter(feature => {
+    const code = feature.properties?.reference
+    return Boolean(code && !eligibleLads.has(code))
+  })
+
   const eligibleNonCountyFeatures = nonCountyFeatures.filter(feature => {
     const code = feature.properties?.reference
     return Boolean(code && eligibleLads.has(code))
+  })
+
+  const nonEligibleNonCountyFeatures = nonCountyFeatures.filter(feature => {
+    const code = feature.properties?.reference
+    return Boolean(code && !eligibleLads.has(code))
   })
 
   const ladStyle = (feature?: GeoFeature) => {
@@ -375,6 +425,26 @@ export default function LocalMap({
     fillColor: '#E75480',
     fillOpacity: 0.28,
   })
+
+  const baseStyle = () => ({
+    color: '#1f2a44',
+    weight: 1.5,
+    fillColor: '#c4c4c4',
+    fillOpacity: 0.7,
+    opacity: 0.98,
+  })
+
+  const overlayStyleForCountries = (feature?: GeoFeature) => {
+    const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
+    const isNi = name === 'northern ireland'
+    return {
+      color: isNi ? 'transparent' : '#1f2a44',
+      weight: isNi ? 0 : 2,
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      opacity: isNi ? 0 : 0.98,
+    }
+  }
 
   const overlayStyle = () => ({
     color: 'transparent',
@@ -509,23 +579,41 @@ export default function LocalMap({
   }
 
   return (
-    <MapContainer center={[53.7, -1.4]} zoom={6} style={{ height: '100%', width: '100%' }}>
+    <MapContainer
+      center={[53.7, -1.4]}
+      zoom={6}
+      style={{ height: '100%', width: '100%' }}
+      zoomAnimation={false}
+      fadeAnimation={false}
+      markerZoomAnimation={false}
+      inertia={false}
+    >
       <InvalidateSize deps={[selectedLad, wardFeatures?.length || 0, ladGeo?.features?.length || 0]} />
       <PatternDefs />
       <TileLayer
         attribution='&copy; OpenStreetMap contributors'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
+      {baseGeo?.features?.length ? (
+        <GeoJSON data={baseGeo as GeoJsonObject} style={baseStyle} interactive={false} />
+      ) : null}
+      {countriesGeo?.features?.length ? (
+        <GeoJSON
+          data={countriesGeo as GeoJsonObject}
+          style={overlayStyleForCountries}
+          interactive={false}
+        />
+      ) : null}
       {!selectedLad && (
         <>
-          {countyFeatures.length > 0 && (
+          {eligibleCountyFeatures.length > 0 && (
             <>
               <GeoJSON
-                data={{ type: 'FeatureCollection', features: countyFeatures } as GeoJsonObject}
+                data={{ type: 'FeatureCollection', features: eligibleCountyFeatures } as GeoJsonObject}
                 style={countyFillStyle}
               />
               <GeoJSON
-                data={{ type: 'FeatureCollection', features: countyFeatures } as GeoJsonObject}
+                data={{ type: 'FeatureCollection', features: eligibleCountyFeatures } as GeoJsonObject}
                 style={countyOutlineStyle}
                 eventHandlers={{
                   click: event => {
