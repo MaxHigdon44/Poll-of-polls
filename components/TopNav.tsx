@@ -20,6 +20,7 @@ export const MAIN_TOPNAV_ITEMS: TopNavItem[] = [
     label: 'Electoral and Sentiment Maps',
     children: [
       { href: '/electoral-maps', label: 'UK Overview' },
+      { href: '/combined-overview', label: 'Combined Overview' },
       { href: '/local-2026', label: 'English Local Elections' },
       { href: '/scottish-map', label: 'Scottish Parliament Map' },
       { href: '/welsh-map', label: 'Senedd Elections' },
