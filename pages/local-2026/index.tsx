@@ -1074,6 +1074,7 @@ export default function Local2026Page() {
   } | null>(null)
   const [hasMounted, setHasMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
+  const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent'>('projected')
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
@@ -2633,6 +2634,32 @@ export default function Local2026Page() {
         <div className="poll-card poll-map-sidebar" style={{ maxHeight: '100%', overflow: 'auto' }}>
           {selectedLad ? (
             <>
+              <div style={{ marginBottom: '1rem' }}>
+                <div style={{ fontWeight: 600, marginBottom: '0.45rem' }}>Map View</div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginLeft: '-0.15rem' }}>
+                  {(['projected', 'incumbent'] as const).map(mode => {
+                    const isActive = mapDisplayMode === mode
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setMapDisplayMode(mode)}
+                        style={{
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '999px',
+                          border: '1px solid var(--poll-border)',
+                          background: isActive ? '#2b3444' : '#11151d',
+                          color: 'var(--poll-nav-ink)',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {mode === 'projected' ? 'Predicted' : 'Incumbent'}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
               <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Council Composition</div>
               {councilComposition ? (
                 <>
@@ -2656,12 +2683,20 @@ export default function Local2026Page() {
                       const deltaColor = delta > 0 ? '#1B8A3A' : delta < 0 ? '#B02A37' : '#666'
                       const partyColor = PARTY_COLORS[party] || '#999'
                       return (
-                        <div key={party} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <div
+                          key={party}
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'minmax(0, 1fr) auto',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
                             <span style={{ width: '10px', height: '10px', background: partyColor }} />
                             {party}
                           </span>
-                          <span>
+                          <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
                             {seats}
                             {showArrow ? (
                               <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
@@ -2733,6 +2768,7 @@ export default function Local2026Page() {
               ladGeo={councilGeo}
               baseGeo={worldGeo}
               countriesGeo={countriesGeo}
+              displayMode={mapDisplayMode}
               onSelectCountry={country => {
                 if (country === 'scotland') void router.push('/scottish-map', undefined, { scroll: false })
                 if (country === 'wales') void router.push('/welsh-map', undefined, { scroll: false })

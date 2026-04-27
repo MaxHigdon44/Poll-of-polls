@@ -10,6 +10,7 @@ type ScottishParliamentMapProps = {
   countriesGeo?: FeatureCollection | null
   onSelectCountry?: (country: 'england' | 'scotland' | 'wales') => void
   focusFeature?: Feature<Geometry, any> | null
+  displayMode?: 'projected' | 'incumbent'
   constituencyResults: Map<
     string,
     {
@@ -213,6 +214,7 @@ export default function ScottishParliamentMap({
   countriesGeo,
   onSelectCountry,
   focusFeature,
+  displayMode = 'projected',
   constituencyResults,
 }: ScottishParliamentMapProps) {
   const buildShareLines = (entries: Array<[string, number | null | undefined]>) => {
@@ -305,10 +307,14 @@ export default function ScottishParliamentMap({
           const result =
             constituencyResults.get(constituencyName) ||
             constituencyResults.get(normalizeScottishConstituencyName(constituencyName))
+          const winner =
+            displayMode === 'incumbent'
+              ? result?.previousWinner2021 || null
+              : result?.projectedWinner || result?.previousWinner2021 || null
           return {
             color: '#f8fafc',
             weight: 1,
-            fillColor: getWinnerColor(result?.projectedWinner || result?.previousWinner2021 || null),
+            fillColor: getWinnerColor(winner),
             fillOpacity: 0.45,
           }
         }}

@@ -48,6 +48,7 @@ type LocalMapProps = {
   countriesGeo?: GeoCollection | null
   onSelectCountry?: (country: 'england' | 'scotland' | 'wales') => void
   ladGeo: GeoCollection
+  displayMode?: 'projected' | 'incumbent'
   overlayAreas?: GeoCollection | null
   boundaryAreas?: GeoCollection | null
   overlayAreaCodes?: Set<string>
@@ -469,6 +470,7 @@ export default function LocalMap({
   baseGeo,
   countriesGeo,
   onSelectCountry,
+  displayMode = 'projected',
   overlayAreas,
   boundaryAreas,
   overlayAreaCodes,
@@ -723,9 +725,12 @@ export default function LocalMap({
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
       1
-    const color = projection ? projection.color || '#ccc' : '#ccc'
+    const projectedColor = projection ? projection.color || '#ccc' : '#ccc'
+    const incumbentColor =
+      projection?.prevWinner ? PARTY_COLORS[formatDisplayPartyLabel(projection.prevWinner)] || '#9a9a9a' : '#9a9a9a'
+    const color = displayMode === 'incumbent' ? incumbentColor : projectedColor
     const { electedParties } = getElectedParties(projection, vacancies)
-    if (electedParties.length >= 2) {
+    if (displayMode !== 'incumbent' && electedParties.length >= 2) {
       const primaryColor = PARTY_COLORS[electedParties[0][0]] || color
       const secondaryColor = PARTY_COLORS[electedParties[1][0]] || '#9a9a9a'
       const id = ensurePartyStripePattern(primaryColor, secondaryColor)
@@ -779,7 +784,7 @@ export default function LocalMap({
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
       1
     const { seatAllocation, electedParties } = getElectedParties(projection, vacancies)
-    if (electedParties.length >= 2 && 'setStyle' in layer) {
+    if (displayMode !== 'incumbent' && electedParties.length >= 2 && 'setStyle' in layer) {
       const primaryColor = PARTY_COLORS[electedParties[0][0]] || projection.color || '#ccc'
       const secondaryColor = PARTY_COLORS[electedParties[1][0]] || '#9a9a9a'
       const id = ensurePartyStripePattern(primaryColor, secondaryColor)

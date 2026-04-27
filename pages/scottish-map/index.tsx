@@ -353,6 +353,7 @@ export default function ScottishMapPage() {
   const [hasMounted, setHasMounted] = useState(false)
   const [focusConstituency, setFocusConstituency] = useState<string | null>(null)
   const [searchValue, setSearchValue] = useState('')
+  const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent'>('projected')
   const settingsKey = 'scotlandModelSettings'
 
   useEffect(() => {
@@ -927,6 +928,32 @@ export default function ScottishMapPage() {
       <div className="poll-card" style={{ height: '86vh', minHeight: '860px', overflow: 'hidden' }}>
         <div className="poll-map-layout" style={{ height: '100%' }}>
           <div className="poll-card poll-map-sidebar" style={{ maxHeight: '100%', overflow: 'auto' }}>
+            <div style={{ marginBottom: '1rem' }}>
+              <div style={{ fontWeight: 600, marginBottom: '0.45rem' }}>Map View</div>
+              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginLeft: '-0.15rem' }}>
+                {(['projected', 'incumbent'] as const).map(mode => {
+                  const isActive = mapDisplayMode === mode
+                  return (
+                    <button
+                      key={mode}
+                      type="button"
+                      onClick={() => setMapDisplayMode(mode)}
+                      style={{
+                        padding: '0.45rem 0.65rem',
+                        borderRadius: '999px',
+                        border: '1px solid var(--poll-border)',
+                        background: isActive ? '#2b3444' : '#11151d',
+                        color: 'var(--poll-nav-ink)',
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {mode === 'projected' ? 'Predicted' : 'Incumbent'}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
             <div style={{ marginTop: '1rem', fontWeight: 600 }}>Projected Constituency Seats</div>
             <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
               {projectedSeatSummary.map(item => {
@@ -943,15 +970,23 @@ export default function ScottishMapPage() {
                   <div
                     key={item.party}
                     style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
+                      display: 'grid',
+                      gridTemplateColumns: 'minmax(0, 1fr) auto',
                       alignItems: 'center',
+                      gap: '0.5rem',
                       fontSize: '0.98rem',
                     }}
                   >
-                    <span style={{ color }}>{item.party}</span>
+                    <span style={{ color, minWidth: 0 }}>{item.party}</span>
                     <span
-                      style={{ fontWeight: 600, display: 'flex', gap: '0.5rem', alignItems: 'center' }}
+                      style={{
+                        fontWeight: 600,
+                        display: 'flex',
+                        gap: '0.5rem',
+                        alignItems: 'center',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                      }}
                     >
                       <span style={{ color: '#172033' }}>{item.seats}</span>
                       <span style={{ color: deltaColor }}>({deltaLabel})</span>
@@ -977,6 +1012,7 @@ export default function ScottishMapPage() {
                   constituencyGeo={constituencyGeo}
                   regionGeo={regionGeo}
                   countriesGeo={countriesGeo}
+                  displayMode={mapDisplayMode}
                   onSelectCountry={country => {
                     if (country === 'england') void router.push('/local-2026', undefined, { scroll: false })
                     if (country === 'wales') void router.push('/welsh-map', undefined, { scroll: false })
