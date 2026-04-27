@@ -114,7 +114,7 @@ export default function PollsPage() {
         items={MAIN_TOPNAV_ITEMS}
       />
       <div className="poll-card poll-stack">
-        <div className="poll-muted">UK National Poll Results from the Past Two Months</div>
+        <div className="poll-muted">UK Westminster Poll Results from the Past Two Months</div>
         <div className="poll-toolbar">
           <label>
             Pollster

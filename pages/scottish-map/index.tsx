@@ -300,6 +300,7 @@ export default function ScottishMapPage() {
   const isEmbed = embedParam === '1' || (Array.isArray(embedParam) && embedParam[0] === '1')
   const [constituencyGeo, setConstituencyGeo] = useState<FeatureCollection | null>(null)
   const [regionGeo, setRegionGeo] = useState<FeatureCollection | null>(null)
+  const [countriesGeo, setCountriesGeo] = useState<FeatureCollection | null>(null)
   const [constituencyResults, setConstituencyResults] = useState<
     Map<
       string,
@@ -384,6 +385,10 @@ export default function ScottishMapPage() {
     fetch('/data/scotland-regions.geojson')
       .then(res => res.json())
       .then(data => setRegionGeo(data))
+    fetch('/data/uk-countries-2022.geojson')
+      .then(res => res.json())
+      .then(setCountriesGeo)
+      .catch(() => setCountriesGeo(null))
     fetch('/api/scottish-constituency-results')
       .then(res => res.json())
       .then(data => {
@@ -834,10 +839,23 @@ export default function ScottishMapPage() {
     [constituencyNameIndex]
   )
 
+  const constituencySearchResults = useMemo(() => {
+    const query = normalizeScottishConstituencyName(searchValue)
+    if (query.length < 2) return []
+    return constituencyNames
+      .filter(name => normalizeScottishConstituencyName(name).includes(query))
+      .slice(0, 6)
+  }, [constituencyNames, searchValue])
+
   const handleSearchChange = (value: string) => {
     setSearchValue(value)
     const match = constituencyNameIndex.get(normalizeScottishConstituencyName(value))
     if (match) setFocusConstituency(match)
+  }
+
+  const handleSearchSelect = (name: string) => {
+    setSearchValue(name)
+    setFocusConstituency(name)
   }
 
   return (
@@ -855,17 +873,56 @@ export default function ScottishMapPage() {
         <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Search constituencies</div>
         <input
           type="text"
-          list="scotland-constituency-list"
           value={searchValue}
           onChange={event => handleSearchChange(event.target.value)}
           placeholder="Search constituencies"
-          style={{ width: '100%', padding: '0.5rem 0.6rem' }}
+          style={{
+            display: 'block',
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
+            padding: '0.6rem 0.75rem',
+            borderRadius: '10px',
+            border: '1px solid rgba(248, 250, 252, 0.18)',
+            fontSize: '0.95rem',
+          }}
         />
-        <datalist id="scotland-constituency-list">
-          {constituencyNames.map(name => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
+        {constituencySearchResults.length > 0 ? (
+          <div
+            style={{
+              marginTop: '0.5rem',
+              border: '1px solid rgba(248, 250, 252, 0.1)',
+              borderRadius: '10px',
+              padding: '0.4rem',
+              display: 'grid',
+              gap: '0.25rem',
+              background: '#0d1118',
+            }}
+          >
+            {constituencySearchResults.map(name => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => handleSearchSelect(name)}
+                style={{
+                  textAlign: 'left',
+                  padding: '0.5rem 0.65rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--poll-nav-ink)',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontWeight: 600 }}>{name}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--poll-nav-muted)' }}>
+                  Scottish constituency
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
       <div className="poll-card" style={{ height: '86vh', minHeight: '860px', overflow: 'hidden' }}>
         <div className="poll-map-layout" style={{ height: '100%' }}>
@@ -913,18 +970,23 @@ export default function ScottishMapPage() {
               Back to UK overview
             </button>
           </div>
-          <div className="poll-card poll-map-panel" style={{ height: '100%' }}>
+          <div className="poll-map-panel" style={{ height: '100%' }}>
             {constituencyGeo && regionGeo ? (
               <div className="poll-map-frame" style={{ height: '100%' }}>
                 <ScottishParliamentMap
                   constituencyGeo={constituencyGeo}
                   regionGeo={regionGeo}
+                  countriesGeo={countriesGeo}
+                  onSelectCountry={country => {
+                    if (country === 'england') void router.push('/local-2026', undefined, { scroll: false })
+                    if (country === 'wales') void router.push('/welsh-map', undefined, { scroll: false })
+                  }}
                   constituencyResults={projectedResults}
                   focusFeature={focusFeature as any}
                 />
               </div>
             ) : (
-              <div className="poll-muted">Loading map...</div>
+              <div className="poll-map-frame poll-map-frame--placeholder" style={{ height: '100%' }} />
             )}
           </div>
         </div>

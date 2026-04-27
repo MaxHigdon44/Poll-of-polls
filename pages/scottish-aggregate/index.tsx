@@ -196,13 +196,14 @@ export default function ScottishAggregatePage() {
       <TopNav
         title="Poll of Polls"
         items={MAIN_TOPNAV_ITEMS}
-        subtitle="Scottish Polling Average"
+        subtitle="Scottish Parliament Polling Average"
         subtitleStyle={{ fontSize: '1.5rem', color: '#172033' }}
       />
-      <AggregateCard title="Scottish Constituency Voting Average" aggregate={constituencyAggregate} />
-      <AggregateCard title="Scottish Regional Voting Average" aggregate={regionalAggregate} />
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
+        <AggregateCard title="Scottish Constituency Voting Average" aggregate={constituencyAggregate} />
+        <AggregateCard title="Scottish Regional Voting Average" aggregate={regionalAggregate} />
+      </div>
       <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Updated on request.</div>
     </PageShell>
   )
 }
-

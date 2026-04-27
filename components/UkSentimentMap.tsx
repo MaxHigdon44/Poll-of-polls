@@ -10,33 +10,33 @@ type UkSentimentMapProps = {
   legendTitle?: string
   legendMinLabel?: string
   legendMaxLabel?: string
-  colorMode?: 'green' | 'purple' | 'yellow' | 'pink'
+  colorMode?: 'green' | 'purple' | 'yellow' | 'pink' | 'blue' | 'orange' | 'red' | 'magenta'
   regionDisplayMap?: Record<string, { label: string; value: number }>
   rangeMin?: number
   rangeMax?: number
   valueLabel?: string
+  noDataLabel?: string
 }
 
 function supportToColor(
   value: number,
-  mode: 'green' | 'purple' | 'yellow' | 'pink',
+  mode: 'green' | 'purple' | 'yellow' | 'pink' | 'blue' | 'orange' | 'red' | 'magenta',
   min: number,
   max: number
 ) {
   const clamped = Math.max(min, Math.min(max, value))
   const t = (clamped - min) / (max - min || 1)
-  const lightness = 96 - t * 80
-  if (mode === 'purple') {
-    return `hsl(270, 70%, ${lightness}%)`
-  }
-  if (mode === 'yellow') {
-    return `hsl(48, 85%, ${lightness}%)`
-  }
-  if (mode === 'pink') {
-    const pinkLightness = 98 - t * 100
-    return `hsl(330, 85%, ${pinkLightness}%)`
-  }
-  return `hsl(128, 70%, ${lightness}%)`
+  const ramp = (hue: number, saturation: number, start: number, end: number) =>
+    `hsl(${hue}, ${saturation}%, ${start - t * (start - end)}%)`
+
+  if (mode === 'purple') return ramp(270, 74, 97, 26)
+  if (mode === 'yellow') return ramp(46, 94, 97, 30)
+  if (mode === 'pink') return ramp(336, 88, 98, 28)
+  if (mode === 'blue') return ramp(210, 82, 97, 27)
+  if (mode === 'orange') return ramp(28, 94, 97, 28)
+  if (mode === 'red') return ramp(2, 86, 97, 28)
+  if (mode === 'magenta') return ramp(312, 82, 97, 27)
+  return ramp(128, 72, 97, 28)
 }
 
 function normalizeRegionName(name: string) {
@@ -48,11 +48,15 @@ function FitToUK({ countriesGeo }: { countriesGeo: FeatureCollection | null }) {
   const map = useMap()
 
   useEffect(() => {
-    if (!countriesGeo) return
-    const layer = L.geoJSON(countriesGeo as GeoJsonObject)
-    const bounds = layer.getBounds()
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20] })
+    try {
+      if (!countriesGeo || !(map as any)._loaded) return
+      const layer = L.geoJSON(countriesGeo as GeoJsonObject)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20], animate: false })
+      }
+    } catch {
+      // Ignore transient Leaflet DOM positioning errors during unmounts.
     }
   }, [map, countriesGeo])
 
@@ -71,6 +75,7 @@ export default function UkSentimentMap({
   rangeMin,
   rangeMax,
   valueLabel = 'Support',
+  noDataLabel = 'Not enough data',
 }: UkSentimentMapProps) {
   const min = rangeMin ?? 0
   const max = rangeMax ?? 100
@@ -80,10 +85,17 @@ export default function UkSentimentMap({
     regionDisplayMap?.[regionName]?.label ?? regionName
   return (
     <div style={{ position: 'relative', height: '100%' }}>
-      <MapContainer center={[54.2, -2.5]} zoom={5} style={{ height: '100%', width: '100%' }}>
+      <MapContainer
+        center={[54.2, -2.5]}
+        zoom={5}
+        zoomAnimation={false}
+        fadeAnimation={false}
+        markerZoomAnimation={false}
+        style={{ height: '100%', width: '100%' }}
+      >
         <TileLayer
-          attribution="&copy; OpenStreetMap contributors"
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+          url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
         />
         {countriesGeo && (
           <GeoJSON
@@ -112,7 +124,7 @@ export default function UkSentimentMap({
                   `<strong>${label}</strong><br/>${valueLabel}: ${support.toFixed(1)}%`
                 )
               } else {
-                layer.bindPopup(`<strong>${label}</strong>`)
+                layer.bindPopup(`<strong>${label}</strong><br/>${noDataLabel}`)
               }
             }}
           />
@@ -139,7 +151,7 @@ export default function UkSentimentMap({
                   `<strong>${label}</strong><br/>${valueLabel}: ${support.toFixed(1)}%`
                 )
               } else {
-                layer.bindPopup(`<strong>${label}</strong>`)
+                layer.bindPopup(`<strong>${label}</strong><br/>${noDataLabel}`)
               }
             }}
           />
@@ -152,13 +164,13 @@ export default function UkSentimentMap({
           top: '14px',
           right: '14px',
           zIndex: 1000,
-          background: '#ffffff',
-          border: '1px solid rgba(15, 23, 42, 0.12)',
+          background: 'rgba(11, 14, 19, 0.92)',
+          border: '1px solid rgba(248, 250, 252, 0.16)',
           borderRadius: '12px',
           padding: '10px 12px',
-          boxShadow: '0 10px 24px rgba(15, 23, 42, 0.12)',
+          boxShadow: '0 10px 24px rgba(0, 0, 0, 0.34)',
           fontSize: '0.85rem',
-          color: '#172033',
+          color: '#f8fafc',
         }}
       >
         <div style={{ fontWeight: 600, marginBottom: '0.4rem', whiteSpace: 'pre-line' }}>

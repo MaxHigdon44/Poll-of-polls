@@ -224,8 +224,8 @@ const SCOTLAND_REGIONAL_LIST_DELTAS: Record<string, Record<string, number>> = {
   },
   glasgow: {
     SNP: 3.7,
-    Conservative: 3.7,
-    Labour: -6.17,
+    Conservative: -6.17,
+    Labour: 3.7,
     'Liberal Democrat': -4.63,
     Green: 8.43,
     Reform: -0.07,
@@ -344,7 +344,7 @@ function computeScottishPollWeight(poll: Poll) {
   )
 }
 
-function computeConstituencyAggregate(polls: Poll[]) {
+export function computeConstituencyAggregate(polls: Poll[]) {
   if (polls.length === 0) return null
   const totals = {
     snp: 0,
@@ -384,7 +384,7 @@ function computeConstituencyAggregate(polls: Poll[]) {
   }
 }
 
-function computeRegionalAggregate(polls: Poll[]) {
+export function computeRegionalAggregate(polls: Poll[]) {
   if (polls.length === 0) return null
   const totals = {
     snp: 0,
@@ -456,6 +456,334 @@ function allocateRegionalSeats(
     regionalSeats[bestParty] = (regionalSeats[bestParty] || 0) + 1
   }
   return regionalSeats
+}
+
+export function computeScottishProjectedResults(args: {
+  constituencyAggregate: ReturnType<typeof computeConstituencyAggregate> | null
+  constituencyResults: Map<string, any>
+  geLookup: GePconLookup | null
+  spcToWpcByName: Map<string, { code: string; name: string }>
+  spcCodeByName: Map<string, string>
+  wpcLeaveLookup: ScotlandWpcLeaveLookup | null
+  tenureLookup: ScotlandTenureLookup | null
+  ageLookup: ScotlandAgeLookup | null
+  degreeLookup: ScotlandDegreeLookup | null
+  nssecLookup: ScotlandNssecLookup | null
+  geBlendWeight: number
+  tenureStrength: number
+  ageStrength: number
+  degreeStrength: number
+  nssecStrength: number
+  leaveStrength: number
+  regionStrength: number
+}) {
+  const {
+    constituencyAggregate,
+    constituencyResults,
+    geLookup,
+    spcToWpcByName,
+    spcCodeByName,
+    wpcLeaveLookup,
+    tenureLookup,
+    ageLookup,
+    degreeLookup,
+    nssecLookup,
+    geBlendWeight,
+    tenureStrength,
+    ageStrength,
+    degreeStrength,
+    nssecStrength,
+    leaveStrength,
+    regionStrength,
+  } = args
+  if (!constituencyAggregate) return constituencyResults
+  const tenureBaseline: ScotlandTenureShare = tenureLookup?.meta?.baseline || {
+    owned: 0,
+    socialRented: 0,
+    privateRented: 0,
+  }
+  const ageBaseline: ScotlandAgeShare = ageLookup?.meta?.baseline || {
+    age16_34: 0,
+    age35_54: 0,
+    age55_plus: 0,
+  }
+  const degreeBaseline: ScotlandDegreeShare = degreeLookup?.meta?.baseline || {
+    degree: 0,
+    noDegree: 0,
+  }
+  const nssecBaseline: ScotlandNssecShare = nssecLookup?.meta?.baseline || {
+    higher: 0,
+    intermediate: 0,
+    lower: 0,
+  }
+  const deltas = {
+    snp: constituencyAggregate.snp - BASELINE_2021_CONSTITUENCY.snp,
+    conservative: constituencyAggregate.conservative - BASELINE_2021_CONSTITUENCY.conservative,
+    labour: constituencyAggregate.labour - BASELINE_2021_CONSTITUENCY.labour,
+    libdem: constituencyAggregate.libdem - BASELINE_2021_CONSTITUENCY.libdem,
+    green: constituencyAggregate.green - BASELINE_2021_CONSTITUENCY.green,
+    reform: constituencyAggregate.reform - SCOTLAND_GE2024_REFORM_BASELINE,
+    other: constituencyAggregate.other - BASELINE_2021_CONSTITUENCY.other,
+  }
+  const map = new Map(constituencyResults)
+  for (const [name, result] of map.entries()) {
+    const normalizedName = normalizeScottishConstituencyName(name)
+    const wpcInfo = spcToWpcByName.get(normalizedName)
+    const wpcCode = wpcInfo?.code
+    const wpcName = wpcInfo?.name
+    const geShares = wpcCode ? geLookup?.pcon?.[wpcCode] : null
+    const wpcLeaveByCode = wpcCode ? wpcLeaveLookup?.byCode?.[wpcCode] : null
+    const wpcLeaveByName = wpcName ? wpcLeaveLookup?.byName?.[normalizeWestminsterName(wpcName)] : null
+    const leaveShare = wpcLeaveByCode?.leaveShare ?? wpcLeaveByName?.leaveShare ?? null
+    const spcCode = spcCodeByName.get(normalizedName)
+    const tenureShare = (spcCode && tenureLookup?.constituencies?.[spcCode]) || tenureBaseline
+    const ageShare = (spcCode && ageLookup?.constituencies?.[spcCode]) || ageBaseline
+    const degreeShare = (spcCode && degreeLookup?.constituencies?.[spcCode]) || degreeBaseline
+    const nssecShare = (spcCode && nssecLookup?.constituencies?.[spcCode]) || nssecBaseline
+    const regionKey = normalizeRegionName(result.region)
+    const regionAdjustments = SCOTLAND_REGION_DELTAS[regionKey] || {}
+    const adjustedLeaveShare = clampLeaveShare(
+      typeof leaveShare === 'number' ? leaveShare : SCOTLAND_NATIONAL_LEAVE_SHARE
+    )
+    const tenureAdjustments = {
+      snp: getScottishTenureAdjustment('SNP', tenureShare, tenureBaseline),
+      conservative: getScottishTenureAdjustment('Conservative', tenureShare, tenureBaseline),
+      labour: getScottishTenureAdjustment('Labour', tenureShare, tenureBaseline),
+      libdem: getScottishTenureAdjustment('Liberal Democrat', tenureShare, tenureBaseline),
+      green: getScottishTenureAdjustment('Green', tenureShare, tenureBaseline),
+      reform: getScottishTenureAdjustment('Reform', tenureShare, tenureBaseline),
+    }
+    const ageAdjustments = {
+      snp: getScottishAgeAdjustment('SNP', ageShare, ageBaseline),
+      conservative: getScottishAgeAdjustment('Conservative', ageShare, ageBaseline),
+      labour: getScottishAgeAdjustment('Labour', ageShare, ageBaseline),
+      libdem: getScottishAgeAdjustment('Liberal Democrat', ageShare, ageBaseline),
+      green: getScottishAgeAdjustment('Green', ageShare, ageBaseline),
+      reform: getScottishAgeAdjustment('Reform', ageShare, ageBaseline),
+    }
+    const degreeAdjustments = {
+      snp: getScottishDegreeAdjustment('SNP', degreeShare, degreeBaseline),
+      conservative: getScottishDegreeAdjustment('Conservative', degreeShare, degreeBaseline),
+      labour: getScottishDegreeAdjustment('Labour', degreeShare, degreeBaseline),
+      libdem: getScottishDegreeAdjustment('Liberal Democrat', degreeShare, degreeBaseline),
+      green: getScottishDegreeAdjustment('Green', degreeShare, degreeBaseline),
+      reform: getScottishDegreeAdjustment('Reform', degreeShare, degreeBaseline),
+    }
+    const nssecAdjustments = {
+      snp: getScottishNssecAdjustment('SNP', nssecShare, nssecBaseline),
+      conservative: getScottishNssecAdjustment('Conservative', nssecShare, nssecBaseline),
+      labour: getScottishNssecAdjustment('Labour', nssecShare, nssecBaseline),
+      libdem: getScottishNssecAdjustment('Liberal Democrat', nssecShare, nssecBaseline),
+      green: getScottishNssecAdjustment('Green', nssecShare, nssecBaseline),
+      reform: getScottishNssecAdjustment('Reform', nssecShare, nssecBaseline),
+    }
+    const leaveAdjustments = {
+      snp: getCenteredScottishPartyLeaveAdjustment('SNP', adjustedLeaveShare),
+      conservative: getCenteredScottishPartyLeaveAdjustment('Conservative', adjustedLeaveShare),
+      labour: getCenteredScottishPartyLeaveAdjustment('Labour', adjustedLeaveShare),
+      libdem: getCenteredScottishPartyLeaveAdjustment('Liberal Democrat', adjustedLeaveShare),
+      green: getCenteredScottishPartyLeaveAdjustment('Green', adjustedLeaveShare),
+      reform: getCenteredScottishPartyLeaveAdjustment('Reform', adjustedLeaveShare),
+    }
+    const baseShares = {
+      snp: result.shares.snp ?? 0,
+      conservative: result.shares.conservative ?? 0,
+      labour: result.shares.labour ?? 0,
+      libdem: result.shares.libdem ?? 0,
+      green: result.shares.green ?? 0,
+      reform: result.shares.reform ?? 0,
+      other: result.shares.other ?? 0,
+    }
+    const blendedBase = {
+      snp: geShares?.SNP != null ? blendShare(baseShares.snp, geShares.SNP, geBlendWeight) : baseShares.snp,
+      conservative:
+        geShares?.Conservative != null
+          ? blendShare(baseShares.conservative, geShares.Conservative, geBlendWeight)
+          : baseShares.conservative,
+      labour:
+        geShares?.Labour != null ? blendShare(baseShares.labour, geShares.Labour, geBlendWeight) : baseShares.labour,
+      libdem:
+        geShares?.['Liberal Democrat'] != null
+          ? blendShare(baseShares.libdem, geShares['Liberal Democrat'], geBlendWeight)
+          : baseShares.libdem,
+      green: geShares?.Green != null ? blendShare(baseShares.green, geShares.Green, geBlendWeight) : baseShares.green,
+      reform:
+        baseShares.reform === 0
+          ? getRelativeScottishReformShare(geShares?.Reform)
+          : geShares?.Reform != null
+            ? blendShare(baseShares.reform, geShares.Reform, geBlendWeight)
+            : baseShares.reform,
+      other: baseShares.other,
+    }
+    const swingApplied = {
+      snp: blendedBase.snp + deltas.snp,
+      conservative: blendedBase.conservative + deltas.conservative,
+      labour: blendedBase.labour + deltas.labour,
+      libdem: blendedBase.libdem + deltas.libdem,
+      green: blendedBase.green + deltas.green,
+      reform: blendedBase.reform + deltas.reform,
+      other: blendedBase.other + deltas.other,
+    }
+    const projectedRaw = {
+      snp: Math.max(
+        0,
+        swingApplied.snp +
+          tenureStrength * tenureAdjustments.snp +
+          ageStrength * ageAdjustments.snp +
+          degreeStrength * degreeAdjustments.snp +
+          nssecStrength * nssecAdjustments.snp +
+          leaveStrength * leaveAdjustments.snp +
+          regionStrength * (regionAdjustments.SNP ?? 0)
+      ),
+      conservative: Math.max(
+        0,
+        swingApplied.conservative +
+          tenureStrength * tenureAdjustments.conservative +
+          ageStrength * ageAdjustments.conservative +
+          degreeStrength * degreeAdjustments.conservative +
+          nssecStrength * nssecAdjustments.conservative +
+          leaveStrength * leaveAdjustments.conservative +
+          regionStrength * (regionAdjustments.Conservative ?? 0)
+      ),
+      labour: Math.max(
+        0,
+        swingApplied.labour +
+          tenureStrength * tenureAdjustments.labour +
+          ageStrength * ageAdjustments.labour +
+          degreeStrength * degreeAdjustments.labour +
+          nssecStrength * nssecAdjustments.labour +
+          leaveStrength * leaveAdjustments.labour +
+          regionStrength * (regionAdjustments.Labour ?? 0)
+      ),
+      libdem: Math.max(
+        0,
+        swingApplied.libdem +
+          tenureStrength * tenureAdjustments.libdem +
+          ageStrength * ageAdjustments.libdem +
+          degreeStrength * degreeAdjustments.libdem +
+          nssecStrength * nssecAdjustments.libdem +
+          leaveStrength * leaveAdjustments.libdem +
+          regionStrength * (regionAdjustments['Liberal Democrat'] ?? 0)
+      ),
+      green: Math.max(
+        0,
+        swingApplied.green +
+          tenureStrength * tenureAdjustments.green +
+          ageStrength * ageAdjustments.green +
+          degreeStrength * degreeAdjustments.green +
+          nssecStrength * nssecAdjustments.green +
+          leaveStrength * leaveAdjustments.green +
+          regionStrength * (regionAdjustments.Green ?? 0)
+      ),
+      reform: Math.max(
+        0,
+        swingApplied.reform +
+          tenureStrength * tenureAdjustments.reform +
+          ageStrength * ageAdjustments.reform +
+          degreeStrength * degreeAdjustments.reform +
+          nssecStrength * nssecAdjustments.reform +
+          leaveStrength * leaveAdjustments.reform +
+          regionStrength * (regionAdjustments.Reform ?? 0)
+      ),
+      other: Math.max(0, swingApplied.other),
+    }
+    const total = Object.values(projectedRaw).reduce((sum, value) => sum + value, 0) || 1
+    const projected = {
+      snp: (projectedRaw.snp / total) * 100,
+      conservative: (projectedRaw.conservative / total) * 100,
+      labour: (projectedRaw.labour / total) * 100,
+      libdem: (projectedRaw.libdem / total) * 100,
+      green: (projectedRaw.green / total) * 100,
+      reform: (projectedRaw.reform / total) * 100,
+      other: (projectedRaw.other / total) * 100,
+    }
+    const projectedWinner = Object.entries(projected).sort((a, b) => b[1] - a[1])[0]?.[0] || null
+    const projectedWinnerLabel =
+      projectedWinner === 'snp'
+        ? 'SNP'
+        : projectedWinner === 'conservative'
+          ? 'Conservative'
+          : projectedWinner === 'labour'
+            ? 'Labour'
+            : projectedWinner === 'libdem'
+              ? 'Liberal Democrat'
+              : projectedWinner === 'green'
+                ? 'Green'
+                : projectedWinner === 'reform'
+                  ? 'Reform'
+                  : projectedWinner === 'other'
+                    ? 'Other'
+                    : null
+    map.set(name, { ...result, projected, projectedWinner: projectedWinnerLabel })
+  }
+  return map
+}
+
+export function computeScottishCombinedSeatCounts(args: {
+  constituencyList: Array<{ name: string; region: string; previousWinner2021: string | null }>
+  projectedResults: Map<string, any>
+  regionalAggregate: ReturnType<typeof computeRegionalAggregate> | null
+}) {
+  const { constituencyList, projectedResults, regionalAggregate } = args
+  const constituencyWinners = constituencyList.map(entry => {
+    const result =
+      projectedResults.get(entry.name) ||
+      projectedResults.get(normalizeScottishConstituencyName(entry.name))
+    return { ...entry, projectedWinner: result?.projectedWinner || 'Unknown' }
+  })
+  const constituencySeatsByRegion = new Map<string, Record<string, number>>()
+  constituencyWinners.forEach(entry => {
+    const regionKey = normalizeRegionName(entry.region || 'Unknown')
+    if (!constituencySeatsByRegion.has(regionKey)) constituencySeatsByRegion.set(regionKey, {})
+    const bucket = constituencySeatsByRegion.get(regionKey) as Record<string, number>
+    const party = entry.projectedWinner || 'Unknown'
+    bucket[party] = (bucket[party] || 0) + 1
+  })
+  const regionalVotesByRegion = new Map<string, Record<string, number>>()
+  if (regionalAggregate) {
+    REGION_LABELS.forEach(({ key }) => {
+      const adjustments = SCOTLAND_REGIONAL_LIST_DELTAS[key] || {}
+      const raw = {
+        SNP: Math.max(0, regionalAggregate.snp + (adjustments.SNP ?? 0)),
+        Conservative: Math.max(0, regionalAggregate.conservative + (adjustments.Conservative ?? 0)),
+        Labour: Math.max(0, regionalAggregate.labour + (adjustments.Labour ?? 0)),
+        'Liberal Democrat': Math.max(0, regionalAggregate.libdem + (adjustments['Liberal Democrat'] ?? 0)),
+        Green: Math.max(0, regionalAggregate.green + (adjustments.Green ?? 0)),
+        Reform: Math.max(0, regionalAggregate.reform + (adjustments.Reform ?? 0)),
+        Other: Math.max(0, regionalAggregate.other),
+      }
+      const total = Object.values(raw).reduce((sum, value) => sum + value, 0) || 1
+      regionalVotesByRegion.set(key, {
+        SNP: (raw.SNP / total) * 100,
+        Conservative: (raw.Conservative / total) * 100,
+        Labour: (raw.Labour / total) * 100,
+        'Liberal Democrat': (raw['Liberal Democrat'] / total) * 100,
+        Green: (raw.Green / total) * 100,
+        Reform: (raw.Reform / total) * 100,
+        Other: (raw.Other / total) * 100,
+      })
+    })
+  }
+  const constituencySeatCounts: Record<string, number> = {}
+  constituencyWinners.forEach(entry => {
+    const winner = entry.projectedWinner || 'Unknown'
+    constituencySeatCounts[winner] = (constituencySeatCounts[winner] || 0) + 1
+  })
+  const regionalSeatCounts: Record<string, number> = {}
+  REGION_LABELS.forEach(({ key }) => {
+    const votes = regionalVotesByRegion.get(key)
+    if (!votes) return
+    const constituencySeats = constituencySeatsByRegion.get(key) || {}
+    const seats = allocateRegionalSeats(votes, constituencySeats)
+    Object.entries(seats).forEach(([party, count]) => {
+      regionalSeatCounts[party] = (regionalSeatCounts[party] || 0) + count
+    })
+  })
+  const combinedSeatCounts: Record<string, number> = { ...constituencySeatCounts }
+  Object.entries(regionalSeatCounts).forEach(([party, count]) => {
+    combinedSeatCounts[party] = (combinedSeatCounts[party] || 0) + count
+  })
+  return combinedSeatCounts
 }
 
 function getRelativeScottishReformShare(geShare: number | undefined) {
@@ -941,18 +1269,18 @@ export default function ScottishParliamentProjectionPage() {
     REGION_LABELS.forEach(({ key }) => {
       const adjustments = SCOTLAND_REGIONAL_LIST_DELTAS[key] || {}
       const raw = {
-        SNP: Math.max(0, regionalAggregate.snp + regionStrength * (adjustments.SNP ?? 0)),
+        SNP: Math.max(0, regionalAggregate.snp + (adjustments.SNP ?? 0)),
         Conservative: Math.max(
           0,
-          regionalAggregate.conservative + regionStrength * (adjustments.Conservative ?? 0)
+          regionalAggregate.conservative + (adjustments.Conservative ?? 0)
         ),
-        Labour: Math.max(0, regionalAggregate.labour + regionStrength * (adjustments.Labour ?? 0)),
+        Labour: Math.max(0, regionalAggregate.labour + (adjustments.Labour ?? 0)),
         'Liberal Democrat': Math.max(
           0,
-          regionalAggregate.libdem + regionStrength * (adjustments['Liberal Democrat'] ?? 0)
+          regionalAggregate.libdem + (adjustments['Liberal Democrat'] ?? 0)
         ),
-        Green: Math.max(0, regionalAggregate.green + regionStrength * (adjustments.Green ?? 0)),
-        Reform: Math.max(0, regionalAggregate.reform + regionStrength * (adjustments.Reform ?? 0)),
+        Green: Math.max(0, regionalAggregate.green + (adjustments.Green ?? 0)),
+        Reform: Math.max(0, regionalAggregate.reform + (adjustments.Reform ?? 0)),
         Other: Math.max(0, regionalAggregate.other),
       }
       const total = Object.values(raw).reduce((sum, value) => sum + value, 0) || 1
@@ -967,7 +1295,7 @@ export default function ScottishParliamentProjectionPage() {
       })
     })
     return map
-  }, [regionalAggregate, regionStrength])
+  }, [regionalAggregate])
 
 
   const regionalSeatsByRegion = useMemo(() => {
@@ -1079,7 +1407,6 @@ export default function ScottishParliamentProjectionPage() {
       />
       <div className="poll-card poll-stack">
         <div className="poll-muted">
-          Constituency projections are filled first (currently {constituencyWinners.length} seats).
           Regional list seats are allocated using the d’Hondt method.
         </div>
       </div>
@@ -1098,12 +1425,14 @@ export default function ScottishParliamentProjectionPage() {
             {hemicycleDots.map((dot, index) => (
               <circle
                 key={`${dot.party}-${index}`}
+                className="poll-hemicycle-seat"
                 cx={dot.x}
                 cy={dot.y}
                 r={5.5}
                 fill={SCOTTISH_PARTY_COLORS[dot.party] || '#ccc'}
                 stroke="rgba(0,0,0,0.08)"
                 strokeWidth="1"
+                style={{ animationDelay: `${index * 14}ms` }}
               >
                 <title>{dot.party}</title>
               </circle>
@@ -1129,7 +1458,7 @@ export default function ScottishParliamentProjectionPage() {
                     }}
                   />
                   <span style={{ fontWeight: 600 }}>{item.party}</span>
-                  <span style={{ color: '#555' }}>{item.count}</span>
+                  <span style={{ color: 'var(--poll-nav-muted)' }}>{item.count}</span>
                   <span style={{ color: deltaColor }}>({deltaLabel})</span>
                 </div>
               )
@@ -1137,7 +1466,7 @@ export default function ScottishParliamentProjectionPage() {
           </div>
         </div>
       </div>
-      <div className="poll-card poll-stack">
+      <div className="poll-card poll-stack poll-projection-card">
         <div className="poll-section-title">Projected Constituencies by Region</div>
         <div style={{ display: 'grid', gap: '1.5rem' }}>
           {regionGroups.map(([region, entries]) => (
@@ -1148,14 +1477,15 @@ export default function ScottishParliamentProjectionPage() {
               <div style={{ display: 'grid', gap: '0.35rem' }}>
                 {entries.map(entry => (
                   <div
+                    className="poll-projection-row"
                     key={entry.name}
                     style={{
                       display: 'grid',
                       gridTemplateColumns: '1fr 160px 160px',
                       gap: '0.75rem',
                       alignItems: 'center',
-                      padding: '0.35rem 0',
-                      borderBottom: '1px solid #f0f0f0',
+                      padding: '0.45rem 0.6rem',
+                      borderBottom: '1px solid rgba(248, 250, 252, 0.1)',
                     }}
                   >
                     <a
@@ -1184,7 +1514,7 @@ export default function ScottishParliamentProjectionPage() {
                         <span style={{ fontWeight: 600, color: SCOTTISH_PARTY_COLORS[party] || '#333' }}>
                           {party}
                         </span>
-                        <span style={{ color: '#555' }}>{count}</span>
+                        <span style={{ color: 'var(--poll-nav-muted)' }}>{count}</span>
                       </div>
                     ))}
                 </div>
@@ -1192,6 +1522,17 @@ export default function ScottishParliamentProjectionPage() {
             </div>
           ))}
         </div>
+      </div>
+      <div className="poll-note">
+        For more information on how the Scottish Parliament electoral system works, please click{' '}
+        <a
+          href="https://www.parliament.scot/-/media/files/spice/factsheets/parliamentary-business/scottish-parliament-electoral-system-12-may-2021.pdf"
+          target="_blank"
+          rel="noreferrer"
+        >
+          here
+        </a>
+        .
       </div>
     </PageShell>
   )

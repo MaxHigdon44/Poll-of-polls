@@ -5,6 +5,7 @@ import L from 'leaflet'
 
 type WelshSeneddMapProps = {
   constituencyGeo: FeatureCollection
+  countriesGeo?: FeatureCollection | null
   projectedResults: Map<
     string,
     {
@@ -24,17 +25,36 @@ type WelshSeneddMapProps = {
     } | null
   }) => void
   selectedName?: string | null
+  onSelectCountry?: (country: 'england' | 'scotland' | 'wales') => void
 }
 
 function FitToWales({ constituencyGeo }: { constituencyGeo: FeatureCollection }) {
   const map = useMap()
+  const lastBoundsKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
-    const layer = L.geoJSON(constituencyGeo as GeoJsonObject)
-    const bounds = layer.getBounds()
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20] })
-      map.setMaxBounds(bounds.pad(0.1))
+    try {
+      if (!(map as any)._loaded) return
+      const layer = L.geoJSON(constituencyGeo as GeoJsonObject)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        const southWest = bounds.getSouthWest()
+        const northEast = bounds.getNorthEast()
+        const nextKey = [southWest.lat, southWest.lng, northEast.lat, northEast.lng]
+          .map(value => value.toFixed(4))
+          .join('|')
+        if (lastBoundsKeyRef.current === nextKey) return
+        lastBoundsKeyRef.current = nextKey
+        map.flyToBounds(bounds, {
+          padding: [20, 20],
+          animate: true,
+          duration: 0.35,
+          easeLinearity: 0.2,
+        })
+        map.setMaxBounds(bounds.pad(0.1))
+      }
+    } catch {
+      // Ignore transient Leaflet DOM positioning errors during unmounts.
     }
   }, [map, constituencyGeo])
 
@@ -49,6 +69,7 @@ function FocusSelectedConstituency({
   selectedName?: string | null
 }) {
   const map = useMap()
+  const lastBoundsKeyRef = useRef<string | null>(null)
 
   const selectedFeature = useMemo(() => {
     if (!selectedName) return null
@@ -66,11 +87,27 @@ function FocusSelectedConstituency({
   }, [constituencyGeo.features, selectedName])
 
   useEffect(() => {
-    if (!selectedFeature) return
-    const layer = L.geoJSON(selectedFeature as GeoJsonObject)
-    const bounds = layer.getBounds()
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20] })
+    try {
+      if (!selectedFeature || !(map as any)._loaded) return
+      const layer = L.geoJSON(selectedFeature as GeoJsonObject)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        const southWest = bounds.getSouthWest()
+        const northEast = bounds.getNorthEast()
+        const nextKey = [southWest.lat, southWest.lng, northEast.lat, northEast.lng]
+          .map(value => value.toFixed(4))
+          .join('|')
+        if (lastBoundsKeyRef.current === nextKey) return
+        lastBoundsKeyRef.current = nextKey
+        map.flyToBounds(bounds, {
+          padding: [20, 20],
+          animate: true,
+          duration: 0.35,
+          easeLinearity: 0.2,
+        })
+      }
+    } catch {
+      // Ignore transient Leaflet DOM positioning errors during unmounts.
     }
   }, [map, selectedFeature])
 
@@ -97,6 +134,99 @@ function getWinnerColor(winner: string | null) {
   if (winner === 'Reform') return '#12B6CF'
   if (winner === 'Green') return '#02A95B'
   return '#9a9a9a'
+}
+
+function escapeLabel(value: string) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function FeatureNameLabels({
+  features,
+  getLabel,
+  minZoom,
+  className,
+}: {
+  features: any[]
+  getLabel: (feature: any) => string
+  minZoom: number
+  className: string
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    const markers: L.Marker[] = []
+    const collides = (
+      box: { left: number; right: number; top: number; bottom: number },
+      boxes: Array<{ left: number; right: number; top: number; bottom: number }>
+    ) =>
+      boxes.some(
+        other =>
+          box.left < other.right &&
+          box.right > other.left &&
+          box.top < other.bottom &&
+          box.bottom > other.top
+      )
+    const getLayerCenter = (bounds: L.LatLngBounds) => {
+      const northWest = map.latLngToLayerPoint(bounds.getNorthWest())
+      const southEast = map.latLngToLayerPoint(bounds.getSouthEast())
+      return L.point((northWest.x + southEast.x) / 2, (northWest.y + southEast.y) / 2)
+    }
+    const estimateBox = (label: string, point: L.Point) => {
+      const width = Math.min(94, Math.max(34, label.length * 4.8 + 10))
+      const lines = Math.max(1, Math.ceil((label.length * 4.8) / width))
+      const height = Math.min(42, lines * 8 + 8)
+      return {
+        left: point.x - width / 2,
+        right: point.x + width / 2,
+        top: point.y - height / 2,
+        bottom: point.y + height / 2,
+      }
+    }
+    const clear = () => {
+      while (markers.length) markers.pop()?.remove()
+    }
+    const render = () => {
+      clear()
+      if (!(map as any)._loaded || map.getZoom() < minZoom) return
+      const occupied: Array<{ left: number; right: number; top: number; bottom: number }> = []
+      features.forEach(feature => {
+        const label = getLabel(feature)
+        if (!label) return
+        const bounds = L.geoJSON(feature as GeoJsonObject).getBounds()
+        if (!bounds.isValid()) return
+        const point = getLayerCenter(bounds)
+        const box = estimateBox(label, point)
+        if (collides(box, occupied)) return
+        occupied.push(box)
+        markers.push(
+          L.marker(map.layerPointToLatLng(point), {
+            interactive: false,
+            icon: L.divIcon({
+              className: `poll-map-div-label ${className}`,
+              html: escapeLabel(label),
+              iconAnchor: [0, 0],
+              iconSize: [0, 0],
+            }),
+          }).addTo(map)
+        )
+      })
+    }
+    render()
+    map.on('zoomend', render)
+    map.on('moveend', render)
+    return () => {
+      map.off('zoomend', render)
+      map.off('moveend', render)
+      clear()
+    }
+  }, [map, features, getLabel, minZoom, className])
+
+  return null
 }
 
 const PARTY_COLORS: Record<string, string> = {
@@ -203,9 +333,11 @@ function findInteriorPoint(feature: any) {
 
 export default function WelshSeneddMap({
   constituencyGeo,
+  countriesGeo,
   projectedResults,
   onSelectConstituency,
   selectedName,
+  onSelectCountry,
 }: WelshSeneddMapProps) {
   const geoKey = `senedd-${constituencyGeo.features.length}-${projectedResults.size}`
   const selectedRef = useRef<L.Path | null>(null)
@@ -217,26 +349,66 @@ export default function WelshSeneddMap({
     'Ceredigion Penfro': 'Ceredigion Penifro',
     'Sir Gaerfyrddin': 'Sir Gaerfyrddin',
   }
+  const countryClickFeatures =
+    countriesGeo?.features.filter(feature => {
+      const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
+      return name === 'england' || name === 'scotland'
+    }) || []
+  const countryBoundaryStyle = (feature?: any) => {
+    const name = String(feature?.properties?.CTRY22NM || '').toLowerCase()
+    const isUkCountry = name === 'england' || name === 'scotland' || name === 'wales'
+    return {
+      color: isUkCountry ? '#f8fafc' : 'transparent',
+      weight: isUkCountry ? 1.6 : 0,
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      opacity: isUkCountry ? 0.9 : 0,
+    }
+  }
 
   return (
     <MapContainer
       center={[52.2, -3.7]}
       zoom={7}
+      zoomAnimation
+      fadeAnimation
+      markerZoomAnimation
+      preferCanvas
       style={{ height: '100%', width: '100%' }}
     >
       <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
+      {countriesGeo?.features?.length ? (
+        <GeoJSON data={countriesGeo as GeoJsonObject} style={countryBoundaryStyle} interactive={false} />
+      ) : null}
+      {onSelectCountry && countryClickFeatures.length ? (
+        <GeoJSON
+          data={{ type: 'FeatureCollection', features: countryClickFeatures } as GeoJsonObject}
+          style={() => ({
+            color: 'transparent',
+            weight: 0,
+            fillColor: '#ffffff',
+            fillOpacity: 0.01,
+          })}
+          onEachFeature={(feature, layer) => {
+            const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
+            if (name === 'england' || name === 'scotland') {
+              layer.on('click', () => onSelectCountry(name))
+            }
+          }}
+        />
+      ) : null}
       <GeoJSON
         key={geoKey}
         data={constituencyGeo as GeoJsonObject}
         style={feature => {
           if (!feature) {
             return {
-              color: '#2D3A52',
+              color: '#dbeafe',
               weight: 1.2,
-              fillColor: '#e2e2e2',
+              fillColor: '#1d2636',
               fillOpacity: 0.35,
             }
           }
@@ -250,7 +422,7 @@ export default function WelshSeneddMap({
             ? normalizeWelshName(selectedName) === normalizedDisplay
             : false
           return {
-            color: isSelected ? '#111' : '#2D3A52',
+            color: isSelected ? '#ffffff' : '#f8fafc',
             weight: isSelected ? 4.5 : 1.2,
             fillColor: getWinnerColor(result?.projectedWinner || null),
             fillOpacity: isSelected ? 0.6 : 0.45,
@@ -265,13 +437,13 @@ export default function WelshSeneddMap({
           const baselineLines = result
             ? Object.entries(result.baseline)
                 .sort((a, b) => b[1] - a[1])
-                .map(([party, value]) => `${party}: ${value.toFixed(1)}%`)
+                .map(([party, value]) => `${party}: ${Math.round(value)}%`)
                 .join('<br/>')
             : ''
           const projectedLines = result
             ? Object.entries(result.projected)
                 .sort((a, b) => b[1] - a[1])
-                .map(([party, value]) => `${party}: ${value.toFixed(1)}%`)
+                .map(([party, value]) => `${party}: ${Math.round(value)}%`)
                 .join('<br/>')
             : ''
           const seatLines = result?.seats
@@ -329,6 +501,16 @@ export default function WelshSeneddMap({
             }
           }
 
+        }}
+      />
+      <FeatureNameLabels
+        features={constituencyGeo.features}
+        minZoom={6}
+        className="poll-map-div-label--seat"
+        getLabel={feature => {
+          const props: any = feature.properties || {}
+          const rawName = props.english_na || props.enw_cymrae || ''
+          return nameOverrides[rawName] || rawName
         }}
       />
       <FitToWales constituencyGeo={constituencyGeo} />

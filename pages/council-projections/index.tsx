@@ -223,6 +223,22 @@ const PARTY_COLORS: Record<string, string> = {
   Other: '#9a9a9a',
 }
 
+const CONTROL_PARTIES = new Set([
+  'Labour',
+  'Conservative',
+  'Reform',
+  'Liberal Democrat',
+  'Green',
+  'SNP',
+  'Plaid Cymru',
+  'Independent',
+])
+
+function getControlTextColor(party: string | null) {
+  if (!party || !CONTROL_PARTIES.has(party)) return '#f8fafc'
+  return PARTY_COLORS[party] || '#f8fafc'
+}
+
 function normalizeName(value: string | undefined | null) {
   return String(value || '')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -1657,12 +1673,13 @@ export default function CouncilProjectionsPage() {
       {!rows.length ? (
         <div style={{ color: '#777' }}>Loading council projections…</div>
       ) : (
-        <div style={{ border: '1px solid #eee', borderRadius: 8, overflow: 'hidden' }}>
+        <div className="poll-projection-card" style={{ border: '1px solid var(--poll-border)', borderRadius: 8, overflow: 'hidden' }}>
           <div
+            className="poll-projection-header"
             style={{
               display: 'grid',
               gridTemplateColumns: '2fr 1fr 1fr',
-              background: '#f7f7f7',
+              background: '#11151d',
               padding: '0.75rem 1rem',
               fontWeight: 600,
             }}
@@ -1676,13 +1693,8 @@ export default function CouncilProjectionsPage() {
                 const projectedParty = mapControlToParty(projectedLabel)
                 const previousLabel = row.previousControl || 'Unknown'
                 const previousParty = mapControlToParty(previousLabel)
-                const projectedColor =
-                  projectedLabel === 'No overall control'
-                    ? '#111'
-                    : PARTY_COLORS[projectedParty || 'Other'] || '#333'
-                const previousIsNoc = normalizeName(previousLabel).includes('no overall control')
-                const previousColor =
-                  previousIsNoc ? '#111' : PARTY_COLORS[previousParty || 'Other'] || '#333'
+                const projectedColor = getControlTextColor(projectedParty)
+                const previousColor = getControlTextColor(previousParty)
                 return (
             <a
               key={row.ladCode}
@@ -1690,11 +1702,12 @@ export default function CouncilProjectionsPage() {
               style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
             >
               <div
+                className="poll-projection-row"
                 style={{
                   display: 'grid',
                   gridTemplateColumns: '2fr 1fr 1fr',
                   padding: '0.75rem 1rem',
-                  borderTop: '1px solid #eee',
+                  borderTop: '1px solid rgba(248, 250, 252, 0.1)',
                   cursor: 'pointer',
                 }}
               >

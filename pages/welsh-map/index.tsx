@@ -41,6 +41,7 @@ export default function WelshMapPage() {
   const embedParam = router.query.embed
   const isEmbed = embedParam === '1' || (Array.isArray(embedParam) && embedParam[0] === '1')
   const [constituencyGeo, setConstituencyGeo] = useState<FeatureCollection | null>(null)
+  const [countriesGeo, setCountriesGeo] = useState<FeatureCollection | null>(null)
   const [lookup, setLookup] = useState<any>(null)
   const [gePcon, setGePcon] = useState<any>(null)
   const [polls, setPolls] = useState<any[]>([])
@@ -77,6 +78,10 @@ export default function WelshMapPage() {
     )
       .then(res => res.json())
       .then(data => setConstituencyGeo(data))
+    fetch(`/data/uk-countries-2022.geojson?_=${cacheBust}`)
+      .then(res => res.json())
+      .then(setCountriesGeo)
+      .catch(() => setCountriesGeo(null))
     fetch(`/data/senedd-to-wpc-lookup.json?_=${cacheBust}`)
       .then(res => res.json())
       .then(data => setLookup(data))
@@ -456,6 +461,14 @@ export default function WelshMapPage() {
     [constituencyNameIndex]
   )
 
+  const constituencySearchResults = useMemo(() => {
+    const query = normalizeWelshName(searchValue)
+    if (query.length < 2) return []
+    return constituencyNames
+      .filter(name => normalizeWelshName(name).includes(query))
+      .slice(0, 6)
+  }, [constituencyNames, searchValue])
+
   const handleSearchChange = (value: string) => {
     setSearchValue(value)
     const match = constituencyNameIndex.get(normalizeWelshName(value))
@@ -464,6 +477,13 @@ export default function WelshMapPage() {
       const result = projectedResults.get(key) || null
       setSelectedSeat({ name: match, result })
     }
+  }
+
+  const handleSearchSelect = (name: string) => {
+    setSearchValue(name)
+    const key = normalizeWelshName(name)
+    const result = projectedResults.get(key) || null
+    setSelectedSeat({ name, result })
   }
 
   useEffect(() => {
@@ -488,17 +508,56 @@ export default function WelshMapPage() {
         <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Search constituencies</div>
         <input
           type="text"
-          list="welsh-constituency-list"
           value={searchValue}
           onChange={event => handleSearchChange(event.target.value)}
           placeholder="Search constituencies"
-          style={{ width: '100%', padding: '0.5rem 0.6rem' }}
+          style={{
+            display: 'block',
+            width: '100%',
+            maxWidth: '100%',
+            minWidth: 0,
+            boxSizing: 'border-box',
+            padding: '0.6rem 0.75rem',
+            borderRadius: '10px',
+            border: '1px solid rgba(248, 250, 252, 0.18)',
+            fontSize: '0.95rem',
+          }}
         />
-        <datalist id="welsh-constituency-list">
-          {constituencyNames.map(name => (
-            <option key={name} value={name} />
-          ))}
-        </datalist>
+        {constituencySearchResults.length > 0 ? (
+          <div
+            style={{
+              marginTop: '0.5rem',
+              border: '1px solid rgba(248, 250, 252, 0.1)',
+              borderRadius: '10px',
+              padding: '0.4rem',
+              display: 'grid',
+              gap: '0.25rem',
+              background: '#0d1118',
+            }}
+          >
+            {constituencySearchResults.map(name => (
+              <button
+                key={name}
+                type="button"
+                onClick={() => handleSearchSelect(name)}
+                style={{
+                  textAlign: 'left',
+                  padding: '0.5rem 0.65rem',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: 'var(--poll-nav-ink)',
+                  cursor: 'pointer',
+                }}
+              >
+                <div style={{ fontWeight: 600 }}>{name}</div>
+                <div style={{ fontSize: '0.82rem', color: 'var(--poll-nav-muted)' }}>
+                  Welsh constituency
+                </div>
+              </button>
+            ))}
+          </div>
+        ) : null}
       </div>
       <div className="poll-card" style={{ height: '86vh', minHeight: '860px', overflow: 'hidden' }}>
         <div className="poll-map-layout" style={{ height: '100%' }}>
@@ -516,7 +575,7 @@ export default function WelshMapPage() {
                       .map(([party, value]) => (
                         <div key={`baseline-${party}`} style={{ display: 'flex', gap: '0.5rem' }}>
                           <span>{party}:</span>
-                          <span>{value.toFixed(1)}%</span>
+                          <span>{Math.round(value)}%</span>
                         </div>
                       ))}
                     <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>
@@ -527,7 +586,7 @@ export default function WelshMapPage() {
                       .map(([party, value]) => (
                         <div key={`projected-${party}`} style={{ display: 'flex', gap: '0.5rem' }}>
                           <span>{party}:</span>
-                          <span>{value.toFixed(1)}%</span>
+                          <span>{Math.round(value)}%</span>
                         </div>
                       ))}
                     <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>
@@ -606,18 +665,23 @@ export default function WelshMapPage() {
               </>
             )}
           </div>
-          <div className="poll-card poll-map-panel" style={{ height: '100%' }}>
+          <div className="poll-map-panel" style={{ height: '100%' }}>
             {constituencyGeo ? (
               <div className="poll-map-frame" style={{ height: '100%' }}>
                 <WelshSeneddMap
                   constituencyGeo={constituencyGeo}
+                  countriesGeo={countriesGeo}
                   projectedResults={projectedResults}
                   onSelectConstituency={setSelectedSeat}
                   selectedName={selectedSeat?.name || null}
+                  onSelectCountry={country => {
+                    if (country === 'england') void router.push('/local-2026', undefined, { scroll: false })
+                    if (country === 'scotland') void router.push('/scottish-map', undefined, { scroll: false })
+                  }}
                 />
               </div>
             ) : (
-              <div className="poll-muted">Loading map...</div>
+              <div className="poll-map-frame poll-map-frame--placeholder" style={{ height: '100%' }} />
             )}
           </div>
         </div>

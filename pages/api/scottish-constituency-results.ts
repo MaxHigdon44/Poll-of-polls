@@ -45,6 +45,90 @@ function normalizePartyLabel(value: string | null) {
   return value
 }
 
+export async function loadScottishConstituencyResults() {
+  const response = await fetch(SOURCE_URL, {
+    headers: {
+      'User-Agent': 'PollOfPollsBot/1.0 (contact: local-dev)',
+    },
+  })
+  if (!response.ok) {
+    throw new Error(`Failed to fetch source: ${response.status} ${response.statusText}`)
+  }
+
+  const html = await response.text()
+  const $ = load(html)
+  const heading = $('h2')
+    .filter((_, el) =>
+      $(el).text().replace(/\s+/g, ' ').trim().toLowerCase().includes('results by constituency')
+    )
+    .first()
+
+  let table = heading.nextAll('table.wikitable').first()
+  if (!table.length) {
+    const wrapper = heading.closest('div.mw-heading')
+    if (wrapper.length) {
+      table = wrapper.nextUntil('div.mw-heading2').filter('table.wikitable').first()
+    }
+  }
+  if (!table.length) {
+    throw new Error('Could not find constituency results table')
+  }
+
+  const rows: ScottishConstituencyResult[] = []
+  const rowSpans: Array<{ text: string; remaining: number }> = []
+  table.find('tr').each((_, row) => {
+    const cells = $(row).find('th, td').toArray()
+    if (!cells.length) return
+    const values: string[] = []
+    let col = 0
+    cells.forEach(cell => {
+      while (rowSpans[col]?.remaining) {
+        values[col] = rowSpans[col].text
+        rowSpans[col].remaining -= 1
+        col += 1
+      }
+      const text = cleanText($(cell).text()) || ''
+      const colSpan = Number($(cell).attr('colspan') || 1)
+      const rowSpan = Number($(cell).attr('rowspan') || 1)
+      for (let i = 0; i < colSpan; i += 1) {
+        values[col] = text
+        if (rowSpan > 1) {
+          rowSpans[col] = { text, remaining: rowSpan - 1 }
+        }
+        col += 1
+      }
+    })
+    while (rowSpans[col]?.remaining) {
+      values[col] = rowSpans[col].text
+      rowSpans[col].remaining -= 1
+      col += 1
+    }
+    const constituency = values[0] || null
+    if (!constituency || constituency === 'Constituency' || constituency === 'Total') return
+    if (values.length < 15) return
+
+    rows.push({
+      constituency,
+      region: values[1] || '',
+      previousWinner2016: normalizePartyLabel(values[3] || null),
+      winner2021: normalizePartyLabel(values[5] || null),
+      msp2021: values[6] || null,
+      majority: toNumber(values[7]),
+      turnout: toNumber(values[8]),
+      shares: {
+        snp: toNumber(values[9]),
+        conservative: toNumber(values[10]),
+        labour: toNumber(values[11]),
+        libdem: toNumber(values[12]),
+        green: toNumber(values[13]),
+        other: toNumber(values[14]),
+      },
+    })
+  })
+
+  return { sourceUrl: SOURCE_URL, results: rows }
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
@@ -52,94 +136,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const response = await fetch(SOURCE_URL, {
-      headers: {
-        'User-Agent': 'PollOfPollsBot/1.0 (contact: local-dev)',
-      },
-    })
-    if (!response.ok) {
-      throw new Error(`Failed to fetch source: ${response.status} ${response.statusText}`)
-    }
-
-    const html = await response.text()
-    const $ = load(html)
-    const heading = $('h2')
-      .filter((_, el) =>
-        $(el).text().replace(/\s+/g, ' ').trim().toLowerCase().includes('results by constituency')
-      )
-      .first()
-
-    let table = heading.nextAll('table.wikitable').first()
-    if (!table.length) {
-      const wrapper = heading.closest('div.mw-heading')
-      if (wrapper.length) {
-        table = wrapper.nextUntil('div.mw-heading2').filter('table.wikitable').first()
-      }
-    }
-    if (!table.length) {
-      throw new Error('Could not find constituency results table')
-    }
-
-    const rows: ScottishConstituencyResult[] = []
-    const rowSpans: Array<{ text: string; remaining: number }> = []
-    table.find('tr').each((_, row) => {
-      const cells = $(row).find('th, td').toArray()
-      if (!cells.length) return
-      const values: string[] = []
-      let col = 0
-      cells.forEach(cell => {
-        while (rowSpans[col]?.remaining) {
-          values[col] = rowSpans[col].text
-          rowSpans[col].remaining -= 1
-          col += 1
-        }
-        const text = cleanText($(cell).text()) || ''
-        const colSpan = Number($(cell).attr('colspan') || 1)
-        const rowSpan = Number($(cell).attr('rowspan') || 1)
-        for (let i = 0; i < colSpan; i += 1) {
-          values[col] = text
-          if (rowSpan > 1) {
-            rowSpans[col] = { text, remaining: rowSpan - 1 }
-          }
-          col += 1
-        }
-      })
-      while (rowSpans[col]?.remaining) {
-        values[col] = rowSpans[col].text
-        rowSpans[col].remaining -= 1
-        col += 1
-      }
-      const constituency = values[0] || null
-      if (!constituency || constituency === 'Constituency' || constituency === 'Total') return
-      if (values.length < 15) return
-
-      // Wikipedia Results by constituency table structure:
-      // 0 Constituency, 1 Region, 3 2016 winner, 5 2021 winner, 6 MSP,
-      // 7 Majority, 8 Turnout, 9-14 Constituency vote share (SNP, Con, Lab, LD, Grn, Other)
-      rows.push({
-        constituency,
-        region: values[1] || '',
-        previousWinner2016: normalizePartyLabel(values[3] || null),
-        winner2021: normalizePartyLabel(values[5] || null),
-        msp2021: values[6] || null,
-        majority: toNumber(values[7]),
-        turnout: toNumber(values[8]),
-        shares: {
-          snp: toNumber(values[9]),
-          conservative: toNumber(values[10]),
-          labour: toNumber(values[11]),
-          libdem: toNumber(values[12]),
-          green: toNumber(values[13]),
-          other: toNumber(values[14]),
-        },
-      })
-    })
-
+    const { sourceUrl, results } = await loadScottishConstituencyResults()
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400')
-    return res.status(200).json({
-      sourceUrl: SOURCE_URL,
-      results: rows,
-    })
+    return res.status(200).json({ sourceUrl, results })
   } catch (err) {
     console.error(err)
     return res.status(500).json({ error: 'Failed to load Scottish constituency results' })

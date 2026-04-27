@@ -11,11 +11,15 @@ function FitToUK({ countriesGeo }: { countriesGeo: FeatureCollection | null }) {
   const map = useMap()
 
   useEffect(() => {
-    if (!countriesGeo) return
-    const layer = L.geoJSON(countriesGeo as GeoJsonObject)
-    const bounds = layer.getBounds()
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20] })
+    try {
+      if (!countriesGeo || !(map as any)._loaded) return
+      const layer = L.geoJSON(countriesGeo as GeoJsonObject)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20], animate: false })
+      }
+    } catch {
+      // Ignore transient Leaflet DOM positioning errors during unmounts.
     }
   }, [map, countriesGeo])
 
@@ -24,19 +28,26 @@ function FitToUK({ countriesGeo }: { countriesGeo: FeatureCollection | null }) {
 
 export default function UkBlankMap({ countriesGeo }: UkBlankMapProps) {
   return (
-    <MapContainer center={[54.2, -2.5]} zoom={5} style={{ height: '100%', width: '100%' }}>
+    <MapContainer
+      center={[54.2, -2.5]}
+      zoom={5}
+      zoomAnimation={false}
+      fadeAnimation={false}
+      markerZoomAnimation={false}
+      style={{ height: '100%', width: '100%' }}
+    >
       <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
       {countriesGeo && (
         <GeoJSON
           data={countriesGeo as GeoJsonObject}
           style={() => ({
-            color: '#394b63',
+            color: '#dbeafe',
             weight: 1.2,
-            fillColor: '#cfd6e6',
-            fillOpacity: 0.6,
+            fillColor: '#1d2636',
+            fillOpacity: 0.35,
           })}
         />
       )}

@@ -191,7 +191,7 @@ export default function WelshAggregatePage() {
       <TopNav
         title="Poll of Polls"
         items={MAIN_TOPNAV_ITEMS}
-        subtitle="Welsh Polling Average"
+        subtitle="Senedd Polling Average"
         subtitleStyle={{ fontSize: '1.5rem', color: '#172033' }}
       />
       <AggregateCard title="Welsh Voting Average" aggregate={aggregate} />

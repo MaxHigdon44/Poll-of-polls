@@ -1482,7 +1482,7 @@ export default function CouncilProjectionsPage() {
       <TopNav
         title="May 2025 Council Projections"
         items={MAIN_TOPNAV_ITEMS}
-        subtitle="Councils up for election in May 2025 with model projected control and actual result."
+        subtitle="May 2025 Council Projections"
       />
 
       {hasMounted && process.env.NODE_ENV !== 'production' && (

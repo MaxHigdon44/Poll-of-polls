@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { GeoJSON, MapContainer, TileLayer, useMap } from 'react-leaflet'
 import type { GeoJsonObject } from 'geojson'
 import type { Feature, FeatureCollection } from 'geojson'
@@ -21,9 +21,32 @@ const PARTY_COLORS: Record<string, string> = {
   Independent: '#9a9a9a',
 }
 
+function formatDisplayPartyLabel(party: string) {
+  const trimmed = String(party || '').trim()
+  if (!trimmed) return trimmed
+  const knownLabels = new Set([
+    'Labour',
+    'Conservative',
+    'Reform',
+    'Liberal Democrat',
+    'Green',
+    'SNP',
+    'Plaid Cymru',
+    'Other',
+    'Independent',
+  ])
+  if (knownLabels.has(trimmed)) return trimmed
+
+  if (trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed)) {
+    return trimmed.charAt(0) + trimmed.slice(1).toLowerCase()
+  }
+  return trimmed
+}
+
 type LocalMapProps = {
   baseGeo?: GeoCollection | null
   countriesGeo?: GeoCollection | null
+  onSelectCountry?: (country: 'england' | 'scotland' | 'wales') => void
   ladGeo: GeoCollection
   overlayAreas?: GeoCollection | null
   boundaryAreas?: GeoCollection | null
@@ -74,6 +97,9 @@ type LocalMapProps = {
   selectedLad: string | null
   selectedLadFeature: GeoFeature | null
   onSelectLad: (lad: string | null) => void
+  focusedWardLadCode?: string | null
+  focusedWardCode?: string | null
+  focusedWardNameKey?: string | null
   eligibleLads: Set<string>
   ladCategoryByCode: Map<string, 'county' | 'district' | 'london' | 'metro' | 'unitary'>
   nonContestedLabel?: string
@@ -89,7 +115,7 @@ function FitBounds({ feature }: { feature: GeoFeature | null }) {
       const layer = L.geoJSON(feature as GeoJsonObject)
       const bounds = layer.getBounds()
       if (bounds && bounds.isValid()) {
-        map.fitBounds(bounds, { padding: [20, 20] })
+        map.fitBounds(bounds, { padding: [28, 28], animate: false })
       }
     } catch {
       // ignore transient leaflet unmount errors
@@ -186,6 +212,51 @@ function InvalidateSize({ deps }: { deps: Array<unknown> }) {
     }, 0)
     return () => window.clearTimeout(id)
   }, [map, ...deps])
+  return null
+}
+
+function FocusWardPopup({
+  selectedLad,
+  targetLadCode,
+  wardCode,
+  wardNameKey,
+  layerVersion,
+}: {
+  selectedLad: string | null
+  targetLadCode?: string | null
+  wardCode?: string | null
+  wardNameKey?: string | null
+  layerVersion: number
+}) {
+  const map = useMap()
+  useEffect(() => {
+    if (!wardCode && !wardNameKey) return
+    if (targetLadCode && selectedLad !== targetLadCode) return
+    const id = window.setTimeout(() => {
+      try {
+        if (!map || !(map as any)._loaded) return
+        let targetLayer: any = null
+        map.eachLayer((layer: any) => {
+          const feature = layer?.feature as GeoFeature | undefined
+          if (!feature) return
+          const code = getWardCode(feature)
+          const nameKey = getWardNameKey(feature)
+          if ((wardCode && code === wardCode) || (wardNameKey && nameKey === wardNameKey)) {
+            targetLayer = layer
+          }
+        })
+        if (!targetLayer) return
+        const bounds = targetLayer.getBounds?.()
+        if (bounds?.isValid?.()) {
+          map.fitBounds(bounds, { padding: [36, 36], animate: false })
+        }
+        targetLayer.openPopup?.()
+      } catch {
+        // ignore transient leaflet layer swap errors
+      }
+    }, 320)
+    return () => window.clearTimeout(id)
+  }, [map, selectedLad, targetLadCode, wardCode, wardNameKey, layerVersion])
   return null
 }
 
@@ -300,10 +371,104 @@ function getElectedParties(
   return { seatAllocation, electedParties }
 }
 
+function escapeLabel(value: string) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function FeatureNameLabels({
+  features,
+  getLabel,
+  minZoom,
+  className,
+}: {
+  features: GeoFeature[]
+  getLabel: (feature: GeoFeature) => string
+  minZoom: number
+  className: string
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    const markers: L.Marker[] = []
+    const collides = (
+      box: { left: number; right: number; top: number; bottom: number },
+      boxes: Array<{ left: number; right: number; top: number; bottom: number }>
+    ) =>
+      boxes.some(
+        other =>
+          box.left < other.right &&
+          box.right > other.left &&
+          box.top < other.bottom &&
+          box.bottom > other.top
+      )
+    const getLayerCenter = (bounds: L.LatLngBounds) => {
+      const northWest = map.latLngToLayerPoint(bounds.getNorthWest())
+      const southEast = map.latLngToLayerPoint(bounds.getSouthEast())
+      return L.point((northWest.x + southEast.x) / 2, (northWest.y + southEast.y) / 2)
+    }
+    const estimateBox = (label: string, point: L.Point) => {
+      const width = Math.min(78, Math.max(28, label.length * 4.4 + 8))
+      const lines = Math.max(1, Math.ceil((label.length * 4.4) / width))
+      const height = Math.min(36, lines * 7 + 7)
+      return {
+        left: point.x - width / 2,
+        right: point.x + width / 2,
+        top: point.y - height / 2,
+        bottom: point.y + height / 2,
+      }
+    }
+    const clear = () => {
+      while (markers.length) markers.pop()?.remove()
+    }
+    const render = () => {
+      clear()
+      if (!(map as any)._loaded || map.getZoom() < minZoom) return
+      const occupied: Array<{ left: number; right: number; top: number; bottom: number }> = []
+      features.forEach(feature => {
+        const label = getLabel(feature)
+        if (!label) return
+        const bounds = L.geoJSON(feature as GeoJsonObject).getBounds()
+        if (!bounds.isValid()) return
+        const point = getLayerCenter(bounds)
+        const box = estimateBox(label, point)
+        if (collides(box, occupied)) return
+        occupied.push(box)
+        markers.push(
+          L.marker(map.layerPointToLatLng(point), {
+            interactive: false,
+            icon: L.divIcon({
+              className: `poll-map-div-label ${className}`,
+              html: escapeLabel(label),
+              iconAnchor: [0, 0],
+              iconSize: [0, 0],
+            }),
+          }).addTo(map)
+        )
+      })
+    }
+    render()
+    map.on('zoomend', render)
+    map.on('moveend', render)
+    return () => {
+      map.off('zoomend', render)
+      map.off('moveend', render)
+      clear()
+    }
+  }, [map, features, getLabel, minZoom, className])
+
+  return null
+}
+
 export default function LocalMap({
   ladGeo,
   baseGeo,
   countriesGeo,
+  onSelectCountry,
   overlayAreas,
   boundaryAreas,
   overlayAreaCodes,
@@ -320,11 +485,16 @@ export default function LocalMap({
   selectedLad,
   selectedLadFeature,
   onSelectLad,
+  focusedWardLadCode,
+  focusedWardCode,
+  focusedWardNameKey,
   eligibleLads,
   ladCategoryByCode,
   nonContestedLabel = 'Not contested',
-  previousWinnerLabel = 'Previous winner',
+  previousWinnerLabel = 'Incumbent',
 }: LocalMapProps) {
+  const pendingSelectionRef = useRef<number | null>(null)
+
   useEffect(() => {
     const prevAutoPan = L.Popup.prototype.options.autoPan
     const prevKeepInView = (L.Popup.prototype.options as any).keepInView
@@ -335,6 +505,43 @@ export default function LocalMap({
       ;(L.Popup.prototype.options as any).keepInView = prevKeepInView
     }
   }, [])
+
+  useEffect(() => {
+    return () => {
+      if (pendingSelectionRef.current != null) {
+        window.clearTimeout(pendingSelectionRef.current)
+      }
+    }
+  }, [])
+
+  const selectLadWithCamera = (ladCode: string, event: any) => {
+    if (pendingSelectionRef.current != null) {
+      window.clearTimeout(pendingSelectionRef.current)
+    }
+    const layer = event?.sourceTarget || event?.target
+    const map = layer?._map
+    const bounds = layer?.getBounds?.()
+    if (map && bounds?.isValid?.()) {
+      try {
+        map.stop?.()
+        map.closePopup?.()
+        map.flyToBounds(bounds, {
+          padding: [34, 34],
+          animate: true,
+          duration: 0.36,
+          easeLinearity: 0.18,
+        })
+        pendingSelectionRef.current = window.setTimeout(() => {
+          pendingSelectionRef.current = null
+          onSelectLad(ladCode)
+        }, 260)
+        return
+      } catch {
+        // Fall back to immediate selection if the map is between layer states.
+      }
+    }
+    onSelectLad(ladCode)
+  }
   const countyFeatures = ladGeo.features.filter(feature => {
     const code = feature.properties?.reference
     return code && ladCategoryByCode.get(code) === 'county'
@@ -440,24 +647,30 @@ export default function LocalMap({
   })
 
   const baseStyle = () => ({
-    color: '#1f2a44',
-    weight: 1.5,
-    fillColor: '#c4c4c4',
-    fillOpacity: 0.7,
-    opacity: 0.98,
+    color: 'transparent',
+    weight: 0,
+    fillColor: 'transparent',
+    fillOpacity: 0,
+    opacity: 0,
   })
 
-  const overlayStyleForCountries = (feature?: GeoFeature) => {
+  const countryBoundaryStyle = (feature?: GeoFeature) => {
     const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
-    const isNi = name === 'northern ireland'
+    const isUkCountry = name === 'england' || name === 'scotland' || name === 'wales'
     return {
-      color: isNi ? 'transparent' : '#1f2a44',
-      weight: isNi ? 0 : 2,
+      color: isUkCountry ? '#f8fafc' : 'transparent',
+      weight: isUkCountry ? 1.6 : 0,
       fillColor: 'transparent',
       fillOpacity: 0,
-      opacity: isNi ? 0 : 0.98,
+      opacity: isUkCountry ? 0.9 : 0,
     }
   }
+
+  const countryClickFeatures =
+    countriesGeo?.features.filter(feature => {
+      const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
+      return name === 'scotland' || name === 'wales'
+    }) || []
 
   const overlayStyle = () => ({
     color: 'transparent',
@@ -477,10 +690,10 @@ export default function LocalMap({
   const wardStyle = (feature?: GeoFeature) => {
     if (!feature) {
       return {
-        color: '#333',
+        color: '#f8fafc',
         weight: 0.5,
-        fillColor: '#ccc',
-        fillOpacity: 0.7,
+        fillColor: '#1d2636',
+        fillOpacity: 0.45,
       }
     }
     const wardCode = getWardCode(feature)
@@ -518,7 +731,7 @@ export default function LocalMap({
       const id = ensurePartyStripePattern(primaryColor, secondaryColor)
       if (id) {
         return {
-          color: '#333',
+          color: '#f8fafc',
           weight: 0.5,
           fillColor: `url(#${id})`,
           fillOpacity: 0.7,
@@ -526,7 +739,7 @@ export default function LocalMap({
       }
     }
     return {
-      color: '#333',
+      color: '#f8fafc',
       weight: 0.5,
       fillColor: color,
       fillOpacity: 0.7,
@@ -579,12 +792,14 @@ export default function LocalMap({
         const seats = seatAllocation[entry.party] || 0
         const suffix =
           electedParties.length >= 2 && seats > 0 ? ` (${getSeatAllocationLabel(seats)})` : ''
-        return `${entry.party}: ${entry.value.toFixed(1)}%${suffix}`
+        return `${formatDisplayPartyLabel(entry.party)}: ${Math.round(entry.value)}%${suffix}`
       })
       .join('<br/>')
-    const prev = projection.prevWinner ? `${previousWinnerLabel}: ${projection.prevWinner}` : null
+    const prev = projection.prevWinner
+      ? `${previousWinnerLabel}: ${formatDisplayPartyLabel(projection.prevWinner)}`
+      : null
     layer.bindPopup(
-      `<strong>${wardName}</strong><br/>${popupLines}<br/>Seats up: ${vacancies}${
+      `<strong>${wardName}</strong><br/><br/>Projected Vote Share:<br/>${popupLines}<br/><br/>Seats up: ${vacancies}${
         prev ? `<br/>${prev}` : ''
       }`,
       { autoPan: false }
@@ -596,17 +811,24 @@ export default function LocalMap({
       center={[53.7, -1.4]}
       zoom={6}
       style={{ height: '100%', width: '100%' }}
-      zoomAnimation={false}
-      fadeAnimation={false}
-      markerZoomAnimation={false}
-      inertia={false}
+      zoomAnimation
+      fadeAnimation
+      markerZoomAnimation
+      inertia
     >
       <InvalidateSize deps={[selectedLad, wardFeatures?.length || 0, ladGeo?.features?.length || 0]} />
+      <FocusWardPopup
+        selectedLad={selectedLad}
+        targetLadCode={focusedWardLadCode}
+        wardCode={focusedWardCode}
+        wardNameKey={focusedWardNameKey}
+        layerVersion={wardFeatures.length}
+      />
       <BasePanes />
       <PatternDefs />
       <TileLayer
-        attribution='&copy; OpenStreetMap contributors'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
       {baseGeo?.features?.length ? (
         <GeoJSON data={baseGeo as GeoJsonObject} style={baseStyle} interactive={false} pane="basePane" />
@@ -614,9 +836,27 @@ export default function LocalMap({
       {countriesGeo?.features?.length ? (
         <GeoJSON
           data={countriesGeo as GeoJsonObject}
-          style={overlayStyleForCountries}
+          style={countryBoundaryStyle}
           interactive={false}
           pane="outlinePane"
+        />
+      ) : null}
+      {onSelectCountry && countryClickFeatures.length ? (
+        <GeoJSON
+          data={{ type: 'FeatureCollection', features: countryClickFeatures } as GeoJsonObject}
+          style={() => ({
+            color: 'transparent',
+            weight: 0,
+            fillColor: '#ffffff',
+            fillOpacity: 0.01,
+          })}
+          pane="outlinePane"
+          onEachFeature={(feature, layer) => {
+            const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
+            if (name === 'scotland' || name === 'wales') {
+              layer.on('click', () => onSelectCountry(name))
+            }
+          }}
         />
       ) : null}
       {!selectedLad && (
@@ -638,7 +878,7 @@ export default function LocalMap({
                       ladCode &&
                       (eligibleLads.has(ladCode) || (overlayAreaCodes && overlayAreaCodes.has(ladCode)))
                     ) {
-                      onSelectLad(ladCode)
+                      selectLadWithCamera(ladCode, event)
                     }
                   },
                 }}
@@ -657,7 +897,7 @@ export default function LocalMap({
                     ladCode &&
                     (eligibleLads.has(ladCode) || (overlayAreaCodes && overlayAreaCodes.has(ladCode)))
                   ) {
-                    onSelectLad(ladCode)
+                    selectLadWithCamera(ladCode, event)
                   }
                 },
               }}
@@ -674,7 +914,7 @@ export default function LocalMap({
               const feature = (event as any)?.sourceTarget?.feature
               const areaCode = feature?.properties?.reference
               if (areaCode) {
-                onSelectLad(areaCode)
+                selectLadWithCamera(areaCode, event)
               }
             },
           }}
@@ -696,6 +936,12 @@ export default function LocalMap({
               onEachFeature={wardOnEachFeature}
             />
           )}
+          <FeatureNameLabels
+            features={wardFeatures}
+            minZoom={10}
+            className="poll-map-div-label--ward"
+            getLabel={getWardDisplayName}
+          />
           <FitBounds feature={selectedLadFeature} />
         </>
       )}

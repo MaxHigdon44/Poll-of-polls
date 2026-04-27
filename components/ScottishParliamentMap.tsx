@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { GeoJSON, MapContainer, TileLayer, useMap } from 'react-leaflet'
 import type { GeoJsonObject } from 'geojson'
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
@@ -7,6 +7,8 @@ import L from 'leaflet'
 type ScottishParliamentMapProps = {
   constituencyGeo: FeatureCollection
   regionGeo: FeatureCollection
+  countriesGeo?: FeatureCollection | null
+  onSelectCountry?: (country: 'england' | 'scotland' | 'wales') => void
   focusFeature?: Feature<Geometry, any> | null
   constituencyResults: Map<
     string,
@@ -54,6 +56,107 @@ function normalizeScottishConstituencyName(name: string) {
     .trim()
 }
 
+function getBoundsKey(bounds: L.LatLngBounds) {
+  const southWest = bounds.getSouthWest()
+  const northEast = bounds.getNorthEast()
+  return [southWest.lat, southWest.lng, northEast.lat, northEast.lng]
+    .map(value => value.toFixed(4))
+    .join('|')
+}
+
+function escapeLabel(value: string) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+}
+
+function FeatureNameLabels({
+  features,
+  getLabel,
+  minZoom,
+  className,
+}: {
+  features: any[]
+  getLabel: (feature: any) => string
+  minZoom: number
+  className: string
+}) {
+  const map = useMap()
+
+  useEffect(() => {
+    const markers: L.Marker[] = []
+    const collides = (
+      box: { left: number; right: number; top: number; bottom: number },
+      boxes: Array<{ left: number; right: number; top: number; bottom: number }>
+    ) =>
+      boxes.some(
+        other =>
+          box.left < other.right &&
+          box.right > other.left &&
+          box.top < other.bottom &&
+          box.bottom > other.top
+      )
+    const getLayerCenter = (bounds: L.LatLngBounds) => {
+      const northWest = map.latLngToLayerPoint(bounds.getNorthWest())
+      const southEast = map.latLngToLayerPoint(bounds.getSouthEast())
+      return L.point((northWest.x + southEast.x) / 2, (northWest.y + southEast.y) / 2)
+    }
+    const estimateBox = (label: string, point: L.Point) => {
+      const width = Math.min(96, Math.max(34, label.length * 4.8 + 10))
+      const lines = Math.max(1, Math.ceil((label.length * 4.8) / width))
+      const height = Math.min(42, lines * 8 + 8)
+      return {
+        left: point.x - width / 2,
+        right: point.x + width / 2,
+        top: point.y - height / 2,
+        bottom: point.y + height / 2,
+      }
+    }
+    const clear = () => {
+      while (markers.length) markers.pop()?.remove()
+    }
+    const render = () => {
+      clear()
+      if (!(map as any)._loaded || map.getZoom() < minZoom) return
+      const occupied: Array<{ left: number; right: number; top: number; bottom: number }> = []
+      features.forEach(feature => {
+        const label = getLabel(feature)
+        if (!label) return
+        const bounds = L.geoJSON(feature as GeoJsonObject).getBounds()
+        if (!bounds.isValid()) return
+        const point = getLayerCenter(bounds)
+        const box = estimateBox(label, point)
+        if (collides(box, occupied)) return
+        occupied.push(box)
+        markers.push(
+          L.marker(map.layerPointToLatLng(point), {
+            interactive: false,
+            icon: L.divIcon({
+              className: `poll-map-div-label ${className}`,
+              html: escapeLabel(label),
+              iconAnchor: [0, 0],
+              iconSize: [0, 0],
+            }),
+          }).addTo(map)
+        )
+      })
+    }
+    render()
+    map.on('zoomend', render)
+    map.on('moveend', render)
+    return () => {
+      map.off('zoomend', render)
+      map.off('moveend', render)
+      clear()
+    }
+  }, [map, features, getLabel, minZoom, className])
+
+  return null
+}
+
 function FitToScotland({
   regionGeo,
   focusFeature,
@@ -62,20 +165,42 @@ function FitToScotland({
   focusFeature?: Feature<Geometry, any> | null
 }) {
   const map = useMap()
+  const lastBoundsKeyRef = useRef<string | null>(null)
 
   useEffect(() => {
-    if (focusFeature) {
-      const focusLayer = L.geoJSON(focusFeature as GeoJsonObject)
-      const focusBounds = focusLayer.getBounds()
-      if (focusBounds.isValid()) {
-        map.fitBounds(focusBounds, { padding: [20, 20] })
-        return
+    try {
+      if (!(map as any)._loaded) return
+      if (focusFeature) {
+        const focusLayer = L.geoJSON(focusFeature as GeoJsonObject)
+        const focusBounds = focusLayer.getBounds()
+        if (focusBounds.isValid()) {
+          const nextKey = `focus:${getBoundsKey(focusBounds)}`
+          if (lastBoundsKeyRef.current === nextKey) return
+          lastBoundsKeyRef.current = nextKey
+          map.flyToBounds(focusBounds, {
+            padding: [20, 20],
+            animate: true,
+            duration: 0.35,
+            easeLinearity: 0.2,
+          })
+          return
+        }
       }
-    }
-    const layer = L.geoJSON(regionGeo as GeoJsonObject)
-    const bounds = layer.getBounds()
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20] })
+      const layer = L.geoJSON(regionGeo as GeoJsonObject)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        const nextKey = `regions:${getBoundsKey(bounds)}`
+        if (lastBoundsKeyRef.current === nextKey) return
+        lastBoundsKeyRef.current = nextKey
+        map.flyToBounds(bounds, {
+          padding: [20, 20],
+          animate: true,
+          duration: 0.35,
+          easeLinearity: 0.2,
+        })
+      }
+    } catch {
+      // Ignore transient Leaflet DOM positioning errors during unmounts.
     }
   }, [map, regionGeo, focusFeature])
 
@@ -85,6 +210,8 @@ function FitToScotland({
 export default function ScottishParliamentMap({
   constituencyGeo,
   regionGeo,
+  countriesGeo,
+  onSelectCountry,
   focusFeature,
   constituencyResults,
 }: ScottishParliamentMapProps) {
@@ -93,7 +220,7 @@ export default function ScottishParliamentMap({
       .filter(([, value]) => value != null)
       .map(([party, value]) => [party, Number(value)] as [string, number])
       .sort((a, b) => b[1] - a[1])
-      .map(([party, value]) => `${party}: ${value.toFixed(1)}%`)
+      .map(([party, value]) => `${party}: ${Math.round(value)}%`)
       .join('<br/>')
   }
 
@@ -107,24 +234,68 @@ export default function ScottishParliamentMap({
     return '#9a9a9a'
   }
 
+  const countryClickFeatures =
+    countriesGeo?.features.filter(feature => {
+      const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
+      return name === 'england' || name === 'wales'
+    }) || []
+
+  const countryBoundaryStyle = (feature?: any) => {
+    const name = String(feature?.properties?.CTRY22NM || '').toLowerCase()
+    const isUkCountry = name === 'england' || name === 'scotland' || name === 'wales'
+    return {
+      color: isUkCountry ? '#f8fafc' : 'transparent',
+      weight: isUkCountry ? 1.6 : 0,
+      fillColor: 'transparent',
+      fillOpacity: 0,
+      opacity: isUkCountry ? 0.9 : 0,
+    }
+  }
+
   return (
-    <MapContainer center={[56.5, -4]} zoom={6} style={{ height: '100%', width: '100%' }}>
+    <MapContainer
+      center={[56.5, -4]}
+      zoom={6}
+      zoomAnimation
+      fadeAnimation
+      markerZoomAnimation
+      preferCanvas
+      style={{ height: '100%', width: '100%' }}
+    >
       <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
+      {countriesGeo?.features?.length ? (
+        <GeoJSON data={countriesGeo as GeoJsonObject} style={countryBoundaryStyle} interactive={false} />
+      ) : null}
+      {onSelectCountry && countryClickFeatures.length ? (
+        <GeoJSON
+          data={{ type: 'FeatureCollection', features: countryClickFeatures } as GeoJsonObject}
+          style={() => ({
+            color: 'transparent',
+            weight: 0,
+            fillColor: '#ffffff',
+            fillOpacity: 0.01,
+          })}
+          onEachFeature={(feature, layer) => {
+            const name = String((feature as any)?.properties?.CTRY22NM || '').toLowerCase()
+            if (name === 'england' || name === 'wales') {
+              layer.on('click', () => onSelectCountry(name))
+            }
+          }}
+        />
+      ) : null}
       <GeoJSON
         data={regionGeo as GeoJsonObject}
         style={() => ({
-          color: '#4A6FA5',
-          weight: 3,
-          fillColor: '#9FB7D9',
-          fillOpacity: 0.18,
+          color: '#dbeafe',
+          weight: 0.8,
+          fillColor: '#1d2636',
+          fillOpacity: 0.06,
+          opacity: 0.45,
         })}
-        onEachFeature={(feature, layer) => {
-          const props: any = feature.properties || {}
-          layer.bindPopup(`<strong>${props.SPR22NM || 'Region'}</strong><br/>Code: ${props.SPR22CD || '—'}`)
-        }}
+        interactive={false}
       />
       <GeoJSON
         data={constituencyGeo as GeoJsonObject}
@@ -135,7 +306,7 @@ export default function ScottishParliamentMap({
             constituencyResults.get(constituencyName) ||
             constituencyResults.get(normalizeScottishConstituencyName(constituencyName))
           return {
-            color: '#1F2A44',
+            color: '#f8fafc',
             weight: 1,
             fillColor: getWinnerColor(result?.projectedWinner || result?.previousWinner2021 || null),
             fillOpacity: 0.45,
@@ -186,6 +357,12 @@ export default function ScottishParliamentMap({
             }`
           )
         }}
+      />
+      <FeatureNameLabels
+        features={constituencyGeo.features}
+        minZoom={6}
+        className="poll-map-div-label--seat"
+        getLabel={feature => String(feature?.properties?.SPC22NM || '')}
       />
       <FitToScotland regionGeo={regionGeo} focusFeature={focusFeature} />
     </MapContainer>

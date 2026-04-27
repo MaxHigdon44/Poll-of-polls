@@ -425,7 +425,7 @@ export default function AggregatePage() {
                           x2={trendChart.width - 20}
                           y1={y}
                           y2={y}
-                          stroke="rgba(15,23,42,0.08)"
+                          stroke="rgba(248,250,252,0.14)"
                           strokeWidth="1"
                         />
                         <text
@@ -433,7 +433,7 @@ export default function AggregatePage() {
                           y={y + 4}
                           textAnchor="end"
                           fontSize="12"
-                          fill="rgba(15,23,42,0.55)"
+                          fill="rgba(248,250,252,0.72)"
                         >
                           {formatPercentTick(value)}
                         </text>
@@ -450,7 +450,7 @@ export default function AggregatePage() {
                         y={trendChart.height - 10}
                         textAnchor={index === 0 ? 'start' : index === trendChart.series.length - 1 ? 'end' : 'middle'}
                         fontSize="12"
-                        fill="rgba(15,23,42,0.55)"
+                        fill="rgba(248,250,252,0.72)"
                       >
                         {trendChart.dateFormatter.format(new Date(row.aggregate_date))}
                       </text>

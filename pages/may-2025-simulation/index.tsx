@@ -2447,11 +2447,7 @@ export default function Local2026Page() {
       <TopNav
         title="May 2025 Simulation"
         items={MAIN_TOPNAV_ITEMS}
-        subtitle={
-          selectedCouncilName ? (
-            <span style={{ fontSize: '1.1rem', color: '#333' }}>{selectedCouncilName}</span>
-          ) : undefined
-        }
+        subtitle={selectedCouncilName}
       />
       {hasMounted && process.env.NODE_ENV !== 'production' && (
         <div
@@ -2597,7 +2593,7 @@ export default function Local2026Page() {
             </button>
           )}
         </div>
-        <div className="poll-card poll-map-panel">
+        <div className="poll-map-panel">
           {!selectedLad && (
             <div className="poll-note poll-inline-note">
               Click a council area to zoom into ward-level projections.

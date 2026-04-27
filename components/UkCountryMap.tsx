@@ -12,10 +12,15 @@ function FitToUk({ countriesGeo }: { countriesGeo: FeatureCollection }) {
   const map = useMap()
 
   useEffect(() => {
-    const layer = L.geoJSON(countriesGeo as GeoJsonObject)
-    const bounds = layer.getBounds()
-    if (bounds.isValid()) {
-      map.fitBounds(bounds, { padding: [20, 20] })
+    try {
+      if (!(map as any)._loaded) return
+      const layer = L.geoJSON(countriesGeo as GeoJsonObject)
+      const bounds = layer.getBounds()
+      if (bounds.isValid()) {
+        map.fitBounds(bounds, { padding: [20, 20], animate: false })
+      }
+    } catch {
+      // Ignore transient Leaflet DOM positioning errors during unmounts.
     }
   }, [map, countriesGeo])
 
@@ -24,10 +29,17 @@ function FitToUk({ countriesGeo }: { countriesGeo: FeatureCollection }) {
 
 export default function UkCountryMap({ countriesGeo, onSelectCountry }: UkCountryMapProps) {
   return (
-    <MapContainer center={[54.2, -2.5]} zoom={5} style={{ height: '100%', width: '100%' }}>
+    <MapContainer
+      center={[54.2, -2.5]}
+      zoom={5}
+      zoomAnimation={false}
+      fadeAnimation={false}
+      markerZoomAnimation={false}
+      style={{ height: '100%', width: '100%' }}
+    >
       <TileLayer
-        attribution="&copy; OpenStreetMap contributors"
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        attribution="&copy; OpenStreetMap contributors &copy; CARTO"
+        url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
       />
       <GeoJSON
         data={countriesGeo as GeoJsonObject}

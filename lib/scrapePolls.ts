@@ -61,10 +61,19 @@ function parseSortDate(value: string): Date | null {
   return Number.isNaN(parsed.getTime()) ? null : parsed
 }
 
-function toNumber(value: string): number | null {
-  const cleaned = value.replace('%', '').trim()
+function toPercentNumber(value: string): number | null {
+  const cleaned = value.replace(/\[\d+\]/g, '').replace(/\s+/g, ' ').trim()
   if (!cleaned) return null
-  const parsed = Number(cleaned)
+
+  const normalized = cleaned.toLowerCase()
+  if (normalized === 'n/a' || normalized === 'na' || normalized === '–' || normalized === '—' || normalized === '-') {
+    return null
+  }
+
+  const percentMatch = cleaned.match(/(\d+(?:\.\d+)?)\s*%/)
+  if (!percentMatch) return null
+
+  const parsed = Number(percentMatch[1])
   return Number.isNaN(parsed) ? null : parsed
 }
 
@@ -88,6 +97,19 @@ function cleanDateLabel(text: string): string {
 }
 
 type CheerioElement = Parameters<ReturnType<typeof load>>[0]
+
+function getVisibleCellText($: ReturnType<typeof load>, cell: CheerioElement): string {
+  const hiddenTitleText = $(cell).find('.hidden-title').first().text().trim()
+  if (hiddenTitleText) return hiddenTitleText
+
+  const clone = $(cell).clone()
+  clone.find('.hidden-content, style, script, sup.reference, link[rel="mw-deduplicated-inline-style"]').remove()
+  return clone.text()
+}
+
+function getCellPercent($: ReturnType<typeof load>, cell: CheerioElement): number | null {
+  return toPercentNumber(getVisibleCellText($, cell))
+}
 
 function selectNationalYearTables($: ReturnType<typeof load>, year: number) {
   const nationalHeading = $('h2')
@@ -263,15 +285,15 @@ export async function scrapePolls(lastMonths = 2): Promise<{
           pollster,
           sampleSize: sampleIndex >= 0 ? toSampleSize($(tds[sampleIndex]).text()) : null,
           area: areaIndex >= 0 ? $(tds[areaIndex]).text().trim() || null : null,
-          labour: columnMap.labour != null ? toNumber($(tds[columnMap.labour]).text()) : null,
+          labour: columnMap.labour != null ? getCellPercent($, tds[columnMap.labour]) : null,
           conservative:
-            columnMap.conservative != null ? toNumber($(tds[columnMap.conservative]).text()) : null,
-          libdem: columnMap.libdem != null ? toNumber($(tds[columnMap.libdem]).text()) : null,
-          green: columnMap.green != null ? toNumber($(tds[columnMap.green]).text()) : null,
-          reform: columnMap.reform != null ? toNumber($(tds[columnMap.reform]).text()) : null,
-          snp: columnMap.snp != null ? toNumber($(tds[columnMap.snp]).text()) : null,
-          pc: columnMap.pc != null ? toNumber($(tds[columnMap.pc]).text()) : null,
-          others: columnMap.others != null ? toNumber($(tds[columnMap.others]).text()) : null,
+            columnMap.conservative != null ? getCellPercent($, tds[columnMap.conservative]) : null,
+          libdem: columnMap.libdem != null ? getCellPercent($, tds[columnMap.libdem]) : null,
+          green: columnMap.green != null ? getCellPercent($, tds[columnMap.green]) : null,
+          reform: columnMap.reform != null ? getCellPercent($, tds[columnMap.reform]) : null,
+          snp: columnMap.snp != null ? getCellPercent($, tds[columnMap.snp]) : null,
+          pc: columnMap.pc != null ? getCellPercent($, tds[columnMap.pc]) : null,
+          others: columnMap.others != null ? getCellPercent($, tds[columnMap.others]) : null,
         }
 
         const hasPartyData =
@@ -348,7 +370,7 @@ function parsePollTable(
 
         const abolishValue =
           (columnMap as any).abolish != null
-            ? toNumber($(tds[(columnMap as any).abolish]).text())
+            ? getCellPercent($, tds[(columnMap as any).abolish])
             : null
         const poll = {
           pollDate: parsedDate.toISOString().slice(0, 10),
@@ -356,15 +378,15 @@ function parsePollTable(
           pollster,
           sampleSize: sampleIndex >= 0 ? toSampleSize($(tds[sampleIndex]).text()) : null,
           area: areaIndex >= 0 ? $(tds[areaIndex]).text().trim() || null : null,
-          labour: columnMap.labour != null ? toNumber($(tds[columnMap.labour]).text()) : null,
+          labour: columnMap.labour != null ? getCellPercent($, tds[columnMap.labour]) : null,
           conservative:
-            columnMap.conservative != null ? toNumber($(tds[columnMap.conservative]).text()) : null,
-          libdem: columnMap.libdem != null ? toNumber($(tds[columnMap.libdem]).text()) : null,
-          green: columnMap.green != null ? toNumber($(tds[columnMap.green]).text()) : null,
-          reform: columnMap.reform != null ? toNumber($(tds[columnMap.reform]).text()) : null,
-          snp: columnMap.snp != null ? toNumber($(tds[columnMap.snp]).text()) : null,
-          pc: columnMap.pc != null ? toNumber($(tds[columnMap.pc]).text()) : null,
-          others: columnMap.others != null ? toNumber($(tds[columnMap.others]).text()) : null,
+            columnMap.conservative != null ? getCellPercent($, tds[columnMap.conservative]) : null,
+          libdem: columnMap.libdem != null ? getCellPercent($, tds[columnMap.libdem]) : null,
+          green: columnMap.green != null ? getCellPercent($, tds[columnMap.green]) : null,
+          reform: columnMap.reform != null ? getCellPercent($, tds[columnMap.reform]) : null,
+          snp: columnMap.snp != null ? getCellPercent($, tds[columnMap.snp]) : null,
+          pc: columnMap.pc != null ? getCellPercent($, tds[columnMap.pc]) : null,
+          others: columnMap.others != null ? getCellPercent($, tds[columnMap.others]) : null,
         }
         if (abolishValue != null) {
           poll.others = (poll.others ?? 0) + abolishValue

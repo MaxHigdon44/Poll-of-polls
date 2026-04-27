@@ -188,12 +188,14 @@ export default function ScottishPollsPage() {
           </label>
         </div>
       </div>
-      <PollTable
-        title="Constituency Vote"
-        polls={constituencyPolls}
-        pollsterFilter={pollsterFilter}
-      />
-      <PollTable title="Regional Vote" polls={regionalPolls} pollsterFilter={pollsterFilter} />
+      <div style={{ display: 'grid', gap: '1.5rem' }}>
+        <PollTable
+          title="Constituency Vote"
+          polls={constituencyPolls}
+          pollsterFilter={pollsterFilter}
+        />
+        <PollTable title="Regional Vote" polls={regionalPolls} pollsterFilter={pollsterFilter} />
+      </div>
       <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Updated on request.</div>
     </PageShell>
   )

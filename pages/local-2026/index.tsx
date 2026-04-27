@@ -1067,6 +1067,11 @@ export default function Local2026Page() {
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [selectedLad, setSelectedLad] = useState<string | null>(null)
+  const [focusedWard, setFocusedWard] = useState<{
+    ladCode: string
+    wardCode: string | null
+    wardNameKey: string | null
+  } | null>(null)
   const [hasMounted, setHasMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
@@ -1222,10 +1227,20 @@ export default function Local2026Page() {
   useEffect(() => {
     if (!router.isReady) return
     const council = router.query.council
+    const wardCode = typeof router.query.ward === 'string' ? router.query.ward : null
+    const wardNameKey =
+      typeof router.query.wardNameKey === 'string' ? router.query.wardNameKey : null
     if (typeof council === 'string' && council) {
       setSelectedLad(council)
+      if (wardCode || wardNameKey) {
+        setFocusedWard({
+          ladCode: council,
+          wardCode,
+          wardNameKey,
+        })
+      }
     }
-  }, [router.isReady, router.query.council])
+  }, [router.isReady, router.query.council, router.query.ward, router.query.wardNameKey])
 
   useEffect(() => {
     router.prefetch('/council-projections')
@@ -1260,7 +1275,7 @@ export default function Local2026Page() {
       void router.replace(
         { pathname: '/local-2026', query: { council: selectedLad } },
         undefined,
-        { shallow: true }
+        { shallow: true, scroll: false }
       )
     }
   }, [selectedLad, router])
@@ -1951,6 +1966,8 @@ export default function Local2026Page() {
         return {
           type: 'ward' as const,
           ladCode: ward.ladCode,
+          wardCode: ward.wardCode,
+          wardNameKey: `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`,
           wardName: ward.wardName,
           label: `${ward.wardName} — ${ward.ladName}`,
           searchKey: normalizeName(`${ward.wardName} ${ward.ladName}`),
@@ -1959,6 +1976,8 @@ export default function Local2026Page() {
     const councilOptions = Array.from(councilMap.values()).map(council => ({
       type: 'council' as const,
       ladCode: council.ladCode,
+      wardCode: null,
+      wardNameKey: null,
       label: council.ladName,
       searchKey: normalizeName(council.ladName),
     }))
@@ -1966,12 +1985,16 @@ export default function Local2026Page() {
       {
         type: 'council' as const,
         ladCode: 'surrey-east',
+        wardCode: null,
+        wardNameKey: null,
         label: 'East Surrey Council',
         searchKey: normalizeName('East Surrey Council'),
       },
       {
         type: 'council' as const,
         ladCode: 'surrey-west',
+        wardCode: null,
+        wardNameKey: null,
         label: 'West Surrey Council',
         searchKey: normalizeName('West Surrey Council'),
       },
@@ -2505,30 +2528,53 @@ export default function Local2026Page() {
     selectedBaselineWards,
   ])
 
+  const isEnglishMapReady = Boolean(
+    councilGeo &&
+      baseline &&
+      aggregate &&
+      leaveLookup &&
+      ageLookup &&
+      regionLookup &&
+      nssecLookup &&
+      degreeLookup &&
+      tenureLookup &&
+      ruralUrbanLookup &&
+      wardVacancyLookup &&
+      wardToPcon &&
+      cedToPcon &&
+      geLookup &&
+      councilSeats &&
+      councilPrevious &&
+      (!selectedLad || (isCountySelection ? cedGeo : wardGeo))
+  )
+
+  const goToUkOverview = () => {
+    setSelectedLad(null)
+    setFocusedWard(null)
+    void router.replace('/electoral-maps', undefined, { scroll: false })
+  }
+
   return (
     <PageShell>
       {!isEmbed && (
         <TopNav
           title="Local Elections 2026"
           items={MAIN_TOPNAV_ITEMS}
-          subtitle={
-            selectedCouncilName ? (
-              <span style={{ fontSize: '1.1rem', color: '#333' }}>{selectedCouncilName}</span>
-            ) : (
-              'English Local Elections Map'
-            )
-          }
+          subtitle={selectedCouncilName || 'English Local Elections Map'}
         />
       )}
-      {!selectedLad && (
-        <div className="poll-card" style={{ marginBottom: '0.75rem' }}>
-          <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Search councils or wards</div>
+      <div className="poll-card" style={{ marginBottom: '0.75rem' }}>
+          <div style={{ fontWeight: 600, marginBottom: '0.35rem' }}>Search English councils or wards</div>
           <input
             value={searchQuery}
             onChange={event => setSearchQuery(event.target.value)}
             placeholder="Start typing a council or ward name"
             style={{
+              display: 'block',
               width: '100%',
+              maxWidth: '100%',
+              minWidth: 0,
+              boxSizing: 'border-box',
               padding: '0.6rem 0.75rem',
               borderRadius: '10px',
               border: '1px solid rgba(0,0,0,0.15)',
@@ -2544,7 +2590,7 @@ export default function Local2026Page() {
                 padding: '0.4rem',
                 display: 'grid',
                 gap: '0.25rem',
-                background: '#fff',
+                background: '#0d1118',
               }}
             >
               {searchResults.map(option => (
@@ -2552,6 +2598,15 @@ export default function Local2026Page() {
                   key={`${option.type}-${option.label}`}
                   onClick={() => {
                     setSelectedLad(option.ladCode)
+                    setFocusedWard(
+                      option.type === 'ward'
+                        ? {
+                            ladCode: option.ladCode,
+                            wardCode: option.wardCode,
+                            wardNameKey: option.wardNameKey,
+                          }
+                        : null
+                    )
                     setSearchQuery(option.label)
                   }}
                   style={{
@@ -2560,11 +2615,12 @@ export default function Local2026Page() {
                     borderRadius: '8px',
                     border: 'none',
                     background: 'transparent',
+                    color: 'var(--poll-nav-ink)',
                     cursor: 'pointer',
                   }}
                 >
                   <div style={{ fontWeight: 600 }}>{option.label}</div>
-                  <div style={{ fontSize: '0.82rem', color: '#666' }}>
+                  <div style={{ fontSize: '0.82rem', color: 'var(--poll-nav-muted)' }}>
                     {option.type === 'ward' ? 'Ward' : 'Council'}
                   </div>
                 </button>
@@ -2572,7 +2628,6 @@ export default function Local2026Page() {
             </div>
           )}
         </div>
-      )}
       <div className="poll-card" style={{ height: '86vh', minHeight: '860px', overflow: 'hidden' }}>
         <div className="poll-map-layout" style={{ height: '100%' }}>
         <div className="poll-card poll-map-sidebar" style={{ maxHeight: '100%', overflow: 'auto' }}>
@@ -2623,10 +2678,16 @@ export default function Local2026Page() {
                   No composition data available for this council.
                 </div>
               )}
-              <button style={{ marginTop: '1rem' }} onClick={() => setSelectedLad(null)}>
+              <button style={{ marginTop: '1rem' }} onClick={() => {
+                setSelectedLad(null)
+                setFocusedWard(null)
+              }}>
                 Back to councils
               </button>
-              <button style={{ marginTop: '0.75rem' }} onClick={() => router.push('/electoral-maps')}>
+              <button
+                style={{ marginTop: '0.75rem' }}
+                onClick={goToUkOverview}
+              >
                 Back to UK overview
               </button>
             </>
@@ -2656,19 +2717,26 @@ export default function Local2026Page() {
               <div style={{ marginTop: '0.75rem', color: '#555' }}>
                 Click a council area to zoom into ward-level projections.
               </div>
-              <button style={{ marginTop: '1rem' }} onClick={() => router.push('/electoral-maps')}>
+              <button
+                style={{ marginTop: '1rem' }}
+                onClick={goToUkOverview}
+              >
                 Back to UK overview
               </button>
             </>
           )}
         </div>
-        <div className="poll-card poll-map-panel" style={{ height: '100%' }}>
+        <div className="poll-map-panel" style={{ height: '100%' }}>
           <div className="poll-map-frame" style={{ height: '100%' }}>
-            {councilGeo ? (
+            {councilGeo && isEnglishMapReady ? (
             <LocalMap
               ladGeo={councilGeo}
               baseGeo={worldGeo}
               countriesGeo={countriesGeo}
+              onSelectCountry={country => {
+                if (country === 'scotland') void router.push('/scottish-map', undefined, { scroll: false })
+                if (country === 'wales') void router.push('/welsh-map', undefined, { scroll: false })
+              }}
               overlayAreas={syntheticCouncilOverlay}
               boundaryAreas={surreyBoundary}
               overlayAreaCodes={new Set(['surrey-east', 'surrey-west', 'E07000245'])}
@@ -2684,17 +2752,23 @@ export default function Local2026Page() {
               fallbackProjection={ladFallbackProjection}
               selectedLad={selectedLad}
               selectedLadFeature={selectedLadFeature}
-              onSelectLad={setSelectedLad}
+              onSelectLad={lad => {
+                setSelectedLad(lad)
+                setFocusedWard(null)
+              }}
+              focusedWardLadCode={focusedWard?.ladCode ?? null}
+              focusedWardCode={focusedWard?.wardCode ?? null}
+              focusedWardNameKey={focusedWard?.wardNameKey ?? null}
               eligibleLads={eligibleLads}
               ladCategoryByCode={ladCategoryByCode}
               previousWinnerLabel={
                 selectedLad === 'surrey-east' || selectedLad === 'surrey-west'
-                  ? 'Previous winner of Surrey County Council Division'
-                  : 'Previous winner'
+                  ? 'Incumbent of Surrey County Council Division'
+                  : 'Incumbent'
               }
             />
             ) : (
-              <div style={{ padding: '1rem' }}>Loading map data...</div>
+              <div className="poll-map-frame poll-map-frame--placeholder" style={{ height: '100%' }} />
             )}
           </div>
         </div>
