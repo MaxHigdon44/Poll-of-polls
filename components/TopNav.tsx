@@ -90,12 +90,34 @@ export default function TopNav({ title, items, subtitle }: TopNavProps) {
   const router = useRouter()
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
   const navRef = useRef<HTMLElement | null>(null)
+  const closeTimeoutRef = useRef<number | null>(null)
   const resolvedSubtitle =
     subtitle ?? DEFAULT_PAGE_TITLES[router.pathname] ?? (title !== 'Poll of Polls' ? title : null)
+
+  const clearCloseTimeout = () => {
+    if (closeTimeoutRef.current != null) {
+      window.clearTimeout(closeTimeoutRef.current)
+      closeTimeoutRef.current = null
+    }
+  }
+
+  const openDropdownNow = (label: string) => {
+    clearCloseTimeout()
+    setOpenDropdown(label)
+  }
+
+  const scheduleDropdownClose = () => {
+    clearCloseTimeout()
+    closeTimeoutRef.current = window.setTimeout(() => {
+      closeTimeoutRef.current = null
+      setOpenDropdown(null)
+    }, 180)
+  }
 
   useEffect(() => {
     const handlePointerDown = (event: PointerEvent) => {
       if (!navRef.current?.contains(event.target as Node)) {
+        clearCloseTimeout()
         setOpenDropdown(null)
       }
     }
@@ -104,8 +126,13 @@ export default function TopNav({ title, items, subtitle }: TopNavProps) {
   }, [])
 
   useEffect(() => {
+    clearCloseTimeout()
     setOpenDropdown(null)
   }, [router.pathname])
+
+  useEffect(() => {
+    return () => clearCloseTimeout()
+  }, [])
 
   return (
     <header className="poll-topnav">
@@ -130,14 +157,16 @@ export default function TopNav({ title, items, subtitle }: TopNavProps) {
                 <div
                   key={item.label}
                   className={dropdownClass}
-                  onMouseEnter={() => setOpenDropdown(item.label)}
-                  onMouseLeave={() => setOpenDropdown(null)}
+                  onMouseEnter={() => openDropdownNow(item.label)}
+                  onMouseLeave={scheduleDropdownClose}
                 >
                   <button
                     type="button"
                     className={buttonClass}
                     aria-haspopup="true"
                     aria-expanded={isOpen}
+                    onFocus={() => openDropdownNow(item.label)}
+                    onBlur={scheduleDropdownClose}
                     onClick={() => setOpenDropdown(isOpen ? null : item.label)}
                   >
                     {item.label}

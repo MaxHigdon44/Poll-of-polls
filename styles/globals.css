@@ -513,7 +513,8 @@ button:hover {
   position: relative;
   display: inline-flex;
   align-items: center;
-  padding-bottom: 4px;
+  padding-bottom: 12px;
+  margin-bottom: -12px;
 }
 
 .poll-topnav__dropdown-toggle {
@@ -536,7 +537,7 @@ button:hover {
   top: 100%;
   left: 0;
   min-width: 210px;
-  margin-top: 8px;
+  margin-top: 2px;
   background: #0d1118;
   border: 1px solid var(--poll-border);
   border-radius: 12px;
