@@ -1,0 +1,327 @@
+{
+  "generatedAt": "2026-03-16T15:39:55.960Z",
+  "councils": [
+    {
+      "council": "Cambridgeshire",
+      "seatsUp": 61,
+      "totalSeats": 61,
+      "actualControl": "Liberal Democrat",
+      "actualSeats": {
+        "Green": 3,
+        "Conservative": 10,
+        "Labour": 5,
+        "Liberal Democrat": 31,
+        "Reform": 10,
+        "Independent": 2
+      },
+      "previousControl": null
+    },
+    {
+      "council": "Derbyshire",
+      "seatsUp": 64,
+      "totalSeats": 64,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 42,
+        "Green": 2,
+        "Conservative": 12,
+        "Labour": 3,
+        "Independent": 2,
+        "Liberal Democrat": 3
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Devon",
+      "seatsUp": 60,
+      "totalSeats": 60,
+      "actualControl": null,
+      "actualSeats": {
+        "Reform": 18,
+        "Conservative": 7,
+        "Independent": 2,
+        "Liberal Democrat": 27,
+        "Green": 6
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Gloucestershire",
+      "seatsUp": 55,
+      "totalSeats": 55,
+      "actualControl": null,
+      "actualSeats": {
+        "Conservative": 6,
+        "Liberal Democrat": 27,
+        "Green": 9,
+        "Reform": 11,
+        "Independent": 1,
+        "Labour": 1
+      },
+      "previousControl": null
+    },
+    {
+      "council": "Hertfordshire",
+      "seatsUp": 78,
+      "totalSeats": 78,
+      "actualControl": null,
+      "actualSeats": {
+        "Liberal Democrat": 31,
+        "Labour": 5,
+        "Reform": 14,
+        "Conservative": 22,
+        "Independent": 1,
+        "Green": 5
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Kent",
+      "seatsUp": 81,
+      "totalSeats": 81,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 57,
+        "Labour": 2,
+        "Liberal Democrat": 12,
+        "Conservative": 5,
+        "Green": 5
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Leicestershire",
+      "seatsUp": 55,
+      "totalSeats": 55,
+      "actualControl": null,
+      "actualSeats": {
+        "Reform": 25,
+        "Conservative": 15,
+        "Liberal Democrat": 11,
+        "Independent": 1,
+        "Labour": 2,
+        "Green": 1
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Lincolnshire",
+      "seatsUp": 70,
+      "totalSeats": 70,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 44,
+        "Independent": 4,
+        "Labour": 3,
+        "Conservative": 14,
+        "Liberal Democrat": 5
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Nottinghamshire",
+      "seatsUp": 66,
+      "totalSeats": 66,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 42,
+        "Labour": 4,
+        "Conservative": 17,
+        "Broxtowe Alliance": 1,
+        "Independent": 2
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Oxfordshire",
+      "seatsUp": 69,
+      "totalSeats": 69,
+      "actualControl": "Liberal Democrat",
+      "actualSeats": {
+        "Liberal Democrat": 36,
+        "Conservative": 10,
+        "Labour": 12,
+        "Green": 7,
+        "Independent": 2,
+        "Reform": 1,
+        "Henley Residents Group": 1
+      },
+      "previousControl": null
+    },
+    {
+      "council": "Staffordshire",
+      "seatsUp": 62,
+      "totalSeats": 62,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 49,
+        "Conservative": 10,
+        "Labour": 1,
+        "Green": 1,
+        "Independent": 1
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Warwickshire",
+      "seatsUp": 57,
+      "totalSeats": 57,
+      "actualControl": null,
+      "actualSeats": {
+        "Conservative": 9,
+        "Liberal Democrat": 14,
+        "Reform": 23,
+        "Labour": 3,
+        "Green": 7,
+        "Whitnash Residents Association": 1
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Worcestershire",
+      "seatsUp": 72,
+      "totalSeats": 72,
+      "actualControl": null,
+      "actualSeats": {
+        "Independent": 4,
+        "Reform": 32,
+        "Conservative": 17,
+        "Liberal Democrat": 8,
+        "Green": 8,
+        "Labour": 3
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Doncaster",
+      "seatsUp": 55,
+      "totalSeats": 55,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 37,
+        "Labour": 12,
+        "Conservative": 6
+      },
+      "previousControl": "Labour"
+    },
+    {
+      "council": "Buckinghamshire",
+      "seatsUp": 97,
+      "totalSeats": 97,
+      "actualControl": null,
+      "actualSeats": {
+        "Conservative": 48,
+        "Liberal Democrat": 27,
+        "Reform": 3,
+        "Labour": 4,
+        "Independent": 13,
+        "Green": 2
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Cornwall",
+      "seatsUp": 87,
+      "totalSeats": 87,
+      "actualControl": null,
+      "actualSeats": {
+        "Liberal Democrat": 26,
+        "Independent": 16,
+        "Mebyon Kernow - The Party for Cornwall": 3,
+        "Reform": 28,
+        "Labour": 4,
+        "Conservative": 7,
+        "Green": 3
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "County Durham",
+      "seatsUp": 98,
+      "totalSeats": 98,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 65,
+        "Liberal Democrat": 14,
+        "Labour": 4,
+        "Independent": 12,
+        "Green": 2,
+        "Conservative": 1
+      },
+      "previousControl": null
+    },
+    {
+      "council": "North Northamptonshire",
+      "seatsUp": 69,
+      "totalSeats": 69,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Reform": 41,
+        "Labour": 4,
+        "Conservative": 14,
+        "Green": 8,
+        "Liberal Democrat": 1,
+        "Independent": 1
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Northumberland",
+      "seatsUp": 70,
+      "totalSeats": 70,
+      "actualControl": null,
+      "actualSeats": {
+        "Conservative": 26,
+        "Green": 3,
+        "Reform": 23,
+        "Labour": 8,
+        "Independent": 7,
+        "Liberal Democrat": 3
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Shropshire",
+      "seatsUp": 74,
+      "totalSeats": 74,
+      "actualControl": "Liberal Democrat",
+      "actualSeats": {
+        "Liberal Democrat": 42,
+        "Conservative": 7,
+        "Reform": 16,
+        "Labour": 4,
+        "Independent": 1,
+        "Green": 4
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "West Northamptonshire",
+      "seatsUp": 76,
+      "totalSeats": 76,
+      "actualControl": "Reform",
+      "actualSeats": {
+        "Labour": 9,
+        "Reform": 42,
+        "Conservative": 17,
+        "Liberal Democrat": 6,
+        "Independent": 2
+      },
+      "previousControl": "Conservative"
+    },
+    {
+      "council": "Wiltshire",
+      "seatsUp": 98,
+      "totalSeats": 98,
+      "actualControl": null,
+      "actualSeats": {
+        "Conservative": 37,
+        "Reform": 10,
+        "Liberal Democrat": 43,
+        "Independent": 7,
+        "Labour": 1
+      },
+      "previousControl": "Conservative"
+    }
+  ]
+}

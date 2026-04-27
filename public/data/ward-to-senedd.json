@@ -1,0 +1,3815 @@
+{
+  "generatedAt": "2026-04-02T11:20:27.131769Z",
+  "wards": {
+    "W05001039": {
+      "wardName": "Bishopston",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001040": {
+      "wardName": "Bôn-y-maen",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001041": {
+      "wardName": "Castle",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001042": {
+      "wardName": "Clydach",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001043": {
+      "wardName": "Cockett",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001044": {
+      "wardName": "Cwmbwrla",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001045": {
+      "wardName": "Dunvant and Killay",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001046": {
+      "wardName": "Fairwood",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001047": {
+      "wardName": "Gorseinon and Penyrheol",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001048": {
+      "wardName": "Gower",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001049": {
+      "wardName": "Gowerton",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001050": {
+      "wardName": "Landore",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001051": {
+      "wardName": "Llangyfelach",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001052": {
+      "wardName": "Llansamlet",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001053": {
+      "wardName": "Llwchwr",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001054": {
+      "wardName": "Mayals",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001055": {
+      "wardName": "Morriston",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001056": {
+      "wardName": "Mumbles",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001057": {
+      "wardName": "Mynydd-bach",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001058": {
+      "wardName": "Pen-clawdd",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001059": {
+      "wardName": "Penderry",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001060": {
+      "wardName": "Penllergaer",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001061": {
+      "wardName": "Pennard",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001062": {
+      "wardName": "Pontarddulais",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001063": {
+      "wardName": "Pontlliw and Tircoed",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001064": {
+      "wardName": "Sketty",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001065": {
+      "wardName": "St Thomas",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001066": {
+      "wardName": "Townhill",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001067": {
+      "wardName": "Uplands",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001068": {
+      "wardName": "Waterfront",
+      "pcon": "W07000108",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001069": {
+      "wardName": "Waunarlwydd",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001070": {
+      "wardName": "West Cross",
+      "pcon": "W07000097",
+      "senedd": "Gŵyr Abertawe"
+    },
+    "W05001071": {
+      "wardName": "Aberaman",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001072": {
+      "wardName": "Abercynon",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001073": {
+      "wardName": "Aberdare East",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001074": {
+      "wardName": "Aberdare West and Llwydcoed",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001075": {
+      "wardName": "Beddau and Tyn-y-nant",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001076": {
+      "wardName": "Brynna and Llanharan",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001077": {
+      "wardName": "Church Village",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001078": {
+      "wardName": "Cilfynydd",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001079": {
+      "wardName": "Cwm Clydach",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001080": {
+      "wardName": "Cwmbach",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001081": {
+      "wardName": "Cymer",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001082": {
+      "wardName": "Ferndale and Maerdy",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001083": {
+      "wardName": "Gilfach-goch",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001084": {
+      "wardName": "Glyn-coch",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001085": {
+      "wardName": "Graig and Pontypridd West",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001086": {
+      "wardName": "Hawthorn and Lower Rhydfelen",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001087": {
+      "wardName": "Hirwaun, Penderyn and Rhigos",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001088": {
+      "wardName": "Llanharry",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001089": {
+      "wardName": "Llantrisant and Talbot Green",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001090": {
+      "wardName": "Llantwit Fardre",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001091": {
+      "wardName": "Llwyn-y-pia",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001092": {
+      "wardName": "Mountain Ash",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001093": {
+      "wardName": "Penrhiw-ceibr",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001094": {
+      "wardName": "Pentre",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001095": {
+      "wardName": "Pen-y-graig",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001096": {
+      "wardName": "Pen-y-waun",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001097": {
+      "wardName": "Pontyclun Central",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001098": {
+      "wardName": "Pontyclun East",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001099": {
+      "wardName": "Pontyclun West",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001100": {
+      "wardName": "Pontypridd Town",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001101": {
+      "wardName": "Porth",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001102": {
+      "wardName": "Rhydfelen Central",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001103": {
+      "wardName": "Taff's Well",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001104": {
+      "wardName": "Ton-teg",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001105": {
+      "wardName": "Tonypandy",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001106": {
+      "wardName": "Tonyrefail East",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001107": {
+      "wardName": "Tonyrefail West",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001108": {
+      "wardName": "Trallwng",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001109": {
+      "wardName": "Trealaw",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001110": {
+      "wardName": "Treforest",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001111": {
+      "wardName": "Treherbert",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001112": {
+      "wardName": "Treorchy",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001113": {
+      "wardName": "Tylorstown and Ynyshir",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001114": {
+      "wardName": "Upper Rhydfelen and Glyn-taf",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001115": {
+      "wardName": "Ynysybwl",
+      "pcon": "W07000106",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001116": {
+      "wardName": "Ystrad",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001117": {
+      "wardName": "Aber-craf and Ystradgynlais",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001118": {
+      "wardName": "Banwy, Llanfihangel and Llanwddyn",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001119": {
+      "wardName": "Berriew and Castle Caereinion",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001120": {
+      "wardName": "Brecon East",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001121": {
+      "wardName": "Brecon West",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001122": {
+      "wardName": "Bronllys and Felin-fach",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001123": {
+      "wardName": "Builth",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001124": {
+      "wardName": "Caersws",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001125": {
+      "wardName": "Churchstoke",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001126": {
+      "wardName": "Crickhowell with Cwmdu and Tretower",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001127": {
+      "wardName": "Cwm-twrch",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001128": {
+      "wardName": "Disserth and Trecoed with Newbridge",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001129": {
+      "wardName": "Dolforwyn",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001130": {
+      "wardName": "Forden and Montgomery",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001131": {
+      "wardName": "Glantwymyn",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001132": {
+      "wardName": "Glasbury",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001133": {
+      "wardName": "Guilsfield",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001134": {
+      "wardName": "Gwernyfed",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001135": {
+      "wardName": "Hay",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001136": {
+      "wardName": "Ithon Valley",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001137": {
+      "wardName": "Kerry",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001138": {
+      "wardName": "Knighton with Beguildy",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001139": {
+      "wardName": "Llanafanfawr with Garth",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001140": {
+      "wardName": "Llanbrynmair",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001141": {
+      "wardName": "Llandinam with Dolfor",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001142": {
+      "wardName": "Llandrindod North",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001143": {
+      "wardName": "Llandrindod South",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001144": {
+      "wardName": "Llandrinio",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001145": {
+      "wardName": "Llandysilio",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001146": {
+      "wardName": "Llanelwedd",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001147": {
+      "wardName": "Llanfair Caereinion and Llanerfyl",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001148": {
+      "wardName": "Llanfyllin",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001149": {
+      "wardName": "Llangattock and Llangynidr",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001150": {
+      "wardName": "Llangors with Bwlch",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001151": {
+      "wardName": "Llangunllo with Norton",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001152": {
+      "wardName": "Llangyniew and Meifod",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001153": {
+      "wardName": "Llanidloes",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001154": {
+      "wardName": "Llanrhaeadr-ym-Mochnant and Llansilin",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001155": {
+      "wardName": "Llansantffraid",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001156": {
+      "wardName": "Llanwrtyd Wells",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001157": {
+      "wardName": "Llanyre with Nantmel",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001158": {
+      "wardName": "Machynlleth",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001159": {
+      "wardName": "Maescar and Llywel",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001160": {
+      "wardName": "Newtown Central and South",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001161": {
+      "wardName": "Newtown East",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001162": {
+      "wardName": "Newtown North",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001163": {
+      "wardName": "Newtown West",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001164": {
+      "wardName": "Old Radnor",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001165": {
+      "wardName": "Presteigne",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001166": {
+      "wardName": "Rhayader",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001167": {
+      "wardName": "Rhiwcynon",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001168": {
+      "wardName": "Talgarth",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001169": {
+      "wardName": "Talybont-on-Usk",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001170": {
+      "wardName": "Tawe Uchaf",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001171": {
+      "wardName": "Trelystan and Trewern",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001172": {
+      "wardName": "Welshpool Castle",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001173": {
+      "wardName": "Welshpool Gungrog",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001174": {
+      "wardName": "Welshpool Llanerchyddol",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001175": {
+      "wardName": "Ynyscedwyn",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001176": {
+      "wardName": "Yscir with Honddu Isaf and Llanddew",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001177": {
+      "wardName": "Abergwili",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001178": {
+      "wardName": "Ammanford",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001179": {
+      "wardName": "Betws",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001180": {
+      "wardName": "Bigyn",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001181": {
+      "wardName": "Burry Port",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001182": {
+      "wardName": "Bynea",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001183": {
+      "wardName": "Carmarthen Town North and South",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001184": {
+      "wardName": "Carmarthen Town West",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001185": {
+      "wardName": "Cenarth and Llangeler",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001186": {
+      "wardName": "Cilycwm",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001187": {
+      "wardName": "Cwarter Bach",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001188": {
+      "wardName": "Cynwyl Elfed",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001189": {
+      "wardName": "Dafen and Felinfoel",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001190": {
+      "wardName": "Elli",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001191": {
+      "wardName": "Garnant",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001192": {
+      "wardName": "Glanamman",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001193": {
+      "wardName": "Glanymor",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001194": {
+      "wardName": "Glyn",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001195": {
+      "wardName": "Gorslas",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001196": {
+      "wardName": "Hendy",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001197": {
+      "wardName": "Hengoed",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001198": {
+      "wardName": "Kidwelly and St Ishmael",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001199": {
+      "wardName": "Laugharne Township",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001200": {
+      "wardName": "Llanboidy",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001201": {
+      "wardName": "Llanddarog",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001202": {
+      "wardName": "Llandeilo",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001203": {
+      "wardName": "Llandovery",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001204": {
+      "wardName": "Llandybie",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001205": {
+      "wardName": "Llanegwad",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001206": {
+      "wardName": "Llanfihangel Aberbythych",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001207": {
+      "wardName": "Llanfihangel-ar-Arth",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001208": {
+      "wardName": "Llangadog",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001209": {
+      "wardName": "Llangennech",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001210": {
+      "wardName": "Llangunnor",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001211": {
+      "wardName": "Llangyndeyrn",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001212": {
+      "wardName": "Llannon",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001213": {
+      "wardName": "Llanybydder",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001214": {
+      "wardName": "Lliedi",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001215": {
+      "wardName": "Llwynhendy",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001216": {
+      "wardName": "Manordeilo and Salem",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001217": {
+      "wardName": "Pembrey",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001218": {
+      "wardName": "Penygroes",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001219": {
+      "wardName": "Pontyberem",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001220": {
+      "wardName": "Saron",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001221": {
+      "wardName": "St Clears and Llansteffan",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001222": {
+      "wardName": "Swiss Valley",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001223": {
+      "wardName": "Trelech",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001224": {
+      "wardName": "Trimsaran",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001225": {
+      "wardName": "Tycroes",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001226": {
+      "wardName": "Tyisha",
+      "pcon": "W07000098",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001227": {
+      "wardName": "Whitland",
+      "pcon": "W07000087",
+      "senedd": "Sir Gaerfyrddin"
+    },
+    "W05001228": {
+      "wardName": "Aberkenfig",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001229": {
+      "wardName": "Blackmill",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001230": {
+      "wardName": "Brackla East and Coychurch Lower",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001231": {
+      "wardName": "Brackla East Central",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001232": {
+      "wardName": "Brackla West",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001233": {
+      "wardName": "Brackla West Central",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001234": {
+      "wardName": "Bridgend Central",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001235": {
+      "wardName": "Bryntirion, Laleston and Merthyr Mawr",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001236": {
+      "wardName": "Caerau",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001237": {
+      "wardName": "Cefn-glas",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001238": {
+      "wardName": "Coity Higher",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001239": {
+      "wardName": "Cornelly",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001240": {
+      "wardName": "Garw Valley",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001241": {
+      "wardName": "Llangynwyd",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001242": {
+      "wardName": "Maesteg East",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001243": {
+      "wardName": "Maesteg West",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001244": {
+      "wardName": "Nant-y-moel",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001245": {
+      "wardName": "Newton",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001246": {
+      "wardName": "Nottage",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001247": {
+      "wardName": "Ogmore Vale",
+      "pcon": "W07000107",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001248": {
+      "wardName": "Oldcastle",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001249": {
+      "wardName": "Pencoed and Penprysg",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001250": {
+      "wardName": "Pen-y-fai",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001251": {
+      "wardName": "Porthcawl East Central",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001252": {
+      "wardName": "Porthcawl West Central",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001253": {
+      "wardName": "Pyle, Kenfig Hill and Cefn Cribwr",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001254": {
+      "wardName": "Rest Bay",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001255": {
+      "wardName": "St Bride's Minor and Ynysawdre",
+      "pcon": "W07000086",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001256": {
+      "wardName": "Abertillery and Six Bells",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001257": {
+      "wardName": "Beaufort",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001258": {
+      "wardName": "Blaina",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001259": {
+      "wardName": "Brynmawr",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001260": {
+      "wardName": "Cwm",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001261": {
+      "wardName": "Cwmtillery",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001262": {
+      "wardName": "Ebbw Vale North",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001263": {
+      "wardName": "Ebbw Vale South",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001264": {
+      "wardName": "Georgetown",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001265": {
+      "wardName": "Llanhilleth",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001266": {
+      "wardName": "Nantyglo",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001267": {
+      "wardName": "Rassau and Garnlydan",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001268": {
+      "wardName": "Sirhowy",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001269": {
+      "wardName": "Tredegar",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001270": {
+      "wardName": "Adamsdown",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001271": {
+      "wardName": "Butetown",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001272": {
+      "wardName": "Caerau",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001273": {
+      "wardName": "Canton",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001274": {
+      "wardName": "Cathays",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001275": {
+      "wardName": "Cyncoed",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001276": {
+      "wardName": "Ely",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001277": {
+      "wardName": "Fairwater",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001278": {
+      "wardName": "Gabalfa",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001279": {
+      "wardName": "Grangetown",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001280": {
+      "wardName": "Heath",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001281": {
+      "wardName": "Lisvane and Thornhill",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001282": {
+      "wardName": "Llandaff",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001283": {
+      "wardName": "Llandaff North",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001284": {
+      "wardName": "Llanishen",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001285": {
+      "wardName": "Llanrumney",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001286": {
+      "wardName": "Pentwyn",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001287": {
+      "wardName": "Pentyrch and St Fagans",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001288": {
+      "wardName": "Penylan",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001289": {
+      "wardName": "Plasnewydd",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001290": {
+      "wardName": "Pontprennau and Old St Mellons",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001291": {
+      "wardName": "Radyr",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001292": {
+      "wardName": "Rhiwbina",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001293": {
+      "wardName": "Riverside",
+      "pcon": "W07000092",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001294": {
+      "wardName": "Rumney",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001295": {
+      "wardName": "Splott",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001296": {
+      "wardName": "Trowbridge",
+      "pcon": "W07000089",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001297": {
+      "wardName": "Whitchurch and Tongwynlais",
+      "pcon": "W07000090",
+      "senedd": "Caerdydd Ffynnon Taf"
+    },
+    "W05001298": {
+      "wardName": "Aberaeron and Aberarth",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001299": {
+      "wardName": "Aberporth and Y Ferwig",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001300": {
+      "wardName": "Aberystwyth Morfa a Glais",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001301": {
+      "wardName": "Aberystwyth Penparcau",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001302": {
+      "wardName": "Aberystwyth Rheidol",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001303": {
+      "wardName": "Beulah and Llangoedmor",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001304": {
+      "wardName": "Borth",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001305": {
+      "wardName": "Ceulan a Maesmawr",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001306": {
+      "wardName": "Ciliau Aeron",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001307": {
+      "wardName": "Faenor",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001308": {
+      "wardName": "Lampeter",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001309": {
+      "wardName": "Llannarth",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001310": {
+      "wardName": "Llanbadarn Fawr",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001311": {
+      "wardName": "Llandyfriog",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001312": {
+      "wardName": "Llandysilio and Llangrannog",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001313": {
+      "wardName": "Llandysul North and Troedyraur",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001314": {
+      "wardName": "Llandysul South",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001315": {
+      "wardName": "Llanfarian",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001316": {
+      "wardName": "Llanfihangel Ystrad",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001317": {
+      "wardName": "Llangeitho",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001318": {
+      "wardName": "Llangybi",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001319": {
+      "wardName": "Llanrhystyd",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001320": {
+      "wardName": "Llansanffraid",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001321": {
+      "wardName": "Llanwenog",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001322": {
+      "wardName": "Lledrod",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001323": {
+      "wardName": "Melindwr",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001324": {
+      "wardName": "Mwldan",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001325": {
+      "wardName": "New Quay and Llanllwchaearn",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001326": {
+      "wardName": "Penbryn",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001327": {
+      "wardName": "Teifi",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001328": {
+      "wardName": "Tirymynach",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001329": {
+      "wardName": "Trefeurig",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001330": {
+      "wardName": "Tregaron and Ystrad Fflur",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001331": {
+      "wardName": "Ystwyth",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001332": {
+      "wardName": "Alyn Valley",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001333": {
+      "wardName": "Bodelwyddan",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001334": {
+      "wardName": "Denbigh Caledfryn Henllan",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001335": {
+      "wardName": "Denbigh Lower",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001336": {
+      "wardName": "Dyserth",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001337": {
+      "wardName": "Edeirnion",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001338": {
+      "wardName": "Efenechdyd",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001339": {
+      "wardName": "Llandyrnog",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001340": {
+      "wardName": "Llanfair Dyffryn Clwyd Gwyddelwern",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001341": {
+      "wardName": "Llangollen",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001342": {
+      "wardName": "Llanrhaeadr-yng-Nghinmeirch",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001343": {
+      "wardName": "Moel Famau",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001344": {
+      "wardName": "Prestatyn Central",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001345": {
+      "wardName": "Prestatyn East",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001346": {
+      "wardName": "Prestatyn Meliden",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001347": {
+      "wardName": "Prestatyn North",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001348": {
+      "wardName": "Prestatyn South West",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001349": {
+      "wardName": "Rhuddlan",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001350": {
+      "wardName": "Rhyl East",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001351": {
+      "wardName": "Rhyl South",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001352": {
+      "wardName": "Rhyl South West",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001353": {
+      "wardName": "Rhyl Trellewelyn",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001354": {
+      "wardName": "Rhyl Tŷ Newydd",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001355": {
+      "wardName": "Rhyl West",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001356": {
+      "wardName": "Ruthin",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001357": {
+      "wardName": "St Asaph East",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001358": {
+      "wardName": "St Asaph West",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001359": {
+      "wardName": "Trefnant",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001360": {
+      "wardName": "Tremeirchion",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001361": {
+      "wardName": "Abersychan",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001362": {
+      "wardName": "Blaenavon",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001363": {
+      "wardName": "Coed Eva",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001364": {
+      "wardName": "Croesyceiliog",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001365": {
+      "wardName": "Fairwater",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001366": {
+      "wardName": "Greenmeadow",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001367": {
+      "wardName": "Llanfrechfa and Ponthir",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001368": {
+      "wardName": "Llantarnam",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001369": {
+      "wardName": "Llanyrafon",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001370": {
+      "wardName": "New Inn",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001371": {
+      "wardName": "Panteg",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001372": {
+      "wardName": "Pontnewydd",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001373": {
+      "wardName": "Pontnewynydd and Snatchwood",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001374": {
+      "wardName": "Pontypool Fawr",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001375": {
+      "wardName": "St. Dials",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001376": {
+      "wardName": "Trevethin and Penygarn",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001377": {
+      "wardName": "Two Locks",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001378": {
+      "wardName": "Upper Cwmbran",
+      "pcon": "W07000109",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001379": {
+      "wardName": "Baruc",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001380": {
+      "wardName": "Buttrills",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001381": {
+      "wardName": "Cadoc",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001382": {
+      "wardName": "Castleland",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001383": {
+      "wardName": "Cornerswell",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001384": {
+      "wardName": "Court",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001385": {
+      "wardName": "Cowbridge",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001386": {
+      "wardName": "Dinas Powys",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001387": {
+      "wardName": "Dyfan",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001388": {
+      "wardName": "Gibbonsdown",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001389": {
+      "wardName": "Illtyd",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001390": {
+      "wardName": "Llandough",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001391": {
+      "wardName": "Llandow",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001392": {
+      "wardName": "Llantwit Major",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001393": {
+      "wardName": "Peterston-super-Ely",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001394": {
+      "wardName": "Plymouth",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001395": {
+      "wardName": "Rhoose",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001396": {
+      "wardName": "St Athan",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001397": {
+      "wardName": "St Bride's Major",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001398": {
+      "wardName": "St Nicholas and Llancarfan",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001399": {
+      "wardName": "St Augustine's",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001400": {
+      "wardName": "Stanwell",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001401": {
+      "wardName": "Sully",
+      "pcon": "W07000091",
+      "senedd": "Caerdydd Penarth"
+    },
+    "W05001402": {
+      "wardName": "Wenvoe",
+      "pcon": "W07000110",
+      "senedd": "Pen-y-bont Bro Morgannwg"
+    },
+    "W05001403": {
+      "wardName": "Betws-yn-Rhos",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001404": {
+      "wardName": "Betws-y-Coed and Trefriw",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001405": {
+      "wardName": "Bryn",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001406": {
+      "wardName": "Caerhun",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001407": {
+      "wardName": "Colwyn",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001408": {
+      "wardName": "Conwy",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001409": {
+      "wardName": "Craig-y-don",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001410": {
+      "wardName": "Deganwy",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001411": {
+      "wardName": "Eglwys-bach a Llangernyw",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001412": {
+      "wardName": "Eirias",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001413": {
+      "wardName": "Gele and Llanddulas",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001414": {
+      "wardName": "Glyn",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001415": {
+      "wardName": "Glyn y Marl",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001416": {
+      "wardName": "Gogarth Mostyn",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001417": {
+      "wardName": "Kinmel Bay",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001418": {
+      "wardName": "Llandrillo-yn-Rhos",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001419": {
+      "wardName": "Llanrwst a Llanddoged",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001420": {
+      "wardName": "Llansanffraid",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001421": {
+      "wardName": "Llansannan",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001422": {
+      "wardName": "Llysfaen",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001423": {
+      "wardName": "Mochdre",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001424": {
+      "wardName": "Pandy",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001425": {
+      "wardName": "Penmaenmawr",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001426": {
+      "wardName": "Penrhyn",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001427": {
+      "wardName": "Pen-sarn Pentre Mawr",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001428": {
+      "wardName": "Rhiw",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001429": {
+      "wardName": "Towyn",
+      "pcon": "W07000095",
+      "senedd": "Clwyd"
+    },
+    "W05001430": {
+      "wardName": "Tudno",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001431": {
+      "wardName": "Uwch Aled",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001432": {
+      "wardName": "Uwch Conwy",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001433": {
+      "wardName": "Amroth and Saundersfoot North",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001434": {
+      "wardName": "Boncath and Clydau",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001435": {
+      "wardName": "Burton",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001436": {
+      "wardName": "Bro Gwaun",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001437": {
+      "wardName": "Camrose",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001438": {
+      "wardName": "Carew and Jeffreyston",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001439": {
+      "wardName": "Cilgerran and Eglwyswrw",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001440": {
+      "wardName": "Crymych and Mynachlog-ddu",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001441": {
+      "wardName": "East Williamston",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001442": {
+      "wardName": "Fishguard: North East",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001443": {
+      "wardName": "Fishguard: North West",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001444": {
+      "wardName": "Goodwick",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001445": {
+      "wardName": "Haverfordwest: Castle",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001446": {
+      "wardName": "Haverfordwest: Garth",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001447": {
+      "wardName": "Haverfordwest: Portfield",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001448": {
+      "wardName": "Haverfordwest: Prendergast",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001449": {
+      "wardName": "Haverfordwest: Priory",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001450": {
+      "wardName": "Hundleton",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001451": {
+      "wardName": "Johnston",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001452": {
+      "wardName": "Kilgetty and Begelly",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001453": {
+      "wardName": "Lampeter Velfrey",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001454": {
+      "wardName": "Lamphey",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001455": {
+      "wardName": "Letterston",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001456": {
+      "wardName": "Llangwm",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001457": {
+      "wardName": "Llanrhian",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001458": {
+      "wardName": "Maenclochog",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001459": {
+      "wardName": "Manorbier and Penally",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001460": {
+      "wardName": "Martletwy",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001461": {
+      "wardName": "Merlin's Bridge",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001462": {
+      "wardName": "Milford: Central",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001463": {
+      "wardName": "Milford: East",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001464": {
+      "wardName": "Milford: Hakin",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001465": {
+      "wardName": "Milford: Hubberston",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001466": {
+      "wardName": "Milford: North",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001467": {
+      "wardName": "Milford: West",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001468": {
+      "wardName": "Narberth: Urban",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001469": {
+      "wardName": "Narberth: Rural",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001470": {
+      "wardName": "Newport and Dinas",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001471": {
+      "wardName": "Neyland: East",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001472": {
+      "wardName": "Neyland: West",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001473": {
+      "wardName": "Pembroke Dock: Bufferland",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001474": {
+      "wardName": "Pembroke Dock: Bush",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001475": {
+      "wardName": "Pembroke Dock: Central",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001476": {
+      "wardName": "Pembroke Dock: Market",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001477": {
+      "wardName": "Pembroke Dock: Pennar",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001478": {
+      "wardName": "Pembroke: Monkton and St Mary South",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001479": {
+      "wardName": "Pembroke: St Mary North",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001480": {
+      "wardName": "Pembroke: St Michael",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001481": {
+      "wardName": "Rudbaxton and Spittal",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001482": {
+      "wardName": "Saundersfoot South",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001483": {
+      "wardName": "Solva",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001484": {
+      "wardName": "St David's",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001485": {
+      "wardName": "St Dogmaels",
+      "pcon": "W07000093",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001486": {
+      "wardName": "St Florence and St Mary Out Liberty",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001487": {
+      "wardName": "St Ishmael's",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001488": {
+      "wardName": "Tenby: North",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001489": {
+      "wardName": "Tenby: South",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001490": {
+      "wardName": "The Havens",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001491": {
+      "wardName": "Wiston",
+      "pcon": "W07000100",
+      "senedd": "Ceredigion Penfro"
+    },
+    "W05001492": {
+      "wardName": "Aethwy",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001493": {
+      "wardName": "Bodowyr",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001494": {
+      "wardName": "Bro Aberffraw",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001495": {
+      "wardName": "Bro'r Llynnoedd",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001496": {
+      "wardName": "Canolbarth Môn",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001497": {
+      "wardName": "Cefni",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001498": {
+      "wardName": "Crigyll",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001499": {
+      "wardName": "Lligwy",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001500": {
+      "wardName": "Parc a'r Mynydd",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001501": {
+      "wardName": "Seiriol",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001502": {
+      "wardName": "Talybolion",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001503": {
+      "wardName": "Tref Cybi",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001504": {
+      "wardName": "Twrcelyn",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001505": {
+      "wardName": "Ynys Gybi",
+      "pcon": "W07000112",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001506": {
+      "wardName": "Aberdyfi",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001507": {
+      "wardName": "Abererch",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001508": {
+      "wardName": "Abermaw",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001509": {
+      "wardName": "Abersoch gyda Llanengan",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001510": {
+      "wardName": "Arllechwedd",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001511": {
+      "wardName": "Arthog a Llangelynnin",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001512": {
+      "wardName": "Bethel a'r Felinheli",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001513": {
+      "wardName": "Bowydd a'r Rhiw",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001514": {
+      "wardName": "Brithdir and Llanfachreth/Ganllwyd/Llanelltyd",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001515": {
+      "wardName": "Bro Dysynni",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001516": {
+      "wardName": "Cadnant",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001517": {
+      "wardName": "Canol Bangor",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001518": {
+      "wardName": "Canol Bethesda",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001519": {
+      "wardName": "Canol Tref Caernarfon",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001520": {
+      "wardName": "Clynnog",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001521": {
+      "wardName": "Corris a Mawddwy",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001522": {
+      "wardName": "Criccieth",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001523": {
+      "wardName": "Cwm-y-glo",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001524": {
+      "wardName": "De Dolgellau",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001525": {
+      "wardName": "De Pwllheli",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001526": {
+      "wardName": "Deiniolen",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001527": {
+      "wardName": "Dewi",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001528": {
+      "wardName": "Diffwys a Maenofferen",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001529": {
+      "wardName": "Dolbenmaen",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001530": {
+      "wardName": "Dwyrain Bangor",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001531": {
+      "wardName": "Dwyrain Porthmadog",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001532": {
+      "wardName": "Dyffryn Ardudwy",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001533": {
+      "wardName": "Efailnewydd a Buan",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001534": {
+      "wardName": "Gerlan",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001535": {
+      "wardName": "Glaslyn",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001536": {
+      "wardName": "Glyder",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001537": {
+      "wardName": "Gogledd Dolgellau",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001538": {
+      "wardName": "Gogledd Pwllheli",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001539": {
+      "wardName": "Gorllewin Porthmadog",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001540": {
+      "wardName": "Gorllewin Tywyn",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001541": {
+      "wardName": "Harlech a Llanbedr",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001542": {
+      "wardName": "Hendre",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001543": {
+      "wardName": "Llanbedrog gyda Mynytho",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001544": {
+      "wardName": "Llanberis",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001545": {
+      "wardName": "Llandderfel",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001546": {
+      "wardName": "Llanllyfni",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001547": {
+      "wardName": "Llanrug",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001548": {
+      "wardName": "Llanuwchllyn",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001549": {
+      "wardName": "Llanwnda",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001550": {
+      "wardName": "Llanystumdwy",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001551": {
+      "wardName": "Menai",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001552": {
+      "wardName": "Morfa Nefyn a Thudweiliog",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001553": {
+      "wardName": "Morfa Tywyn",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001554": {
+      "wardName": "Nefyn",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001555": {
+      "wardName": "Peblig",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001556": {
+      "wardName": "Pen draw Llŷn",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001557": {
+      "wardName": "Penisa'r-waun",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001558": {
+      "wardName": "Penrhyndeudraeth",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001559": {
+      "wardName": "Pen-y-groes",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001560": {
+      "wardName": "Rachub",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001561": {
+      "wardName": "Teigl",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001562": {
+      "wardName": "Trawsfynydd",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001563": {
+      "wardName": "Tre-garth a Mynydd Llandygái",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001564": {
+      "wardName": "Tryfan",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001565": {
+      "wardName": "Waunfawr",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001566": {
+      "wardName": "Y Bala",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001567": {
+      "wardName": "Y Bontnewydd",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001568": {
+      "wardName": "Y Faenol",
+      "pcon": "W07000083",
+      "senedd": "Bangor Conwy Môn"
+    },
+    "W05001569": {
+      "wardName": "Y Groeslon",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001570": {
+      "wardName": "Yr Eifl",
+      "pcon": "W07000096",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001571": {
+      "wardName": "Argoed and New Brighton",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001572": {
+      "wardName": "Bagillt",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001573": {
+      "wardName": "Broughton North East",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001574": {
+      "wardName": "Broughton South",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001575": {
+      "wardName": "Brynford and Halkyn",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001576": {
+      "wardName": "Buckley: Bistre East",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001577": {
+      "wardName": "Buckley: Bistre West",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001578": {
+      "wardName": "Buckley: Mountain",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001579": {
+      "wardName": "Buckley: Pentrobin",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001580": {
+      "wardName": "Caergwrle",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001581": {
+      "wardName": "Caerwys",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001582": {
+      "wardName": "Cilcain",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001583": {
+      "wardName": "Connah's Quay Central",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001584": {
+      "wardName": "Connah's Quay: Golftyn",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001585": {
+      "wardName": "Connah's Quay South",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001586": {
+      "wardName": "Connah's Quay: Wepre",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001587": {
+      "wardName": "Flint: Castle",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001588": {
+      "wardName": "Flint: Coleshill and Trelawny",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001589": {
+      "wardName": "Flint: Oakenholt",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001590": {
+      "wardName": "Greenfield",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001591": {
+      "wardName": "Gwernaffield and Gwernymynydd",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001592": {
+      "wardName": "Hawarden: Aston",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001593": {
+      "wardName": "Hawarden: Ewloe",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001594": {
+      "wardName": "Hawarden: Mancot",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001595": {
+      "wardName": "Higher Kinnerton",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001596": {
+      "wardName": "Holywell Central",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001597": {
+      "wardName": "Holywell East",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001598": {
+      "wardName": "Holywell West",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001599": {
+      "wardName": "Hope",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001600": {
+      "wardName": "Leeswood",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001601": {
+      "wardName": "Llanasa and Trelawnyd",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001602": {
+      "wardName": "Llanfynydd",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001603": {
+      "wardName": "Mold: Broncoed",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001604": {
+      "wardName": "Mold East",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001605": {
+      "wardName": "Mold South",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001606": {
+      "wardName": "Mold West",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001607": {
+      "wardName": "Mostyn",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001608": {
+      "wardName": "Northop",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001609": {
+      "wardName": "Pen-y-ffordd",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001610": {
+      "wardName": "Queensferry and Sealand",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001611": {
+      "wardName": "Saltney Ferry",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001612": {
+      "wardName": "Shotton East and Shotton Higher",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001613": {
+      "wardName": "Shotton West",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001614": {
+      "wardName": "Treuddyn",
+      "pcon": "W07000082",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001615": {
+      "wardName": "Whitford",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001616": {
+      "wardName": "Bedlinog and Trelewis",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001617": {
+      "wardName": "Cyfarthfa",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001618": {
+      "wardName": "Dowlais and Pant",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001619": {
+      "wardName": "Gurnos",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001620": {
+      "wardName": "Merthyr Vale",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001621": {
+      "wardName": "Park",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001622": {
+      "wardName": "Penydarren",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001623": {
+      "wardName": "Plymouth",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001624": {
+      "wardName": "Town",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001625": {
+      "wardName": "Treharris",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001626": {
+      "wardName": "Vaynor",
+      "pcon": "W07000099",
+      "senedd": "Pontypridd Cynon Merthyr"
+    },
+    "W05001627": {
+      "wardName": "Allt-yr-yn",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001628": {
+      "wardName": "Alway",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001629": {
+      "wardName": "Beechwood",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001630": {
+      "wardName": "Bettws",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001631": {
+      "wardName": "Bishton and Langstone",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001632": {
+      "wardName": "Caerleon",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001633": {
+      "wardName": "Gaer",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001634": {
+      "wardName": "Graig",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001635": {
+      "wardName": "Lliswerry",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001636": {
+      "wardName": "Llanwern",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001637": {
+      "wardName": "Malpas",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001638": {
+      "wardName": "Pillgwenlly",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001639": {
+      "wardName": "Ringland",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001640": {
+      "wardName": "Rogerstone East",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001641": {
+      "wardName": "Rogerstone North",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001642": {
+      "wardName": "Rogerstone West",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001643": {
+      "wardName": "Shaftesbury",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001644": {
+      "wardName": "St Julians",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001645": {
+      "wardName": "Stow Hill",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001646": {
+      "wardName": "Tredegar Park and Marshfield",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001647": {
+      "wardName": "Victoria",
+      "pcon": "W07000104",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001648": {
+      "wardName": "Aber Valley",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001649": {
+      "wardName": "Aberbargoed and Bargoed",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001650": {
+      "wardName": "Abercarn",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001651": {
+      "wardName": "Argoed",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001652": {
+      "wardName": "Bedwas and Trethomas",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001653": {
+      "wardName": "Blackwood",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001654": {
+      "wardName": "Cefn Fforest and Pengam",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001655": {
+      "wardName": "Crosskeys",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001656": {
+      "wardName": "Crumlin",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001657": {
+      "wardName": "Darran Valley",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001658": {
+      "wardName": "Gilfach",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001659": {
+      "wardName": "Hengoed",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001660": {
+      "wardName": "Llanbradach",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001661": {
+      "wardName": "Machen and Rudry",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001662": {
+      "wardName": "Maesycwmmer",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001663": {
+      "wardName": "Morgan Jones",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001664": {
+      "wardName": "Moriah and Pontlottyn",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001665": {
+      "wardName": "Nelson",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001666": {
+      "wardName": "New Tredegar",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001667": {
+      "wardName": "Newbridge",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001668": {
+      "wardName": "Penmaen",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001669": {
+      "wardName": "Penyrheol",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001670": {
+      "wardName": "Pontllanfraith",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001671": {
+      "wardName": "Risca East",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001672": {
+      "wardName": "Risca West",
+      "pcon": "W07000105",
+      "senedd": "Casnewydd Islwyn"
+    },
+    "W05001673": {
+      "wardName": "St Cattwg",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001674": {
+      "wardName": "St Martins",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001675": {
+      "wardName": "Twyn Carno",
+      "pcon": "W07000084",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001676": {
+      "wardName": "Van",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001677": {
+      "wardName": "Ynysddu",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001678": {
+      "wardName": "Ystrad Mynach",
+      "pcon": "W07000088",
+      "senedd": "Blaenau Gwent Caerffili Rhymni"
+    },
+    "W05001679": {
+      "wardName": "Aberavon",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001680": {
+      "wardName": "Aberdulais",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001681": {
+      "wardName": "Allt-wen",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001682": {
+      "wardName": "Baglan",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001683": {
+      "wardName": "Blaengwrach and Glynneath West",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001684": {
+      "wardName": "Briton Ferry East",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001685": {
+      "wardName": "Briton Ferry West",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001686": {
+      "wardName": "Bryn and Cwmavon",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001687": {
+      "wardName": "Bryn-coch North",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001688": {
+      "wardName": "Bryn-coch South",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001689": {
+      "wardName": "Cadoxton",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001690": {
+      "wardName": "Cimla and Pelenna",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001691": {
+      "wardName": "Coedffranc Central",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001692": {
+      "wardName": "Coedffranc North",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001693": {
+      "wardName": "Coedffranc West",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001694": {
+      "wardName": "Crynant, Onllwyn and Seven Sisters",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001695": {
+      "wardName": "Cwmllynfell and Ystalyfera",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001696": {
+      "wardName": "Cymer and Glyncorrwg",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001697": {
+      "wardName": "Dyffryn",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001698": {
+      "wardName": "Glynneath Central and East",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001699": {
+      "wardName": "Godre'r Graig",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001700": {
+      "wardName": "Gwaun-Cae-Gurwen and Lower Brynamman",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001701": {
+      "wardName": "Gwynfi and Croeserw",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001702": {
+      "wardName": "Margam and Tai-bach",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001703": {
+      "wardName": "Neath East",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001704": {
+      "wardName": "Neath North",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001705": {
+      "wardName": "Neath South",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001706": {
+      "wardName": "Pontardawe",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001707": {
+      "wardName": "Port Talbot",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001708": {
+      "wardName": "Resolven and Tonna",
+      "pcon": "W07000103",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001709": {
+      "wardName": "Rhos",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001710": {
+      "wardName": "Sandfields East",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001711": {
+      "wardName": "Sandfields West",
+      "pcon": "W07000081",
+      "senedd": "Afan Ogwr Rhondda"
+    },
+    "W05001712": {
+      "wardName": "Trebanos",
+      "pcon": "W07000085",
+      "senedd": "Brycheiniog Tawe Nedd"
+    },
+    "W05001713": {
+      "wardName": "Acrefair North",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001714": {
+      "wardName": "Acton and Maesydre",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001715": {
+      "wardName": "Bangor Is-y-Coed",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001716": {
+      "wardName": "Borras Park",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001717": {
+      "wardName": "Bronington and Hanmer",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001718": {
+      "wardName": "Brymbo",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001719": {
+      "wardName": "Bryn Cefn",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001720": {
+      "wardName": "Brynyffynnon",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001721": {
+      "wardName": "Cartrefle",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001722": {
+      "wardName": "Cefn East",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001723": {
+      "wardName": "Cefn West",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001724": {
+      "wardName": "Chirk North",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001725": {
+      "wardName": "Chirk South",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001726": {
+      "wardName": "Coedpoeth",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001727": {
+      "wardName": "Dyffryn Ceiriog",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001728": {
+      "wardName": "Erddig",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001729": {
+      "wardName": "Esclusham",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001730": {
+      "wardName": "Garden Village",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001731": {
+      "wardName": "Gresford East and West",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001732": {
+      "wardName": "Grosvenor",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001733": {
+      "wardName": "Gwenfro",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001734": {
+      "wardName": "Gwersyllt East",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001735": {
+      "wardName": "Gwersyllt North",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001736": {
+      "wardName": "Gwersyllt South",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001737": {
+      "wardName": "Gwersyllt West",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001738": {
+      "wardName": "Hermitage",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001739": {
+      "wardName": "Holt",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001740": {
+      "wardName": "Little Acton",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001741": {
+      "wardName": "Llangollen Rural",
+      "pcon": "W07000094",
+      "senedd": "Clwyd"
+    },
+    "W05001742": {
+      "wardName": "Llay",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001743": {
+      "wardName": "Marchwiel",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001744": {
+      "wardName": "Marford and Hoseley",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001745": {
+      "wardName": "Minera",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001746": {
+      "wardName": "New Broughton",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001747": {
+      "wardName": "Offa",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001748": {
+      "wardName": "Overton and Maelor South",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001749": {
+      "wardName": "Pant and Johnstown",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001750": {
+      "wardName": "Penycae",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001751": {
+      "wardName": "Penycae and Ruabon South",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001752": {
+      "wardName": "Ponciau",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001753": {
+      "wardName": "Queensway",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001754": {
+      "wardName": "Rhos",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001755": {
+      "wardName": "Rhosnesni",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001756": {
+      "wardName": "Rossett",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001757": {
+      "wardName": "Ruabon",
+      "pcon": "W07000102",
+      "senedd": "Gwynedd Maldwyn"
+    },
+    "W05001758": {
+      "wardName": "Smithfield",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001759": {
+      "wardName": "Stansty",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001760": {
+      "wardName": "Whitegate",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001761": {
+      "wardName": "Wynnstay",
+      "pcon": "W07000111",
+      "senedd": "Fflint Wrecsam"
+    },
+    "W05001762": {
+      "wardName": "Bulwark and Thornwell",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001763": {
+      "wardName": "Caerwent",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001764": {
+      "wardName": "Caldicot Castle",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001765": {
+      "wardName": "Caldicot Cross",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001766": {
+      "wardName": "Cantref",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001767": {
+      "wardName": "Chepstow Castle and Larkfield",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001768": {
+      "wardName": "Croesonen",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001769": {
+      "wardName": "Crucorney",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001770": {
+      "wardName": "Devauden",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001771": {
+      "wardName": "Dewstow",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001772": {
+      "wardName": "Drybridge",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001773": {
+      "wardName": "Gobion Fawr",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001774": {
+      "wardName": "Goetre Fawr",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001775": {
+      "wardName": "Grofield",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001776": {
+      "wardName": "Lansdown",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001777": {
+      "wardName": "Llanbadoc and Usk",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001778": {
+      "wardName": "Llanelly",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001779": {
+      "wardName": "Llanfoist Fawr and Govilon",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001780": {
+      "wardName": "Llangybi Fawr",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001781": {
+      "wardName": "Llantilio Crossenny",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001782": {
+      "wardName": "Magor East with Undy",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001783": {
+      "wardName": "Magor West",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001784": {
+      "wardName": "Mardy",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001785": {
+      "wardName": "Mitchel Troy and Trellech United",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001786": {
+      "wardName": "Mount Pleasant",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001787": {
+      "wardName": "Osbaston",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001788": {
+      "wardName": "Overmonnow",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001789": {
+      "wardName": "Park",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001790": {
+      "wardName": "Pen Y Fal",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001791": {
+      "wardName": "Portskewett",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001792": {
+      "wardName": "Raglan",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001793": {
+      "wardName": "Rogiet",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001794": {
+      "wardName": "Severn",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001795": {
+      "wardName": "Shirenewton",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001796": {
+      "wardName": "St Arvans",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001797": {
+      "wardName": "St Kingsmark",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001798": {
+      "wardName": "Town",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001799": {
+      "wardName": "West End",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    },
+    "W05001800": {
+      "wardName": "Wyesham",
+      "pcon": "W07000101",
+      "senedd": "Sir Fynwy Torfaen"
+    }
+  }
+}

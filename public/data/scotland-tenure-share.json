@@ -1,0 +1,456 @@
+{
+  "meta": {
+    "source": "QS405SC.csv",
+    "baseline": {
+      "owned": 0.619942792769822,
+      "socialRented": 0.2429301194338954,
+      "privateRented": 0.13712708779628258
+    }
+  },
+  "constituencies": {
+    "S92000003": {
+      "owned": 0.619942792769822,
+      "socialRented": 0.2429301194338954,
+      "privateRented": 0.13712708779628258,
+      "totalHouseholds": 2372777
+    },
+    "S16000074": {
+      "owned": 0.4506292700467458,
+      "socialRented": 0.2393623396859643,
+      "privateRented": 0.31000839026728993,
+      "totalHouseholds": 41715
+    },
+    "S16000075": {
+      "owned": 0.6408117314242827,
+      "socialRented": 0.2770047918711391,
+      "privateRented": 0.08218347670457826,
+      "totalHouseholds": 34642
+    },
+    "S16000076": {
+      "owned": 0.7042518422594272,
+      "socialRented": 0.18434927388770697,
+      "privateRented": 0.11139888385286591,
+      "totalHouseholds": 32433
+    },
+    "S16000077": {
+      "owned": 0.760883142839298,
+      "socialRented": 0.13884204609331086,
+      "privateRented": 0.10027481106739117,
+      "totalHouseholds": 32022
+    },
+    "S16000078": {
+      "owned": 0.7389905489644079,
+      "socialRented": 0.12427106374421878,
+      "privateRented": 0.13673838729137341,
+      "totalHouseholds": 29838
+    },
+    "S16000079": {
+      "owned": 0.6,
+      "socialRented": 0.32169241101410345,
+      "privateRented": 0.07830758898589657,
+      "totalHouseholds": 29780
+    },
+    "S16000080": {
+      "owned": 0.6318558996154624,
+      "socialRented": 0.2576979790094544,
+      "privateRented": 0.11044612137508313,
+      "totalHouseholds": 34587
+    },
+    "S16000081": {
+      "owned": 0.6388443017656501,
+      "socialRented": 0.22282504012841092,
+      "privateRented": 0.138330658105939,
+      "totalHouseholds": 31150
+    },
+    "S16000082": {
+      "owned": 0.6835879431951165,
+      "socialRented": 0.18727266976626497,
+      "privateRented": 0.12913938703861846,
+      "totalHouseholds": 31617
+    },
+    "S16000083": {
+      "owned": 0.6388623000136743,
+      "socialRented": 0.21242991932175578,
+      "privateRented": 0.14870778066456994,
+      "totalHouseholds": 29252
+    },
+    "S16000084": {
+      "owned": 0.6969059440657522,
+      "socialRented": 0.18325899744733373,
+      "privateRented": 0.11983505848691407,
+      "totalHouseholds": 35649
+    },
+    "S16000085": {
+      "owned": 0.6567857470280842,
+      "socialRented": 0.24352901628823764,
+      "privateRented": 0.09968523668367815,
+      "totalHouseholds": 32723
+    },
+    "S16000086": {
+      "owned": 0.661965282083075,
+      "socialRented": 0.2190018598884067,
+      "privateRented": 0.11903285802851829,
+      "totalHouseholds": 32260
+    },
+    "S16000087": {
+      "owned": 0.6280262802628026,
+      "socialRented": 0.27606276062760626,
+      "privateRented": 0.09591095910959109,
+      "totalHouseholds": 33333
+    },
+    "S16000088": {
+      "owned": 0.6565283964365256,
+      "socialRented": 0.2433184855233853,
+      "privateRented": 0.10015311804008908,
+      "totalHouseholds": 28736
+    },
+    "S16000089": {
+      "owned": 0.6333135669922911,
+      "socialRented": 0.3088230704409975,
+      "privateRented": 0.0578633625667114,
+      "totalHouseholds": 32041
+    },
+    "S16000090": {
+      "owned": 0.6970226003047232,
+      "socialRented": 0.2156868969019807,
+      "privateRented": 0.08729050279329609,
+      "totalHouseholds": 31504
+    },
+    "S16000091": {
+      "owned": 0.6239541318043935,
+      "socialRented": 0.297976599219974,
+      "privateRented": 0.07806926897563252,
+      "totalHouseholds": 29999
+    },
+    "S16000092": {
+      "owned": 0.6269264041523822,
+      "socialRented": 0.27474287911313316,
+      "privateRented": 0.09833071673448464,
+      "totalHouseholds": 31211
+    },
+    "S16000093": {
+      "owned": 0.6912496865933594,
+      "socialRented": 0.20824528099143952,
+      "privateRented": 0.10050503241520112,
+      "totalHouseholds": 27919
+    },
+    "S16000094": {
+      "owned": 0.6571523298571342,
+      "socialRented": 0.23470371933208753,
+      "privateRented": 0.10814395081077822,
+      "totalHouseholds": 33178
+    },
+    "S16000095": {
+      "owned": 0.5821282401091405,
+      "socialRented": 0.3286493860845839,
+      "privateRented": 0.08922237380627558,
+      "totalHouseholds": 29320
+    },
+    "S16000096": {
+      "owned": 0.6424172679771087,
+      "socialRented": 0.2544476237870117,
+      "privateRented": 0.10313510823587957,
+      "totalHouseholds": 32152
+    },
+    "S16000097": {
+      "owned": 0.6636982713462546,
+      "socialRented": 0.17283627262673884,
+      "privateRented": 0.16346545602700657,
+      "totalHouseholds": 34362
+    },
+    "S16000098": {
+      "owned": 0.5284092542031901,
+      "socialRented": 0.2896967955165972,
+      "privateRented": 0.18189395028021269,
+      "totalHouseholds": 34795
+    },
+    "S16000099": {
+      "owned": 0.47964997964997963,
+      "socialRented": 0.31155881155881154,
+      "privateRented": 0.2087912087912088,
+      "totalHouseholds": 34398
+    },
+    "S16000100": {
+      "owned": 0.7213000727180752,
+      "socialRented": 0.17490277909513421,
+      "privateRented": 0.1037971481867906,
+      "totalHouseholds": 31629
+    },
+    "S16000101": {
+      "owned": 0.7244367417677643,
+      "socialRented": 0.18015141840737026,
+      "privateRented": 0.09541183982486545,
+      "totalHouseholds": 32889
+    },
+    "S16000102": {
+      "owned": 0.6631739794804627,
+      "socialRented": 0.2314217107930271,
+      "privateRented": 0.10540430972651012,
+      "totalHouseholds": 32067
+    },
+    "S16000103": {
+      "owned": 0.8844511052828775,
+      "socialRented": 0.05612588984638441,
+      "privateRented": 0.0594230048707381,
+      "totalHouseholds": 26690
+    },
+    "S16000104": {
+      "owned": 0.4715161501369066,
+      "socialRented": 0.12142285977368,
+      "privateRented": 0.4070609900894134,
+      "totalHouseholds": 41269
+    },
+    "S16000105": {
+      "owned": 0.5973122150227982,
+      "socialRented": 0.2586459749886676,
+      "privateRented": 0.14404180998853425,
+      "totalHouseholds": 37503
+    },
+    "S16000106": {
+      "owned": 0.5141593119090929,
+      "socialRented": 0.1930651934694244,
+      "privateRented": 0.2927754946214826,
+      "totalHouseholds": 44529
+    },
+    "S16000107": {
+      "owned": 0.6474206984940725,
+      "socialRented": 0.23713553348285807,
+      "privateRented": 0.11544376802306953,
+      "totalHouseholds": 31210
+    },
+    "S16000108": {
+      "owned": 0.6461673063897042,
+      "socialRented": 0.08133890268683676,
+      "privateRented": 0.27249379092345904,
+      "totalHouseholds": 35432
+    },
+    "S16000109": {
+      "owned": 0.7539869517941283,
+      "socialRented": 0.13184124682856108,
+      "privateRented": 0.11417180137731062,
+      "totalHouseholds": 33108
+    },
+    "S16000110": {
+      "owned": 0.7308365139949109,
+      "socialRented": 0.1758905852417303,
+      "privateRented": 0.09327290076335878,
+      "totalHouseholds": 12576
+    },
+    "S16000111": {
+      "owned": 0.5990532024955325,
+      "socialRented": 0.22738815562592093,
+      "privateRented": 0.17355864187854658,
+      "totalHouseholds": 31897
+    },
+    "S16000112": {
+      "owned": 0.6644387367929484,
+      "socialRented": 0.2656003735917343,
+      "privateRented": 0.06996088961531727,
+      "totalHouseholds": 34262
+    },
+    "S16000113": {
+      "owned": 0.6300261096605744,
+      "socialRented": 0.2754569190600522,
+      "privateRented": 0.09451697127937336,
+      "totalHouseholds": 34470
+    },
+    "S16000114": {
+      "owned": 0.6189243857457315,
+      "socialRented": 0.22062585519662087,
+      "privateRented": 0.1604497590576477,
+      "totalHouseholds": 33618
+    },
+    "S16000115": {
+      "owned": 0.49791788938263326,
+      "socialRented": 0.39339314161146977,
+      "privateRented": 0.10868896900589699,
+      "totalHouseholds": 35781
+    },
+    "S16000116": {
+      "owned": 0.5650666888500679,
+      "socialRented": 0.27768072539722155,
+      "privateRented": 0.15725258575271053,
+      "totalHouseholds": 36063
+    },
+    "S16000117": {
+      "owned": 0.3722155512534614,
+      "socialRented": 0.2424338961452692,
+      "privateRented": 0.3853505526012694,
+      "totalHouseholds": 40807
+    },
+    "S16000118": {
+      "owned": 0.37117274038592385,
+      "socialRented": 0.5181122934980813,
+      "privateRented": 0.11071496611599488,
+      "totalHouseholds": 36743
+    },
+    "S16000119": {
+      "owned": 0.5171412300683371,
+      "socialRented": 0.3931662870159453,
+      "privateRented": 0.08969248291571753,
+      "totalHouseholds": 35120
+    },
+    "S16000120": {
+      "owned": 0.4386561077950476,
+      "socialRented": 0.4253885704154601,
+      "privateRented": 0.13595532178949235,
+      "totalHouseholds": 33842
+    },
+    "S16000121": {
+      "owned": 0.4627868899549019,
+      "socialRented": 0.38724039870163446,
+      "privateRented": 0.14997271134346365,
+      "totalHouseholds": 34813
+    },
+    "S16000122": {
+      "owned": 0.4328495879965564,
+      "socialRented": 0.3107243881441397,
+      "privateRented": 0.2564260238593039,
+      "totalHouseholds": 32524
+    },
+    "S16000123": {
+      "owned": 0.6054294007170906,
+      "socialRented": 0.28396221046041775,
+      "privateRented": 0.1106083888224916,
+      "totalHouseholds": 35142
+    },
+    "S16000124": {
+      "owned": 0.6650056555898627,
+      "socialRented": 0.24364892543792607,
+      "privateRented": 0.09134541897221118,
+      "totalHouseholds": 32711
+    },
+    "S16000125": {
+      "owned": 0.666173830393917,
+      "socialRented": 0.17280071813285458,
+      "privateRented": 0.16102545147322844,
+      "totalHouseholds": 37876
+    },
+    "S16000126": {
+      "owned": 0.6359495348259393,
+      "socialRented": 0.2672059188913122,
+      "privateRented": 0.09684454628274854,
+      "totalHouseholds": 36223
+    },
+    "S16000127": {
+      "owned": 0.5826187335092349,
+      "socialRented": 0.2969437115215479,
+      "privateRented": 0.12043755496921724,
+      "totalHouseholds": 36384
+    },
+    "S16000128": {
+      "owned": 0.6330679446548659,
+      "socialRented": 0.2656205714874649,
+      "privateRented": 0.10131148385766922,
+      "totalHouseholds": 38811
+    },
+    "S16000129": {
+      "owned": 0.6545131025558072,
+      "socialRented": 0.24293109026205112,
+      "privateRented": 0.1025558071821417,
+      "totalHouseholds": 30910
+    },
+    "S16000130": {
+      "owned": 0.6431571368572628,
+      "socialRented": 0.2627047459050819,
+      "privateRented": 0.09413811723765525,
+      "totalHouseholds": 33334
+    },
+    "S16000131": {
+      "owned": 0.6427470301967778,
+      "socialRented": 0.22691412507934589,
+      "privateRented": 0.1303388447238763,
+      "totalHouseholds": 33083
+    },
+    "S16000132": {
+      "owned": 0.651637272105404,
+      "socialRented": 0.18975106326026828,
+      "privateRented": 0.1586116646343277,
+      "totalHouseholds": 33623
+    },
+    "S16000133": {
+      "owned": 0.5444202876969354,
+      "socialRented": 0.3818685409655419,
+      "privateRented": 0.07371117133752271,
+      "totalHouseholds": 33577
+    },
+    "S16000134": {
+      "owned": 0.6637679278343825,
+      "socialRented": 0.14721915763514828,
+      "privateRented": 0.1890129145304692,
+      "totalHouseholds": 30818
+    },
+    "S16000135": {
+      "owned": 0.7108483290488432,
+      "socialRented": 0.13830334190231364,
+      "privateRented": 0.15084832904884318,
+      "totalHouseholds": 9725
+    },
+    "S16000136": {
+      "owned": 0.5859390731524897,
+      "socialRented": 0.28179386128930184,
+      "privateRented": 0.13226706555820844,
+      "totalHouseholds": 34763
+    },
+    "S16000137": {
+      "owned": 0.6258060457362147,
+      "socialRented": 0.17467207700292536,
+      "privateRented": 0.19952187726086,
+      "totalHouseholds": 31791
+    },
+    "S16000138": {
+      "owned": 0.6911720123688838,
+      "socialRented": 0.1687685684835991,
+      "privateRented": 0.14005941914751713,
+      "totalHouseholds": 32986
+    },
+    "S16000139": {
+      "owned": 0.741960371734175,
+      "socialRented": 0.16573733122917764,
+      "privateRented": 0.09230229703664738,
+      "totalHouseholds": 28515
+    },
+    "S16000140": {
+      "owned": 0.6462185149912975,
+      "socialRented": 0.27214212997931103,
+      "privateRented": 0.08163935502939149,
+      "totalHouseholds": 30451
+    },
+    "S16000141": {
+      "owned": 0.645993413830955,
+      "socialRented": 0.27245941417759545,
+      "privateRented": 0.08154717199144954,
+      "totalHouseholds": 34618
+    },
+    "S16000142": {
+      "owned": 0.6538693467336684,
+      "socialRented": 0.23678391959798994,
+      "privateRented": 0.1093467336683417,
+      "totalHouseholds": 9950
+    },
+    "S16000143": {
+      "owned": 0.6888749804412455,
+      "socialRented": 0.17862619308402441,
+      "privateRented": 0.1324988264747301,
+      "totalHouseholds": 31955
+    },
+    "S16000144": {
+      "owned": 0.6373716892662527,
+      "socialRented": 0.22110632365986568,
+      "privateRented": 0.14152198707388164,
+      "totalHouseholds": 31564
+    },
+    "S16000145": {
+      "owned": 0.7987004950495049,
+      "socialRented": 0.13066212871287128,
+      "privateRented": 0.07063737623762376,
+      "totalHouseholds": 32320
+    },
+    "S16000146": {
+      "owned": 0.6170120227406878,
+      "socialRented": 0.29907732455186553,
+      "privateRented": 0.08391065270744665,
+      "totalHouseholds": 32189
+    }
+  }
+}
