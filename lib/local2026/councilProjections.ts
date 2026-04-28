@@ -1141,8 +1141,9 @@ export function computeCouncilProjectionRows(args: {
     ...surreyCouncilFeatures,
   ]
   councilFeatures.forEach(feature => {
-    const ladCode = feature.properties?.reference
-    const ladName = feature.properties?.name
+    const ladCode =
+      typeof feature.properties?.reference === 'string' ? feature.properties.reference : null
+    const ladName = typeof feature.properties?.name === 'string' ? feature.properties.name : null
     if (!ladCode || !ladName) return
     const normalized = normalizeCouncilName(ladName)
     const seatRow = councilSeats.councils.find(
