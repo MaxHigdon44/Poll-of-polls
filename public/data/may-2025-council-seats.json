@@ -1,0 +1,137 @@
+{
+  "generatedAt": "2026-03-16T15:39:55.957Z",
+  "councils": [
+    {
+      "council": "Cambridgeshire",
+      "seatsUp": 61,
+      "totalSeats": 61,
+      "control": null
+    },
+    {
+      "council": "Derbyshire",
+      "seatsUp": 64,
+      "totalSeats": 64,
+      "control": "Conservative"
+    },
+    {
+      "council": "Devon",
+      "seatsUp": 60,
+      "totalSeats": 60,
+      "control": "Conservative"
+    },
+    {
+      "council": "Gloucestershire",
+      "seatsUp": 55,
+      "totalSeats": 55,
+      "control": null
+    },
+    {
+      "council": "Hertfordshire",
+      "seatsUp": 78,
+      "totalSeats": 78,
+      "control": "Conservative"
+    },
+    {
+      "council": "Kent",
+      "seatsUp": 81,
+      "totalSeats": 81,
+      "control": "Conservative"
+    },
+    {
+      "council": "Leicestershire",
+      "seatsUp": 55,
+      "totalSeats": 55,
+      "control": "Conservative"
+    },
+    {
+      "council": "Lincolnshire",
+      "seatsUp": 70,
+      "totalSeats": 70,
+      "control": "Conservative"
+    },
+    {
+      "council": "Nottinghamshire",
+      "seatsUp": 66,
+      "totalSeats": 66,
+      "control": "Conservative"
+    },
+    {
+      "council": "Oxfordshire",
+      "seatsUp": 69,
+      "totalSeats": 69,
+      "control": null
+    },
+    {
+      "council": "Staffordshire",
+      "seatsUp": 62,
+      "totalSeats": 62,
+      "control": "Conservative"
+    },
+    {
+      "council": "Warwickshire",
+      "seatsUp": 57,
+      "totalSeats": 57,
+      "control": "Conservative"
+    },
+    {
+      "council": "Worcestershire",
+      "seatsUp": 72,
+      "totalSeats": 72,
+      "control": "Conservative"
+    },
+    {
+      "council": "Doncaster",
+      "seatsUp": 55,
+      "totalSeats": 55,
+      "control": "Labour"
+    },
+    {
+      "council": "Buckinghamshire",
+      "seatsUp": 97,
+      "totalSeats": 97,
+      "control": "Conservative"
+    },
+    {
+      "council": "Cornwall",
+      "seatsUp": 87,
+      "totalSeats": 87,
+      "control": "Conservative"
+    },
+    {
+      "council": "County Durham",
+      "seatsUp": 98,
+      "totalSeats": 98,
+      "control": null
+    },
+    {
+      "council": "North Northamptonshire",
+      "seatsUp": 69,
+      "totalSeats": 69,
+      "control": "Conservative"
+    },
+    {
+      "council": "Northumberland",
+      "seatsUp": 70,
+      "totalSeats": 70,
+      "control": "Conservative"
+    },
+    {
+      "council": "Shropshire",
+      "seatsUp": 74,
+      "totalSeats": 74,
+      "control": "Conservative"
+    },
+    {
+      "council": "West Northamptonshire",
+      "seatsUp": 76,
+      "totalSeats": 76,
+      "control": "Conservative"
+    },
+    {
+      "council": "Wiltshire",
+      "seatsUp": 98,
+      "totalSeats": 98,
+      "control": "Conservative"
+    }
+  ]
+}
