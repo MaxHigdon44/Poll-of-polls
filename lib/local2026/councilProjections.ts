@@ -69,7 +69,7 @@ type LeaveShareLookup = {
   wards?: Record<string, { leaveShare: number }>
   wardNames?: Record<string, { leaveShare: number }>
   lads?: Record<string, { leaveShare: number }>
-  meta?: Record<string, any>
+  meta?: Record<string, unknown>
 }
 
 type AgeShareLookup = {
@@ -144,8 +144,8 @@ type GePconLookup = {
 
 type GeoFeature = {
   type: 'Feature'
-  properties: Record<string, any>
-  geometry: any
+  properties: Record<string, unknown>
+  geometry: unknown
 }
 
 type GeoCollection = {
@@ -173,6 +173,20 @@ type CouncilProjectionRow = {
   projectedControl: string
   projectedSeatsUp: Record<string, number>
   previousSeatsUp: Record<string, number>
+}
+
+export type EnglandWardProjectionEntry = {
+  wardCode: string
+  winner: string
+  shares: Record<string, number>
+  leaveSource: 'ward' | 'ward-name' | 'lad' | 'national'
+  prevWinner: string | null
+}
+
+export type EnglandLocalProjectionSnapshot = {
+  generatedAt: string
+  wardsByCode: Record<string, EnglandWardProjectionEntry>
+  councilRows: CouncilProjectionRow[]
 }
 
 type Weights = {
@@ -441,7 +455,7 @@ function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, numb
     seats: Math.floor(entry.scaled),
     frac: entry.scaled - Math.floor(entry.scaled),
   }))
-  let assigned = floored.reduce((acc, entry) => acc + entry.seats, 0)
+  const assigned = floored.reduce((acc, entry) => acc + entry.seats, 0)
   let remaining = targetTotal - assigned
   floored
     .sort((a, b) => b.frac - a.frac)
@@ -1381,4 +1395,320 @@ export function computeCouncilProjectionRows(args: {
   })
 
   return projections.sort((a, b) => a.council.localeCompare(b.council))
+}
+
+export function computeEnglandWardProjectionSnapshot(args: {
+  generatedAt: string
+  baseline: BaselineData
+  aggregate: AggregateRow
+  councilSeats: CouncilSeatData
+  councilPrevious: CouncilPreviousData | null
+  ladGeo: GeoCollection
+  countyGeo: GeoCollection | null
+  leaveLookup: LeaveShareLookup | null
+  ageLookup: AgeShareLookup | null
+  regionLookup: RegionLookup | null
+  nssecLookup: NssecLookup | null
+  degreeLookup: DegreeLookup | null
+  tenureLookup: TenureLookup | null
+  ruralUrbanLookup: RuralUrbanLookup | null
+  wardVacancyLookup: WardVacancyLookup | null
+  wardToPcon: WardToPconLookup | null
+  cedToPcon: CedToPconLookup | null
+  geLookup: GePconLookup | null
+  weights: Weights
+}): EnglandLocalProjectionSnapshot {
+  const {
+    generatedAt,
+    baseline,
+    aggregate,
+    councilSeats,
+    councilPrevious,
+    ladGeo,
+    countyGeo,
+    leaveLookup,
+    ageLookup,
+    regionLookup,
+    nssecLookup,
+    degreeLookup,
+    tenureLookup,
+    ruralUrbanLookup,
+    wardVacancyLookup,
+    wardToPcon,
+    cedToPcon,
+    geLookup,
+    weights,
+  } = args
+
+  const ladBaselineMap = new Map<
+    string,
+    { totalVotes: number; national: Record<string, number>; local: Record<string, number> }
+  >()
+  baseline.wards.forEach(ward => {
+    const entry = ladBaselineMap.get(ward.ladCode) || {
+      totalVotes: 0,
+      national: {},
+      local: {},
+    }
+    const weight = ward.totalVotes || 0
+    if (weight > 0) {
+      Object.entries(ward.nationalShares || {}).forEach(([party, share]) => {
+        entry.national[party] = (entry.national[party] || 0) + share * weight
+      })
+      Object.entries(ward.localShares || {}).forEach(([party, share]) => {
+        entry.local[party] = (entry.local[party] || 0) + share * weight
+      })
+      entry.totalVotes += weight
+    }
+    ladBaselineMap.set(ward.ladCode, entry)
+  })
+
+  const wardIncumbentLookup = new Map<string, string>()
+  councilPrevious?.councils?.forEach(row => {
+    const councilKey = normalizeCouncilName(row.council)
+    Object.entries(row.wardIncumbents || {}).forEach(([wardName, party]) => {
+      wardIncumbentLookup.set(`${councilKey}|${normalizeName(wardName)}`, canonicalizePartyLabel(party))
+    })
+  })
+
+  const getLeaveShareForWard = (
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): { leaveShare: number; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
+    const wardShare = leaveLookup?.wards?.[wardCode]?.leaveShare
+    if (typeof wardShare === 'number') return { leaveShare: wardShare, source: 'ward' }
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = leaveLookup?.wardNames?.[key]?.leaveShare
+      if (typeof nameShare === 'number') return { leaveShare: nameShare, source: 'ward-name' }
+    }
+    const ladShare = leaveLookup?.lads?.[ladCode]?.leaveShare
+    if (typeof ladShare === 'number') return { leaveShare: ladShare, source: 'lad' }
+    return { leaveShare: NATIONAL_LEAVE_SHARE, source: 'national' }
+  }
+
+  const getAgeShareForWard = (
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): { share: { age18_35: number; age35_55: number; age55_plus: number }; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
+    const wardShare = ageLookup?.wards?.[wardCode]
+    if (wardShare) return { share: wardShare, source: 'ward' }
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = ageLookup?.wardNames?.[key]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+    }
+    if (wardName) {
+      const nameKey = normalizeName(wardName)
+      const nameShare = ageLookup?.wardNamesOnly?.[nameKey]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+      const aggressiveShare = ageLookup?.wardNamesAggressive?.[nameKey]
+      if (aggressiveShare) return { share: aggressiveShare, source: 'ward-name' }
+    }
+    const ladShare = ageLookup?.lads?.[ladCode]
+    if (ladShare) return { share: ladShare, source: 'lad' }
+    return { share: AGE_BASELINE, source: 'national' }
+  }
+
+  const getRegionForWard = (ladCode: string) => {
+    const entry = regionLookup?.lads?.[ladCode]
+    if (entry?.regionName) return entry.regionName
+    if (COUNTY_REGION_LOOKUP[ladCode]) return COUNTY_REGION_LOOKUP[ladCode]
+    return null
+  }
+
+  const getNssecBaseline = () => nssecLookup?.meta?.baseline || { higher: 0.33, intermediate: 0.33, lower: 0.34 }
+  const getDegreeBaseline = () => degreeLookup?.meta?.baseline || { degree: 0.4, noDegree: 0.6 }
+  const getTenureBaseline = () =>
+    tenureLookup?.meta?.baseline || {
+      ownedOutright: 0.32831847091249194,
+      ownsWithMortgage: 0.297073553740984,
+      socialRented: 0.1705895998333387,
+      privateRented: 0.20401837551318536,
+    }
+  const getRuralUrbanBaseline = () =>
+    ruralUrbanLookup?.meta?.baseline || {
+      conurbation: 0.3663336976668199,
+      cityTown: 0.45521235562383135,
+      ruralTownFringe: 0.09743014933962564,
+      ruralVillageHamlet: 0.08102379736972319,
+    }
+
+  const getWardLookupShare = <T extends Record<string, unknown>>(
+    lookup:
+      | {
+          wards?: Record<string, T>
+          wardNames?: Record<string, T>
+          wardNamesOnly?: Record<string, T>
+          wardNamesAggressive?: Record<string, T>
+          lads?: Record<string, T>
+        }
+      | null,
+    wardCode: string,
+    ladCode: string,
+    wardName?: string,
+    ladName?: string
+  ): { share: T | null; source: 'ward' | 'ward-name' | 'lad' | 'national' } => {
+    const wardShare = lookup?.wards?.[wardCode]
+    if (wardShare) return { share: wardShare, source: 'ward' }
+    if (wardName && ladName) {
+      const key = `${normalizeName(ladName)}|${normalizeName(wardName)}`
+      const nameShare = lookup?.wardNames?.[key]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+    }
+    if (wardName) {
+      const nameKey = normalizeName(wardName)
+      const nameShare = lookup?.wardNamesOnly?.[nameKey]
+      if (nameShare) return { share: nameShare, source: 'ward-name' }
+      const aggressiveShare = lookup?.wardNamesAggressive?.[nameKey]
+      if (aggressiveShare) return { share: aggressiveShare, source: 'ward-name' }
+    }
+    const ladShare = lookup?.lads?.[ladCode]
+    if (ladShare) return { share: ladShare, source: 'lad' }
+    return { share: null, source: 'national' }
+  }
+
+  const wardsByCode: Record<string, EnglandWardProjectionEntry> = {}
+
+  baseline.wards.forEach(ward => {
+    const nationalSum = sumShares(ward.nationalShares || {})
+    const localSum = sumShares(ward.localShares || {})
+    let adjustedWard = ward
+    if (nationalSum + localSum === 0) {
+      const ladBaseline = ladBaselineMap.get(ward.ladCode)
+      if (ladBaseline && ladBaseline.totalVotes > 0) {
+        adjustedWard = {
+          ...ward,
+          nationalShares: Object.fromEntries(
+            Object.entries(ladBaseline.national).map(([party, value]) => [party, value / ladBaseline.totalVotes])
+          ),
+          localShares: Object.fromEntries(
+            Object.entries(ladBaseline.local).map(([party, value]) => [party, value / ladBaseline.totalVotes])
+          ),
+        }
+      }
+    }
+
+    const geWeights = {
+      reform: weights.geReformWeight,
+      green: weights.geGreenWeight,
+      major: weights.geMajorWeight,
+    }
+    const wardNameKey = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
+    const pconCode =
+      wardToPcon?.wards?.[ward.wardCode] ||
+      wardToPcon?.wardNames?.[wardNameKey] ||
+      cedToPcon?.ceds?.[ward.wardCode] ||
+      cedToPcon?.cedNames?.[wardNameKey]
+    const geShares = pconCode ? geLookup?.pcon?.[pconCode] : null
+    if (geShares) {
+      const blendedNational = { ...adjustedWard.nationalShares }
+      ;['Labour', 'Conservative', 'Reform', 'Liberal Democrat', 'Green', 'SNP', 'Plaid Cymru'].forEach(party => {
+        const weight = getGeWeightForParty(party, geWeights)
+        if (!weight) return
+        const baseShare = adjustedWard.nationalShares?.[party] ?? 0
+        const geShare = geShares?.[party]
+        if (baseShare === 0 && (party === 'Reform' || party === 'Green')) {
+          blendedNational[party] = getRelativeGeShare(party, geShare)
+          return
+        }
+        blendedNational[party] = blendShare(baseShare, geShare, weight)
+      })
+      adjustedWard = { ...adjustedWard, nationalShares: blendedNational }
+    }
+
+    const leave = getLeaveShareForWard(ward.wardCode, ward.ladCode, ward.wardName, ward.ladName)
+    const age = getAgeShareForWard(ward.wardCode, ward.ladCode, ward.wardName, ward.ladName)
+    const nssec = getWardLookupShare<NssecShare>(nssecLookup, ward.wardCode, ward.ladCode, ward.wardName, ward.ladName)
+    const degree = getWardLookupShare<DegreeShare>(degreeLookup, ward.wardCode, ward.ladCode, ward.wardName, ward.ladName)
+    const tenure = getWardLookupShare<TenureShare>(tenureLookup, ward.wardCode, ward.ladCode, ward.wardName, ward.ladName)
+    const ruralUrban = getWardLookupShare<RuralUrbanShare>(
+      ruralUrbanLookup,
+      ward.wardCode,
+      ward.ladCode,
+      ward.wardName,
+      ward.ladName
+    )
+
+    const projection = computeWardProjection(
+      adjustedWard,
+      getBaselineNationalForYear(baseline, adjustedWard.lastYear),
+      aggregate,
+      leave.leaveShare,
+      age.share,
+      getRegionForWard(ward.ladCode),
+      nssec.share || getNssecBaseline(),
+      getNssecBaseline(),
+      degree.share || getDegreeBaseline(),
+      getDegreeBaseline(),
+      tenure.share || getTenureBaseline(),
+      getTenureBaseline(),
+      ruralUrban.share || getRuralUrbanBaseline(),
+      getRuralUrbanBaseline(),
+      weights.leaveStrength,
+      age.source === 'lad' ? Math.min(weights.ageStrength, 0.6) : weights.ageStrength,
+      weights.regionStrength,
+      nssec.source === 'lad' ? Math.min(weights.nssecStrength, 0.6) : weights.nssecStrength,
+      degree.source === 'lad' ? Math.min(weights.degreeStrength, 0.6) : weights.degreeStrength,
+      tenure.source === 'lad' ? Math.min(weights.tenureStrength, 0.6) : weights.tenureStrength,
+      ruralUrban.source === 'lad'
+        ? Math.min(weights.ruralUrbanStrength, 0.6)
+        : weights.ruralUrbanStrength
+    )
+
+    const previousShares: Record<string, number> = {
+      ...adjustedWard.nationalShares,
+      ...adjustedWard.localShares,
+    }
+    const incumbentKey = `${normalizeCouncilName(ward.ladName)}|${normalizeName(ward.wardName)}`
+    let prevWinner: string | null = wardIncumbentLookup.get(incumbentKey) || null
+    let prevTop = -1
+    if (!prevWinner) {
+      Object.entries(previousShares).forEach(([party, value]) => {
+        const numericValue = Number(value)
+        if (!Number.isFinite(numericValue)) return
+        if (numericValue > prevTop) {
+          prevTop = numericValue
+          prevWinner = party
+        }
+      })
+    }
+
+    wardsByCode[ward.wardCode] = {
+      wardCode: ward.wardCode,
+      winner: projection.winner,
+      shares: projection.shares,
+      leaveSource: leave.source,
+      prevWinner,
+    }
+  })
+
+  return {
+    generatedAt,
+    wardsByCode,
+    councilRows: computeCouncilProjectionRows({
+      baseline,
+      aggregate,
+      councilSeats,
+      councilPrevious,
+      ladGeo,
+      countyGeo,
+      leaveLookup,
+      ageLookup,
+      regionLookup,
+      nssecLookup,
+      degreeLookup,
+      tenureLookup,
+      ruralUrbanLookup,
+      wardVacancyLookup,
+      wardToPcon,
+      cedToPcon,
+      geLookup,
+      weights,
+    }),
+  }
 }

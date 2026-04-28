@@ -35,6 +35,7 @@ import {
   type RuralUrbanBaseline,
   type RuralUrbanShare,
 } from '@/lib/local2026/ruralUrban'
+import type { EnglandLocalProjectionSnapshot } from '@/lib/local2026/councilProjections'
 import {
   GE_WEIGHT_GREEN,
   GE_WEIGHT_MAJOR,
@@ -791,6 +792,10 @@ export default function CouncilProjectionsPage() {
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
   const [countyGeo, setCountyGeo] = useState<GeoCollection | null>(null)
+  const [projectionSnapshot, setProjectionSnapshot] = useState<EnglandLocalProjectionSnapshot | null>(null)
+  const [projectionSnapshotStatus, setProjectionSnapshotStatus] = useState<
+    'loading' | 'ready' | 'missing'
+  >('loading')
   const [hasMounted, setHasMounted] = useState(false)
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
@@ -808,6 +813,25 @@ export default function CouncilProjectionsPage() {
 
   useEffect(() => {
     router.prefetch('/local-2026')
+    fetch('/api/england-local-2026')
+      .then(async res => {
+        if (!res.ok) throw new Error('snapshot unavailable')
+        return (await res.json()) as EnglandLocalProjectionSnapshot
+      })
+      .then(data => {
+        if (!data?.councilRows) throw new Error('invalid snapshot')
+        setProjectionSnapshot(data)
+        setProjectionSnapshotStatus('ready')
+      })
+      .catch(() => {
+        setProjectionSnapshot(null)
+        setProjectionSnapshotStatus('missing')
+      })
+  }, [])
+
+  useEffect(() => {
+    if (projectionSnapshotStatus !== 'missing') return
+
     fetch('/data/ward-baseline.json')
       .then(res => res.json())
       .then(setBaseline)
@@ -848,7 +872,6 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then(setWardToPcon)
       .catch(() => setWardToPcon(null))
-
     fetch('/data/ced-to-pcon.json')
       .then(res => res.json())
       .then(setCedToPcon)
@@ -877,7 +900,7 @@ export default function CouncilProjectionsPage() {
       .then(res => res.json())
       .then((data: AggregateResponse) => setAggregate(data.aggregates?.[0] ?? null))
       .catch(() => setAggregate(null))
-  }, [])
+  }, [projectionSnapshotStatus])
 
   const getLeaveShareForWard = (
     wardCode: string,
@@ -1063,7 +1086,7 @@ export default function CouncilProjectionsPage() {
     return { share: getNssecBaseline(), source: 'national' }
   }
 
-  const rows = useMemo<CouncilProjectionRow[]>(() => {
+  const liveRows = useMemo<CouncilProjectionRow[]>(() => {
     if (!baseline || !aggregate || !councilSeats || !ladGeo) return []
     const byLad = new Map<string, WardBaseline[]>()
     baseline.wards.forEach(ward => {
@@ -1529,6 +1552,11 @@ export default function CouncilProjectionsPage() {
     geMajorWeight,
   ])
 
+  const rows = useMemo<CouncilProjectionRow[]>(
+    () => projectionSnapshot?.councilRows || liveRows,
+    [projectionSnapshot, liveRows]
+  )
+
   const summary = useMemo(() => {
     const previousTotals: Record<string, number> = {}
     const projectedTotals: Record<string, number> = {}
@@ -1696,7 +1724,7 @@ export default function CouncilProjectionsPage() {
                 const projectedColor = getControlTextColor(projectedParty)
                 const previousColor = getControlTextColor(previousParty)
                 return (
-            <a
+            <Link
               key={row.ladCode}
               href={`/local-2026?council=${encodeURIComponent(row.ladCode)}`}
               style={{ textDecoration: 'none', color: 'inherit', display: 'block' }}
@@ -1724,7 +1752,7 @@ export default function CouncilProjectionsPage() {
                   {projectedLabel}
                 </span>
               </div>
-            </a>
+            </Link>
           )})}
         </div>
       )}

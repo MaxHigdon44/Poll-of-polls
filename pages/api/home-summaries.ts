@@ -28,7 +28,7 @@ import {
 import {
   TENURE_EFFECT_STRENGTH,
 } from '@/lib/local2026/tenure'
-import { computeCouncilProjectionRows } from '@/lib/local2026/councilProjections'
+import type { EnglandLocalProjectionSnapshot } from '@/lib/local2026/councilProjections'
 import { scrapeScottishPolls, scrapeWelshPolls } from '@/lib/scrapePolls'
 import { loadScottishConstituencyResults } from '@/pages/api/scottish-constituency-results'
 import {
@@ -141,68 +141,23 @@ async function loadLatestWestminsterAggregate() {
   return results.rows[0] || null
 }
 
-function buildEnglandSummary(aggregate: AggregateRow | null): HomeSummary {
-  const baseline = readDataFile<any>('ward-baseline.json')
-  const councilSeats = readDataFile<any>('council-seats.json')
-  const councilPrevious = readDataFile<any>('council-previous.json')
-  const ladGeo = readDataFile<any>('lads.geojson')
-  const countyGeo = readDataFile<any>('counties.geojson')
-  const leaveLookup = readDataFile<any>('leave-share.json')
-  const ageLookup = readDataFile<any>('age-share.json')
-  const regionLookup = readDataFile<any>('lad-region.json')
-  const nssecLookup = readDataFile<any>('nssec-share.json')
-  const degreeLookup = readDataFile<any>('degree-share.json')
-  const tenureLookup = readDataFile<any>('tenure-share.json')
-  const ruralUrbanLookup = readDataFile<any>('rural-urban-share.json')
-  const wardVacancyLookup = readDataFile<any>('ward-vacancies.json')
-  const wardToPcon = readDataFile<any>('ward-to-pcon.json')
-  const cedToPcon = readDataFile<any>('ced-to-pcon.json')
-  const geLookup = readDataFile<any>('ge2024-pcon.json')
+type SnapshotPayloadRow = {
+  payload: EnglandLocalProjectionSnapshot
+}
 
-  const rows = aggregate
-    ? computeCouncilProjectionRows({
-        baseline,
-        aggregate: {
-          pollCount: 0,
-          labour: aggregate.labour,
-          conservative: aggregate.conservative,
-          reform: aggregate.reform,
-          libdem: aggregate.libdem,
-          green: aggregate.green,
-          snp: aggregate.snp,
-          pc: aggregate.pc,
-          others: aggregate.others,
-          lead: null,
-        },
-        councilSeats,
-        councilPrevious,
-        ladGeo,
-        countyGeo,
-        leaveLookup,
-        ageLookup,
-        regionLookup,
-        nssecLookup,
-        degreeLookup,
-        tenureLookup,
-        ruralUrbanLookup,
-        wardVacancyLookup,
-        wardToPcon,
-        cedToPcon,
-        geLookup,
-        weights: {
-          leaveStrength: LEAVE_EFFECT_STRENGTH,
-          ageStrength: AGE_EFFECT_STRENGTH,
-          regionStrength: REGION_EFFECT_STRENGTH,
-          nssecStrength: NSSEC_EFFECT_STRENGTH,
-          degreeStrength: DEGREE_EFFECT_STRENGTH,
-          tenureStrength: TENURE_EFFECT_STRENGTH,
-          ruralUrbanStrength: RURAL_URBAN_EFFECT_STRENGTH,
-          geReformWeight: GE_WEIGHT_REFORM,
-          geGreenWeight: GE_WEIGHT_GREEN,
-          geMajorWeight: GE_WEIGHT_MAJOR,
-        },
-      })
-    : []
+async function loadLatestEnglandSnapshot() {
+  const results = await sql<SnapshotPayloadRow>`
+    SELECT payload
+    FROM projection_snapshots
+    WHERE view_key = ${'england-local-2026'}
+    ORDER BY snapshot_date DESC
+    LIMIT 1
+  `
+  return results.rows[0]?.payload || null
+}
+
+function buildEnglandSummary(snapshot: EnglandLocalProjectionSnapshot | null): HomeSummary {
+  const rows = snapshot?.councilRows || []
 
   const counts: Record<string, number> = {}
   const previousCounts: Record<string, number> = {}
@@ -405,12 +360,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
-    const [aggregate, scotland, wales] = await Promise.all([
-      loadLatestWestminsterAggregate(),
+    const [englandSnapshot, scotland, wales] = await Promise.all([
+      loadLatestEnglandSnapshot(),
       buildScotlandSummary(),
       buildWalesSummary(),
     ])
-    const england = buildEnglandSummary(aggregate)
+    const england = buildEnglandSummary(englandSnapshot)
     const summaries = [england, scotland, wales]
     res.setHeader('Cache-Control', 's-maxage=3600, stale-while-revalidate=86400')
     return res.status(200).json({ summaries })

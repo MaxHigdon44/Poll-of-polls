@@ -36,6 +36,7 @@ import {
   type RuralUrbanBaseline,
   type RuralUrbanShare,
 } from '@/lib/local2026/ruralUrban'
+import type { EnglandLocalProjectionSnapshot } from '@/lib/local2026/councilProjections'
 import {
   GE_WEIGHT_GREEN,
   GE_WEIGHT_MAJOR,
@@ -1066,6 +1067,10 @@ export default function Local2026Page() {
   const [geLookup, setGeLookup] = useState<GePconLookup | null>(null)
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
+  const [projectionSnapshot, setProjectionSnapshot] = useState<EnglandLocalProjectionSnapshot | null>(null)
+  const [projectionSnapshotStatus, setProjectionSnapshotStatus] = useState<
+    'loading' | 'ready' | 'missing'
+  >('loading')
   const [selectedLad, setSelectedLad] = useState<string | null>(null)
   const [focusedWard, setFocusedWard] = useState<{
     ladCode: string
@@ -1132,6 +1137,35 @@ export default function Local2026Page() {
       .then(setBaseline)
       .catch(() => setBaseline(null))
 
+    fetch('/data/council-seats.json')
+      .then(res => res.json())
+      .then(setCouncilSeats)
+      .catch(() => setCouncilSeats(null))
+
+    fetch('/data/council-previous.json')
+      .then(res => res.json())
+      .then(setCouncilPrevious)
+      .catch(() => setCouncilPrevious(null))
+
+    fetch('/api/england-local-2026')
+      .then(async res => {
+        if (!res.ok) throw new Error('snapshot unavailable')
+        return (await res.json()) as EnglandLocalProjectionSnapshot
+      })
+      .then(data => {
+        if (!data?.wardsByCode) throw new Error('invalid snapshot')
+        setProjectionSnapshot(data)
+        setProjectionSnapshotStatus('ready')
+      })
+      .catch(() => {
+        setProjectionSnapshot(null)
+        setProjectionSnapshotStatus('missing')
+      })
+  }, [])
+
+  useEffect(() => {
+    if (projectionSnapshotStatus !== 'missing') return
+
     fetch('/data/leave-share.json')
       .then(res => res.json())
       .then(setLeaveLookup)
@@ -1156,10 +1190,12 @@ export default function Local2026Page() {
       .then(res => res.json())
       .then(setDegreeLookup)
       .catch(() => setDegreeLookup(null))
+
     fetch('/data/tenure-share.json')
       .then(res => res.json())
       .then(setTenureLookup)
       .catch(() => setTenureLookup(null))
+
     fetch('/data/rural-urban-share.json')
       .then(res => res.json())
       .then(setRuralUrbanLookup)
@@ -1180,23 +1216,13 @@ export default function Local2026Page() {
       .then(setGeLookup)
       .catch(() => setGeLookup(null))
 
-    fetch('/data/council-seats.json')
-      .then(res => res.json())
-      .then(setCouncilSeats)
-      .catch(() => setCouncilSeats(null))
-
-    fetch('/data/council-previous.json')
-      .then(res => res.json())
-      .then(setCouncilPrevious)
-      .catch(() => setCouncilPrevious(null))
-
     fetch('/api/aggregate')
       .then(res => res.json())
       .then((data: AggregateResponse) => {
         setAggregate(data.aggregates?.[0] ?? null)
       })
       .catch(() => setAggregate(null))
-  }, [])
+  }, [projectionSnapshotStatus])
 
   useEffect(() => {
     if (!selectedLad) return
@@ -1483,6 +1509,16 @@ export default function Local2026Page() {
   }, [councilPrevious])
 
   const wardMap = useMemo(() => {
+    if (projectionSnapshot?.wardsByCode) {
+      const map = new Map<string, any>()
+      Object.values(projectionSnapshot.wardsByCode).forEach(entry => {
+        map.set(entry.wardCode, {
+          ...entry,
+          color: PARTY_COLORS[entry.winner] || '#ccc',
+        })
+      })
+      return map
+    }
     if (!baseline || !aggregate) return new Map<string, any>()
     const ladBaselineMap = new Map<
       string,
@@ -1710,6 +1746,7 @@ export default function Local2026Page() {
     })
     return map
   }, [
+    projectionSnapshot,
     baseline,
     aggregate,
     leaveLookup,
@@ -1735,7 +1772,7 @@ export default function Local2026Page() {
   ])
 
   const wardMapByName = useMemo(() => {
-    if (!baseline || !aggregate) return new Map<string, any>()
+    if (!baseline || wardMap.size === 0) return new Map<string, any>()
     const map = new Map<string, any>()
     baseline.wards.forEach(ward => {
       const key = `${normalizeName(ward.ladName)}|${normalizeName(ward.wardName)}`
@@ -1745,7 +1782,7 @@ export default function Local2026Page() {
       map.set(key, projection)
     })
     return map
-  }, [baseline, aggregate, wardMap])
+  }, [baseline, wardMap])
 
   const selectedBaselineWards = useMemo(() => {
     if (!selectedLad || !baseline) return []
@@ -1763,7 +1800,7 @@ export default function Local2026Page() {
   }, [baseline, selectedLad])
 
   const wardMapByWardName = useMemo(() => {
-    if (!baseline || !aggregate || !selectedLad) return new Map<string, any>()
+    if (!baseline || !selectedLad || wardMap.size === 0) return new Map<string, any>()
     const map = new Map<string, any>()
     selectedBaselineWards.forEach(ward => {
       const key = normalizeName(ward.wardName)
@@ -1773,10 +1810,10 @@ export default function Local2026Page() {
       map.set(key, projection)
     })
     return map
-  }, [baseline, aggregate, selectedLad, wardMap, selectedBaselineWards])
+  }, [baseline, selectedLad, wardMap, selectedBaselineWards])
 
   const ladFallbackProjection = useMemo(() => {
-    if (!baseline || !aggregate || !selectedLad) return null
+    if (!baseline || !selectedLad || wardMap.size === 0) return null
     const wards = selectedBaselineWards
     if (!wards.length) return null
     const totals: Record<string, number> = {}
@@ -1813,7 +1850,7 @@ export default function Local2026Page() {
       color: PARTY_COLORS[winner] || '#ccc',
       prevWinner: null,
     }
-  }, [baseline, aggregate, selectedLad, wardMap, wardMapByWardName, selectedBaselineWards])
+  }, [baseline, selectedLad, wardMap, wardMapByWardName, selectedBaselineWards])
 
   const wardVacancies = useMemo(() => {
     if (!baseline || !selectedLad) return new Map<string, number>()
@@ -2532,20 +2569,21 @@ export default function Local2026Page() {
   const isEnglishMapReady = Boolean(
     councilGeo &&
       baseline &&
-      aggregate &&
-      leaveLookup &&
-      ageLookup &&
-      regionLookup &&
-      nssecLookup &&
-      degreeLookup &&
-      tenureLookup &&
-      ruralUrbanLookup &&
       wardVacancyLookup &&
-      wardToPcon &&
-      cedToPcon &&
-      geLookup &&
       councilSeats &&
       councilPrevious &&
+      (projectionSnapshot ||
+        (aggregate &&
+          leaveLookup &&
+          ageLookup &&
+          regionLookup &&
+          nssecLookup &&
+          degreeLookup &&
+          tenureLookup &&
+          ruralUrbanLookup &&
+          wardToPcon &&
+          cedToPcon &&
+          geLookup)) &&
       (!selectedLad || (isCountySelection ? cedGeo : wardGeo))
   )
 

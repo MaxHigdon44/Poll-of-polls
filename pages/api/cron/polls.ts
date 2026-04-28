@@ -1,12 +1,99 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
+import fs from 'fs'
+import path from 'path'
 import { scrapePolls } from '../../../lib/scrapePolls'
 import { computeAggregate } from '../../../lib/aggregate'
+import {
+  computeEnglandWardProjectionSnapshot,
+  type EnglandLocalProjectionSnapshot,
+} from '../../../lib/local2026/councilProjections'
+import { AGE_EFFECT_STRENGTH } from '@/lib/local2026/age'
+import { DEGREE_EFFECT_STRENGTH } from '@/lib/local2026/degree'
+import { GE_WEIGHT_GREEN, GE_WEIGHT_MAJOR, GE_WEIGHT_REFORM } from '@/lib/local2026/ge'
+import { LEAVE_EFFECT_STRENGTH } from '@/lib/local2026/leaveRemain'
+import { NSSEC_EFFECT_STRENGTH } from '@/lib/local2026/nssec'
+import { REGION_EFFECT_STRENGTH } from '@/lib/local2026/region'
+import { RURAL_URBAN_EFFECT_STRENGTH } from '@/lib/local2026/ruralUrban'
+import { TENURE_EFFECT_STRENGTH } from '@/lib/local2026/tenure'
 
 function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
   return req.headers.authorization === `Bearer ${secret}`;
+}
+
+function readDataFile<T>(filename: string): T {
+  const filePath = path.join(process.cwd(), 'public', 'data', filename)
+  return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T
+}
+
+function buildEnglandSnapshot(
+  aggregate: ReturnType<typeof computeAggregate>,
+  generatedAt: string
+): EnglandLocalProjectionSnapshot {
+  type SnapshotArgs = Parameters<typeof computeEnglandWardProjectionSnapshot>[0]
+
+  const baseline = readDataFile<SnapshotArgs['baseline']>('ward-baseline.json')
+  const councilSeats = readDataFile<SnapshotArgs['councilSeats']>('council-seats.json')
+  const councilPrevious = readDataFile<SnapshotArgs['councilPrevious']>('council-previous.json')
+  const ladGeo = readDataFile<SnapshotArgs['ladGeo']>('lads.geojson')
+  const countyGeo = readDataFile<SnapshotArgs['countyGeo']>('counties.geojson')
+  const leaveLookup = readDataFile<SnapshotArgs['leaveLookup']>('leave-share.json')
+  const ageLookup = readDataFile<SnapshotArgs['ageLookup']>('age-share.json')
+  const regionLookup = readDataFile<SnapshotArgs['regionLookup']>('lad-region.json')
+  const nssecLookup = readDataFile<SnapshotArgs['nssecLookup']>('nssec-share.json')
+  const degreeLookup = readDataFile<SnapshotArgs['degreeLookup']>('degree-share.json')
+  const tenureLookup = readDataFile<SnapshotArgs['tenureLookup']>('tenure-share.json')
+  const ruralUrbanLookup = readDataFile<SnapshotArgs['ruralUrbanLookup']>('rural-urban-share.json')
+  const wardVacancyLookup = readDataFile<SnapshotArgs['wardVacancyLookup']>('ward-vacancies.json')
+  const wardToPcon = readDataFile<SnapshotArgs['wardToPcon']>('ward-to-pcon.json')
+  const cedToPcon = readDataFile<SnapshotArgs['cedToPcon']>('ced-to-pcon.json')
+  const geLookup = readDataFile<SnapshotArgs['geLookup']>('ge2024-pcon.json')
+
+  return computeEnglandWardProjectionSnapshot({
+    generatedAt,
+    baseline,
+    aggregate: {
+      pollCount: 0,
+      labour: aggregate.labour,
+      conservative: aggregate.conservative,
+      reform: aggregate.reform,
+      libdem: aggregate.libdem,
+      green: aggregate.green,
+      snp: aggregate.snp,
+      pc: aggregate.pc,
+      others: aggregate.others,
+      lead: aggregate.leadParty,
+    },
+    councilSeats,
+    councilPrevious,
+    ladGeo,
+    countyGeo,
+    leaveLookup,
+    ageLookup,
+    regionLookup,
+    nssecLookup,
+    degreeLookup,
+    tenureLookup,
+    ruralUrbanLookup,
+    wardVacancyLookup,
+    wardToPcon,
+    cedToPcon,
+    geLookup,
+    weights: {
+      leaveStrength: LEAVE_EFFECT_STRENGTH,
+      ageStrength: AGE_EFFECT_STRENGTH,
+      regionStrength: REGION_EFFECT_STRENGTH,
+      nssecStrength: NSSEC_EFFECT_STRENGTH,
+      degreeStrength: DEGREE_EFFECT_STRENGTH,
+      tenureStrength: TENURE_EFFECT_STRENGTH,
+      ruralUrbanStrength: RURAL_URBAN_EFFECT_STRENGTH,
+      geReformWeight: GE_WEIGHT_REFORM,
+      geGreenWeight: GE_WEIGHT_GREEN,
+      geMajorWeight: GE_WEIGHT_MAJOR,
+    },
+  })
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -79,6 +166,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         ${aggregate.reform}, ${aggregate.libdem}, ${aggregate.green}, ${aggregate.snp},
         ${aggregate.pc}, ${aggregate.others}, ${aggregate.leadParty}, ${aggregate.leadValue}
       )
+    `
+
+    const englandSnapshot = buildEnglandSnapshot(aggregate, runDate.toISOString())
+    await sql`
+      INSERT INTO projection_snapshots (run_id, snapshot_date, view_key, payload)
+      VALUES (${runId}, ${runDate.toISOString()}, ${'england-local-2026'}, ${JSON.stringify(englandSnapshot)})
+      ON CONFLICT (view_key, snapshot_date)
+      DO UPDATE SET run_id = EXCLUDED.run_id, payload = EXCLUDED.payload
     `
 
     return res.status(200).json({ runId, count: polls.length })
