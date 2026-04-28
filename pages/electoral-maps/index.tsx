@@ -642,7 +642,7 @@ export default function ElectoralMapsPage() {
           </div>
         ) : null}
       </div>
-      <div className="poll-card" style={{ height: '86vh', minHeight: '860px', overflow: 'hidden' }}>
+      <div className="poll-card poll-map-card">
         <div className="poll-map-layout" style={{ height: '100%' }}>
           <div
             className="poll-card poll-map-sidebar"

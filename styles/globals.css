@@ -114,6 +114,12 @@ button:hover {
   background: var(--poll-card-bg-subtle);
 }
 
+.poll-map-card {
+  height: 86vh;
+  min-height: 860px;
+  overflow: hidden;
+}
+
 .poll-map-layout {
   display: grid;
   grid-template-columns: 210px 1fr;
@@ -767,16 +773,39 @@ button:hover {
 
 @media (max-width: 720px) {
   .poll-page-shell {
-    padding: 16px 16px 28px;
+    padding: 14px 12px 24px;
   }
 
   .poll-card {
-    padding: 14px;
+    padding: 12px;
     border-radius: 18px;
+  }
+
+  .poll-map-card {
+    height: auto;
+    min-height: 0;
+    overflow: visible;
   }
 
   .poll-map-layout {
     grid-template-columns: 1fr;
+    gap: 0.85rem;
+    height: auto !important;
+  }
+
+  .poll-map-sidebar {
+    order: 2;
+    max-height: none !important;
+    overflow: visible !important;
+  }
+
+  .poll-map-panel {
+    order: 1;
+    min-height: 360px;
+  }
+
+  .poll-map-frame {
+    min-height: 360px;
   }
 
   .poll-topnav {
@@ -823,10 +852,12 @@ button:hover {
 
   .poll-site-footer {
     flex-direction: column;
+    gap: 0.75rem;
   }
 
   .poll-site-footer-links {
     justify-content: flex-start;
     white-space: normal;
+    flex-wrap: wrap;
   }
 }
