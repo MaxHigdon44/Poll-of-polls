@@ -1062,6 +1062,13 @@ export default function ScottishMapPage() {
             <div style={{ marginTop: '0.75rem', color: '#555' }}>
               Click a constituency to see vote share per party.
             </div>
+            <div style={{ marginTop: '0.5rem', color: '#f8fafc' }}>
+              For the Regional List Seats, please see the{' '}
+              <a href="/scottish-parliament-projection" style={{ color: '#f8fafc' }}>
+                Scottish Parliamentary Elections Projections Page
+              </a>
+              .
+            </div>
             <button
               style={{ marginTop: '1rem' }}
               onClick={() => (window.location.href = '/electoral-maps')}

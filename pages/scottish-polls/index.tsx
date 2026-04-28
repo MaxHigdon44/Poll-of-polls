@@ -136,7 +136,7 @@ function PollTable({
                   <td>{formatPercent(poll.green)}</td>
                   <td>{formatPercent(poll.reform)}</td>
                   <td>{formatPercent(poll.others)}</td>
-                  <td style={{ background: getLeadColor(poll) }}>{formatLead(poll)}</td>
+                  <td style={{ background: getLeadColor(poll), color: '#000' }}>{formatLead(poll)}</td>
                 </tr>
               )
             })}
@@ -188,7 +188,7 @@ export default function ScottishPollsPage() {
           </label>
         </div>
       </div>
-      <div style={{ display: 'grid', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gap: '2.5rem', marginTop: '1rem' }}>
         <PollTable
           title="Constituency Vote"
           polls={constituencyPolls}
