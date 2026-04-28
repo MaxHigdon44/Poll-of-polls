@@ -227,6 +227,34 @@ type CountryProjectionSummary = {
   rows: Array<{ party: string; count: number; delta: number }>
 }
 
+function normalizeSummaryParty(party: string | null | undefined) {
+  const normalized = String(party || '').toLowerCase().trim()
+  if (!normalized) return 'Other'
+  if (normalized.includes('labour')) return 'Labour'
+  if (normalized.includes('conservative')) return 'Conservative'
+  if (normalized.includes('liberal democrat') || normalized.includes('lib dem')) {
+    return 'Liberal Democrat'
+  }
+  if (normalized.includes('reform')) return 'Reform'
+  if (normalized.includes('green')) return 'Green'
+  if (normalized.includes('independent') || normalized === 'ind') return 'Independent'
+  if (normalized.includes('snp')) return 'SNP'
+  if (normalized.includes('plaid')) return 'Plaid Cymru'
+  if (normalized.includes('overall control')) return 'No overall control'
+  return party || 'Other'
+}
+
+function normalizeCouncilLookupName(value: string | null | undefined) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\bcounty council\b/g, ' ')
+    .replace(/\bcouncil\b/g, ' ')
+    .replace(/&/g, ' and ')
+    .replace(/[',.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 type SearchSelectionOption = {
   type: 'council' | 'ward'
   ladCode: string
@@ -2507,6 +2535,46 @@ export default function Local2026Page() {
     selectedBaselineWards,
   ])
 
+  const projectedControlByLad = useMemo(() => {
+    const map = new Map<string, string>()
+    if (projectionSnapshot?.councilRows?.length) {
+      projectionSnapshot.councilRows.forEach(row => {
+        if (row.ladCode) map.set(row.ladCode, row.projectedControl)
+      })
+      return map
+    }
+    if (selectedLad && councilComposition?.projectedControl) {
+      map.set(selectedLad, councilComposition.projectedControl.replace(/\s+majority$/i, ''))
+    }
+    return map
+  }, [projectionSnapshot, selectedLad, councilComposition])
+
+  const seatChangeSummary = useMemo(() => {
+    const rows = projectionSnapshot?.councilRows || []
+    const totals: Record<string, number> = {}
+    rows.forEach(row => {
+      Object.entries(row.projectedSeatsUp || {}).forEach(([party, seats]) => {
+        const key = normalizeSummaryParty(party)
+        totals[key] = (totals[key] || 0) + (seats || 0)
+      })
+    })
+    const independentSeats = totals.Independent || 0
+    let otherSeats = totals.Other || 0
+    const keptRows = Object.entries(totals)
+      .filter(([party]) => party !== 'Other')
+      .map(([party, seats]) => ({ party, seats }))
+      .filter(({ party, seats }) => {
+        if (party === 'Independent') return true
+        if (independentSeats > 0 && seats < independentSeats) {
+          otherSeats += seats
+          return false
+        }
+        return true
+      })
+    if (otherSeats > 0) keptRows.push({ party: 'Other', seats: otherSeats })
+    return keptRows.sort((a, b) => b.seats - a.seats)
+  }, [projectionSnapshot])
+
   const showNoComposition =
     Boolean(selectedLad) && (!councilComposition || !Object.keys(councilComposition.totals).length)
 
@@ -2545,6 +2613,21 @@ export default function Local2026Page() {
     if (/council$/i.test(name)) return name
     return `${name} Council`
   }, [selectedLadFeature])
+
+  const projectedControlByName = useMemo(() => {
+    const map = new Map<string, string>()
+    if (projectionSnapshot?.councilRows?.length) {
+      projectionSnapshot.councilRows.forEach(row => {
+        const key = normalizeCouncilLookupName(row.council)
+        if (key) map.set(key, row.projectedControl)
+      })
+      return map
+    }
+    if (selectedCouncilName && councilComposition?.projectedControl) {
+      map.set(normalizeCouncilLookupName(selectedCouncilName), councilComposition.projectedControl)
+    }
+    return map
+  }, [projectionSnapshot, selectedCouncilName, councilComposition])
 
   const isCountySelection = useMemo(() => {
     if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') return true
@@ -2862,14 +2945,8 @@ export default function Local2026Page() {
                     marginBottom: '1rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700 }}>{englandSummary.country}</div>
-                  <div
-                    className="poll-muted"
-                    style={{ fontSize: '0.82rem', marginBottom: '0.45rem' }}
-                  >
-                    {englandSummary.metric}
-                  </div>
-                  <div style={{ display: 'grid', gap: '0.3rem' }}>
+                  <div style={{ fontWeight: 700 }}>Projected Council Control</div>
+                  <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
                     {englandSummary.rows.map(({ party, count }) => (
                       <div
                         key={party}
@@ -2897,29 +2974,58 @@ export default function Local2026Page() {
                   </div>
                 </div>
               ) : null}
-              <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Council Types</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <span style={{ width: '12px', height: '12px', background: '#2E8B57' }} />
-                <span>District Councils</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <span style={{ width: '12px', height: '12px', background: '#E75480' }} />
-                <span>County Councils</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <span style={{ width: '12px', height: '12px', background: '#6A1B9A' }} />
-                <span>London Boroughs</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <span style={{ width: '12px', height: '12px', background: '#FB8C00' }} />
-                <span>Metropolitan Boroughs</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
-                <span style={{ width: '12px', height: '12px', background: '#1E88E5' }} />
-                <span>Unitary Authorities</span>
-              </div>
+              {seatChangeSummary.length > 0 ? (
+                <div
+                  style={{
+                    border: '1px solid var(--poll-border)',
+                    borderRadius: '14px',
+                    padding: '0.75rem',
+                    background: 'rgba(255,255,255,0.05)',
+                    marginBottom: '1rem',
+                  }}
+                >
+                  <div style={{ fontWeight: 700 }}>Overall Seat Projections</div>
+                  <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
+                    {seatChangeSummary.map(({ party, seats }) => {
+                      return (
+                        <div
+                          key={`seat-change-${party}`}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span
+                              style={{
+                                width: '10px',
+                                height: '10px',
+                                borderRadius: '999px',
+                                background: PARTY_COLORS[party] || '#9a9a9a',
+                              }}
+                            />
+                            {party}
+                          </span>
+                          <strong>
+                            {seats}
+                          </strong>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ) : null}
               <div style={{ marginTop: '0.75rem', color: '#555' }}>
                 Click a council area to zoom into ward-level projections.
+              </div>
+              <div style={{ marginTop: '0.75rem', color: '#555' }}>
+                For a full list of Council Results and Seat Changes, visit the{' '}
+                <a href="/council-projections" style={{ color: '#172033' }}>
+                  Projected English Local Elections Page
+                </a>
+                .
               </div>
               <button
                 style={{ marginTop: '1rem' }}
@@ -2966,6 +3072,8 @@ export default function Local2026Page() {
               focusedWardNameKey={focusedWard?.wardNameKey ?? null}
               eligibleLads={eligibleLads}
               ladCategoryByCode={ladCategoryByCode}
+              projectedControlByLad={projectedControlByLad}
+              projectedControlByName={projectedControlByName}
               previousWinnerLabel={
                 selectedLad === 'surrey-east' || selectedLad === 'surrey-west'
                   ? 'Incumbent of Surrey County Council Division'

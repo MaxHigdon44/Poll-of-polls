@@ -1654,9 +1654,7 @@ export default function CouncilProjectionsPage() {
 
       {seatsUpSummary.length > 0 && (
         <>
-          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>
-            Seat Change from the previous election wards were contested
-          </div>
+          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Seat Change</div>
           <div
             style={{
               display: 'flex',

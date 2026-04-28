@@ -103,6 +103,8 @@ type LocalMapProps = {
   focusedWardNameKey?: string | null
   eligibleLads: Set<string>
   ladCategoryByCode: Map<string, 'county' | 'district' | 'london' | 'metro' | 'unitary'>
+  projectedControlByLad?: Map<string, string>
+  projectedControlByName?: Map<string, string>
   nonContestedLabel?: string
   previousWinnerLabel?: string
 }
@@ -320,6 +322,17 @@ function getWardDisplayName(feature: GeoFeature) {
   )
 }
 
+function normalizeMapName(value: string | null | undefined) {
+  return String(value || '')
+    .toLowerCase()
+    .replace(/\bcounty council\b/g, ' ')
+    .replace(/\bcouncil\b/g, ' ')
+    .replace(/&/g, ' and ')
+    .replace(/[',.]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
 function getPartyStripePatternId(primary: string, secondary: string) {
   const a = primary.replace('#', '')
   const b = secondary.replace('#', '')
@@ -492,6 +505,8 @@ export default function LocalMap({
   focusedWardNameKey,
   eligibleLads,
   ladCategoryByCode,
+  projectedControlByLad,
+  projectedControlByName,
   nonContestedLabel = 'Not contested',
   previousWinnerLabel = 'Incumbent',
 }: LocalMapProps) {
@@ -602,51 +617,44 @@ export default function LocalMap({
         fillOpacity: 0,
       }
     }
-    const fillColor =
-      category === 'county'
-        ? '#E75480'
-        : category === 'london'
-        ? '#6A1B9A'
-        : category === 'metro'
-          ? '#FB8C00'
-          : category === 'unitary'
-            ? '#1E88E5'
-            : category === 'district'
-              ? '#2E8B57'
-              : '#f5f5f5'
-    const strokeColor =
-      category === 'county'
-        ? '#B03060'
-        : category === 'london'
-        ? '#4A148C'
-        : category === 'metro'
-          ? '#EF6C00'
-          : category === 'unitary'
-            ? '#1565C0'
-            : category === 'district'
-              ? '#1B5E20'
-              : '#bbb'
+    const projectedControl =
+      (ladCode ? projectedControlByLad?.get(ladCode) : null) ||
+      projectedControlByName?.get(normalizeMapName(feature.properties?.name))
+    const projectedParty =
+      projectedControl && projectedControl !== 'No overall control'
+        ? formatDisplayPartyLabel(projectedControl.replace(/\s+majority$/i, ''))
+        : null
+    const fillColor = projectedParty
+      ? PARTY_COLORS[projectedParty] || '#9a9a9a'
+      : '#9ca3af'
+    const strokeColor = projectedParty
+      ? PARTY_COLORS[projectedParty] || '#7f7f7f'
+      : '#6b7280'
     return {
       color: strokeColor,
       weight: 2,
       fillColor,
-      fillOpacity: category === 'county' ? 0.28 : 0.35,
+      fillOpacity: category === 'county' ? 0.32 : 0.38,
     }
   }
 
-  const countyOutlineStyle = () => ({
-    color: '#B03060',
-    weight: 3,
+  const countyOutlineStyle = (feature?: GeoFeature) => ({
+    color: feature ? ladStyle(feature).color : '#f8fafc',
+    weight: 2.4,
     fillColor: 'transparent',
     fillOpacity: 0,
+    opacity: 0.95,
   })
 
-  const countyFillStyle = () => ({
-    color: 'transparent',
-    weight: 0,
-    fillColor: '#E75480',
-    fillOpacity: 0.28,
-  })
+  const countyFillStyle = (feature?: GeoFeature) => {
+    const style = ladStyle(feature)
+    return {
+      color: 'transparent',
+      weight: 0,
+      fillColor: style.fillColor,
+      fillOpacity: style.fillOpacity,
+    }
+  }
 
   const baseStyle = () => ({
     color: 'transparent',
