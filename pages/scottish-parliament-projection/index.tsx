@@ -1525,6 +1525,7 @@ export default function ScottishParliamentProjectionPage() {
                   gridTemplateColumns: '1fr 160px 160px',
                   gap: '0.75rem',
                   alignItems: 'center',
+                  padding: '0.45rem 0.6rem',
                 }}
               >
                 <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
