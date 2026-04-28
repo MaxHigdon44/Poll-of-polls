@@ -1276,7 +1276,7 @@ export default function ScottishParliamentProjectionPage() {
         projectedWinner: result?.projectedWinner || 'Unknown',
       }
     })
-  }, [constituencyList, projectedResults])
+  }, [projectionSnapshot, constituencyList, projectedResults])
 
   const constituencySeatsByRegion = useMemo(() => {
     if (projectionSnapshot) {
@@ -1299,7 +1299,7 @@ export default function ScottishParliamentProjectionPage() {
       bucket[party] = (bucket[party] || 0) + 1
     })
     return map
-  }, [constituencyWinners])
+  }, [projectionSnapshot, constituencyWinners])
 
   const regionalVotesByRegion = useMemo(() => {
     if (projectionSnapshot) return new Map<string, Record<string, number>>()
