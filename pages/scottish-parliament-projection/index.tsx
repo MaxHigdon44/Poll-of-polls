@@ -1552,7 +1552,7 @@ export default function ScottishParliamentProjectionPage() {
                 ))}
               </div>
               <div style={{ display: 'grid', gap: '0.35rem', marginTop: '0.6rem' }}>
-                <div style={{ fontWeight: 600, color: '#172033' }}>Regional list seats (7)</div>
+                <div style={{ fontWeight: 600, color: '#f8fafc' }}>Regional list seats (7)</div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1.25rem' }}>
                   {Object.entries(regionalSeatsByRegion.get(region) || {})
                     .filter(([, count]) => count > 0)
