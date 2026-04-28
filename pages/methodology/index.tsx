@@ -25,8 +25,8 @@ export default function MethodologyPage() {
         <h2>1. Polling Averages</h2>
         <p>
           The polling averages are built from recent voting intention polls for the Westminster
-          elections, the Scottish Parliamentary elections, and the Senedd elections. These list of
-          polls are sourced from Wikipedia.
+          elections, the Scottish Parliamentary elections, and the Senedd elections. These polls
+          are sourced from Wikipedia.
         </p>
         <p>
           To create each polling average, polls are weighted according to polling quality, sample

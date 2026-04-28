@@ -269,7 +269,7 @@ button:hover {
 }
 
 .poll-data-table a {
-  color: #93c5fd;
+  color: #f8fafc;
 }
 
 .poll-projection-card {
@@ -344,7 +344,11 @@ button:hover {
 }
 
 .poll-prose a {
-  color: #dbeafe;
+  color: #f8fafc;
+}
+
+.poll-page-shell a {
+  color: #f8fafc;
 }
 
 .poll-prose code {
