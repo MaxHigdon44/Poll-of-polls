@@ -8,6 +8,7 @@ import { TENURE_EFFECT_STRENGTH, getTenureAdjustment } from '../../lib/local2026
 import { NSSEC_EFFECT_STRENGTH, getNssecAdjustment } from '../../lib/local2026/nssec'
 import { DEGREE_EFFECT_STRENGTH, getDegreeAdjustment } from '../../lib/local2026/degree'
 import { RURAL_URBAN_EFFECT_STRENGTH, getRuralUrbanAdjustment } from '../../lib/local2026/ruralUrban'
+import type { WalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
 
 type Poll = {
   poll_date: string
@@ -410,9 +411,32 @@ export default function SeneddProjectionPage() {
   const [degreeLookup, setDegreeLookup] = useState<any>(null)
   const [ruralLookup, setRuralLookup] = useState<any>(null)
   const [wardToSenedd, setWardToSenedd] = useState<any>(null)
+  const [projectionSnapshot, setProjectionSnapshot] = useState<WalesProjectionSnapshot | null>(null)
+  const [projectionSnapshotStatus, setProjectionSnapshotStatus] = useState<
+    'loading' | 'ready' | 'missing'
+  >('loading')
   const cacheBust = useMemo(() => Date.now(), [])
 
   useEffect(() => {
+    fetch('/api/senedd-projection')
+      .then(async res => {
+        if (!res.ok) throw new Error('snapshot unavailable')
+        return (await res.json()) as WalesProjectionSnapshot
+      })
+      .then(data => {
+        if (!data?.projectedConstituencies || !data?.seatCounts) throw new Error('invalid snapshot')
+        setProjectionSnapshot(data)
+        setProjectionSnapshotStatus('ready')
+      })
+      .catch(() => {
+        setProjectionSnapshot(null)
+        setProjectionSnapshotStatus('missing')
+      })
+  }, [])
+
+  useEffect(() => {
+    if (projectionSnapshotStatus !== 'missing') return
+
     fetch(`/data/senedd-to-wpc-lookup.json?_=${cacheBust}`)
       .then(res => res.json())
       .then(data => setLookup(data))
@@ -443,7 +467,7 @@ export default function SeneddProjectionPage() {
     fetch(`/data/ward-to-senedd.json?_=${cacheBust}`)
       .then(res => res.json())
       .then(setWardToSenedd)
-  }, [cacheBust])
+  }, [cacheBust, projectionSnapshotStatus])
 
   const aggregate = useMemo(() => {
     if (!polls.length) return null
@@ -484,11 +508,11 @@ export default function SeneddProjectionPage() {
 
   type ProjectedConstituency = {
     name: string
-    projected: Record<string, number>
     seats: Record<string, number>
   }
 
   const projectedConstituencies = useMemo<ProjectedConstituency[]>(() => {
+    if (projectionSnapshot) return projectionSnapshot.projectedConstituencies
     if (!lookup?.results || !gePcon?.pcon) return []
     const aggregateSafe = aggregate || BASELINE_WALES_GE2024
     const deltas = {
@@ -738,9 +762,10 @@ export default function SeneddProjectionPage() {
         seats,
       }
     })
-  }, [lookup, gePcon, aggregate])
+  }, [projectionSnapshot, lookup, gePcon, aggregate])
 
   const seatCounts = useMemo(() => {
+    if (projectionSnapshot) return projectionSnapshot.seatCounts
     const counts: Record<string, number> = {}
     projectedConstituencies.forEach((entry: ProjectedConstituency) => {
       Object.entries(entry.seats).forEach(([party, count]) => {
@@ -748,7 +773,7 @@ export default function SeneddProjectionPage() {
       })
     })
     return counts
-  }, [projectedConstituencies])
+  }, [projectionSnapshot, projectedConstituencies])
 
   const seatOrder = useMemo(() => {
     const entries = Object.entries(seatCounts).sort((a, b) => b[1] - a[1])

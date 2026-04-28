@@ -8,6 +8,8 @@ import {
   computeEnglandWardProjectionSnapshot,
   type EnglandLocalProjectionSnapshot,
 } from '../../../lib/local2026/councilProjections'
+import { computeScottishProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
+import { computeWalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
 import { AGE_EFFECT_STRENGTH } from '@/lib/local2026/age'
 import { DEGREE_EFFECT_STRENGTH } from '@/lib/local2026/degree'
 import { GE_WEIGHT_GREEN, GE_WEIGHT_MAJOR, GE_WEIGHT_REFORM } from '@/lib/local2026/ge'
@@ -16,6 +18,8 @@ import { NSSEC_EFFECT_STRENGTH } from '@/lib/local2026/nssec'
 import { REGION_EFFECT_STRENGTH } from '@/lib/local2026/region'
 import { RURAL_URBAN_EFFECT_STRENGTH } from '@/lib/local2026/ruralUrban'
 import { TENURE_EFFECT_STRENGTH } from '@/lib/local2026/tenure'
+import { scrapeScottishPolls, scrapeWelshPolls } from '@/lib/scrapePolls'
+import { loadScottishConstituencyResults } from '@/pages/api/scottish-constituency-results'
 
 function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
@@ -96,6 +100,46 @@ function buildEnglandSnapshot(
   })
 }
 
+async function buildScotlandSnapshot(generatedAt: string) {
+  const [{ constituencyPolls, regionalPolls }, { results }] = await Promise.all([
+    scrapeScottishPolls(90),
+    loadScottishConstituencyResults(),
+  ])
+
+  return computeScottishProjectionSnapshot({
+    generatedAt,
+    constituencyPolls,
+    regionalPolls,
+    constituencyResultsRows: results,
+    constituencyGeo: readDataFile('scotland-constituencies.geojson'),
+    geLookup: readDataFile('ge2024-pcon.json'),
+    spcToWpcLookup: readDataFile('spc-to-wpc-lookup.json'),
+    wpcLeaveLookup: readDataFile('scotland-wpc-leave-share.json'),
+    tenureLookup: readDataFile('scotland-tenure-share.json'),
+    ageLookup: readDataFile('scotland-age-share.json'),
+    degreeLookup: readDataFile('scotland-degree-share.json'),
+    nssecLookup: readDataFile('scotland-nssec-share.json'),
+  })
+}
+
+async function buildWalesSnapshot(generatedAt: string) {
+  const { polls } = await scrapeWelshPolls(90)
+
+  return computeWalesProjectionSnapshot({
+    generatedAt,
+    polls,
+    lookup: readDataFile('senedd-to-wpc-lookup.json'),
+    gePcon: readDataFile('ge2024-pcon.json'),
+    leaveLookup: readDataFile('leave-share.json'),
+    ageLookup: readDataFile('age-share.json'),
+    tenureLookup: readDataFile('tenure-share.json'),
+    nssecLookup: readDataFile('nssec-share.json'),
+    degreeLookup: readDataFile('degree-share.json'),
+    ruralLookup: readDataFile('rural-urban-share.json'),
+    wardToSenedd: readDataFile('ward-to-senedd.json'),
+  })
+}
+
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== "GET"){
     res.setHeader('Allow', 'GET')
@@ -168,10 +212,26 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       )
     `
 
-    const englandSnapshot = buildEnglandSnapshot(aggregate, runDate.toISOString())
+    const [englandSnapshot, scotlandSnapshot, walesSnapshot] = await Promise.all([
+      Promise.resolve(buildEnglandSnapshot(aggregate, runDate.toISOString())),
+      buildScotlandSnapshot(runDate.toISOString()),
+      buildWalesSnapshot(runDate.toISOString()),
+    ])
     await sql`
       INSERT INTO projection_snapshots (run_id, snapshot_date, view_key, payload)
       VALUES (${runId}, ${runDate.toISOString()}, ${'england-local-2026'}, ${JSON.stringify(englandSnapshot)})
+      ON CONFLICT (view_key, snapshot_date)
+      DO UPDATE SET run_id = EXCLUDED.run_id, payload = EXCLUDED.payload
+    `
+    await sql`
+      INSERT INTO projection_snapshots (run_id, snapshot_date, view_key, payload)
+      VALUES (${runId}, ${runDate.toISOString()}, ${'scotland-parliament'}, ${JSON.stringify(scotlandSnapshot)})
+      ON CONFLICT (view_key, snapshot_date)
+      DO UPDATE SET run_id = EXCLUDED.run_id, payload = EXCLUDED.payload
+    `
+    await sql`
+      INSERT INTO projection_snapshots (run_id, snapshot_date, view_key, payload)
+      VALUES (${runId}, ${runDate.toISOString()}, ${'wales-senedd'}, ${JSON.stringify(walesSnapshot)})
       ON CONFLICT (view_key, snapshot_date)
       DO UPDATE SET run_id = EXCLUDED.run_id, payload = EXCLUDED.payload
     `

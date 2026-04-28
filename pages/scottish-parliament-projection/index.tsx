@@ -30,6 +30,7 @@ import {
   type ScotlandTenureShare,
 } from '../../lib/scotland/tenure'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
+import type { ScotlandProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
 
 type Poll = {
   poll_date: string
@@ -869,6 +870,10 @@ export default function ScottishParliamentProjectionPage() {
   const [nssecStrength, setNssecStrength] = useState(SCOTLAND_NSSEC_EFFECT_STRENGTH)
   const [leaveStrength, setLeaveStrength] = useState(SCOTLAND_LEAVE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(SCOTLAND_REGION_EFFECT_STRENGTH)
+  const [projectionSnapshot, setProjectionSnapshot] = useState<ScotlandProjectionSnapshot | null>(null)
+  const [projectionSnapshotStatus, setProjectionSnapshotStatus] = useState<
+    'loading' | 'ready' | 'missing'
+  >('loading')
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -888,6 +893,27 @@ export default function ScottishParliamentProjectionPage() {
         // ignore malformed local storage
       }
     }
+    fetch('/api/scottish-parliament-projection')
+      .then(async res => {
+        if (!res.ok) throw new Error('snapshot unavailable')
+        return (await res.json()) as ScotlandProjectionSnapshot
+      })
+      .then(data => {
+        if (!data?.constituencyRows || !data?.combinedSeatCounts) {
+          throw new Error('invalid snapshot')
+        }
+        setProjectionSnapshot(data)
+        setProjectionSnapshotStatus('ready')
+      })
+      .catch(() => {
+        setProjectionSnapshot(null)
+        setProjectionSnapshotStatus('missing')
+      })
+  }, [])
+
+  useEffect(() => {
+    if (projectionSnapshotStatus !== 'missing') return
+
     fetch('/data/scotland-constituencies.geojson')
       .then(res => res.json())
       .then(data => setConstituencyGeo(data))
@@ -950,7 +976,7 @@ export default function ScottishParliamentProjectionPage() {
       .then(res => res.json())
       .then(data => setNssecLookup(data))
       .catch(() => setNssecLookup(null))
-  }, [])
+  }, [projectionSnapshotStatus])
 
   const spcCodeByName = useMemo(() => {
     const map = new Map<string, string>()
@@ -1240,6 +1266,7 @@ export default function ScottishParliamentProjectionPage() {
   ])
 
   const constituencyWinners = useMemo(() => {
+    if (projectionSnapshot) return projectionSnapshot.constituencyRows
     return constituencyList.map(entry => {
       const result =
         projectedResults.get(entry.name) ||
@@ -1252,6 +1279,17 @@ export default function ScottishParliamentProjectionPage() {
   }, [constituencyList, projectedResults])
 
   const constituencySeatsByRegion = useMemo(() => {
+    if (projectionSnapshot) {
+      const map = new Map<string, Record<string, number>>()
+      projectionSnapshot.constituencyRows.forEach(entry => {
+        const regionKey = normalizeRegionName(entry.region || 'Unknown')
+        if (!map.has(regionKey)) map.set(regionKey, {})
+        const bucket = map.get(regionKey) as Record<string, number>
+        const party = entry.projectedWinner || 'Unknown'
+        bucket[party] = (bucket[party] || 0) + 1
+      })
+      return map
+    }
     const map = new Map<string, Record<string, number>>()
     constituencyWinners.forEach(entry => {
       const regionKey = normalizeRegionName(entry.region || 'Unknown')
@@ -1264,6 +1302,7 @@ export default function ScottishParliamentProjectionPage() {
   }, [constituencyWinners])
 
   const regionalVotesByRegion = useMemo(() => {
+    if (projectionSnapshot) return new Map<string, Record<string, number>>()
     if (!regionalAggregate) return new Map<string, Record<string, number>>()
     const map = new Map<string, Record<string, number>>()
     REGION_LABELS.forEach(({ key }) => {
@@ -1295,10 +1334,18 @@ export default function ScottishParliamentProjectionPage() {
       })
     })
     return map
-  }, [regionalAggregate])
+  }, [projectionSnapshot, regionalAggregate])
 
 
   const regionalSeatsByRegion = useMemo(() => {
+    if (projectionSnapshot) {
+      return new Map(
+        Object.entries(projectionSnapshot.regionalSeatsByRegion || {}).map(([region, seats]) => [
+          region,
+          seats,
+        ])
+      )
+    }
     const map = new Map<string, Record<string, number>>()
     REGION_LABELS.forEach(({ key }) => {
       const votes = regionalVotesByRegion.get(key)
@@ -1308,7 +1355,7 @@ export default function ScottishParliamentProjectionPage() {
       map.set(key, seats)
     })
     return map
-  }, [regionalVotesByRegion, constituencySeatsByRegion])
+  }, [projectionSnapshot, regionalVotesByRegion, constituencySeatsByRegion])
 
   const constituencySeatCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -1330,12 +1377,13 @@ export default function ScottishParliamentProjectionPage() {
   }, [regionalSeatsByRegion])
 
   const combinedSeatCounts = useMemo(() => {
+    if (projectionSnapshot) return projectionSnapshot.combinedSeatCounts || {}
     const counts: Record<string, number> = { ...constituencySeatCounts }
     Object.entries(regionalSeatCounts).forEach(([party, count]) => {
       counts[party] = (counts[party] || 0) + count
     })
     return counts
-  }, [constituencySeatCounts, regionalSeatCounts])
+  }, [projectionSnapshot, constituencySeatCounts, regionalSeatCounts])
 
   const seatOrder = useMemo(() => {
     const entries = Object.entries(combinedSeatCounts)
