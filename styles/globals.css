@@ -832,7 +832,10 @@ button:hover {
   }
 
   .poll-topnav__dropdown {
+    display: block;
     width: 100%;
+    padding-bottom: 0;
+    margin-bottom: 0;
   }
 
   .poll-topnav__dropdown-toggle {
@@ -841,13 +844,22 @@ button:hover {
   }
 
   .poll-topnav__dropdown-menu {
+    display: none;
     position: static;
     width: 100%;
+    min-width: 0;
+    margin-top: 0.35rem;
     opacity: 1;
     transform: none;
-    pointer-events: auto;
+    pointer-events: none;
     box-shadow: none;
     border-radius: 12px;
+  }
+
+  .poll-topnav__dropdown:focus-within .poll-topnav__dropdown-menu,
+  .poll-topnav__dropdown--open .poll-topnav__dropdown-menu {
+    display: grid;
+    pointer-events: auto;
   }
 
   .poll-site-footer {

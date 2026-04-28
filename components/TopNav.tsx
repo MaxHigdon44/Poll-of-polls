@@ -89,6 +89,7 @@ const DEFAULT_PAGE_TITLES: Record<string, ReactNode> = {
 export default function TopNav({ title, items, subtitle }: TopNavProps) {
   const router = useRouter()
   const [openDropdown, setOpenDropdown] = useState<string | null>(null)
+  const [isCompactNav, setIsCompactNav] = useState(false)
   const navRef = useRef<HTMLElement | null>(null)
   const closeTimeoutRef = useRef<number | null>(null)
   const resolvedSubtitle =
@@ -134,6 +135,19 @@ export default function TopNav({ title, items, subtitle }: TopNavProps) {
     return () => clearCloseTimeout()
   }, [])
 
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const mediaQuery = window.matchMedia('(max-width: 720px), (hover: none), (pointer: coarse)')
+    const syncCompactNav = () => setIsCompactNav(mediaQuery.matches)
+    syncCompactNav()
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', syncCompactNav)
+      return () => mediaQuery.removeEventListener('change', syncCompactNav)
+    }
+    mediaQuery.addListener(syncCompactNav)
+    return () => mediaQuery.removeListener(syncCompactNav)
+  }, [])
+
   return (
     <header className="poll-topnav">
       <div className="poll-topnav__bar">
@@ -157,17 +171,28 @@ export default function TopNav({ title, items, subtitle }: TopNavProps) {
                 <div
                   key={item.label}
                   className={dropdownClass}
-                  onMouseEnter={() => openDropdownNow(item.label)}
-                  onMouseLeave={scheduleDropdownClose}
+                  onMouseEnter={() => {
+                    if (!isCompactNav) openDropdownNow(item.label)
+                  }}
+                  onMouseLeave={() => {
+                    if (!isCompactNav) scheduleDropdownClose()
+                  }}
                 >
                   <button
                     type="button"
                     className={buttonClass}
                     aria-haspopup="true"
                     aria-expanded={isOpen}
-                    onFocus={() => openDropdownNow(item.label)}
-                    onBlur={scheduleDropdownClose}
-                    onClick={() => setOpenDropdown(isOpen ? null : item.label)}
+                    onFocus={() => {
+                      if (!isCompactNav) openDropdownNow(item.label)
+                    }}
+                    onBlur={() => {
+                      if (!isCompactNav) scheduleDropdownClose()
+                    }}
+                    onClick={() => {
+                      clearCloseTimeout()
+                      setOpenDropdown(isOpen ? null : item.label)
+                    }}
                   >
                     {item.label}
                     <span className="poll-topnav__caret" aria-hidden="true" />

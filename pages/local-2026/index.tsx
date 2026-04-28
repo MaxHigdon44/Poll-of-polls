@@ -1295,7 +1295,12 @@ export default function Local2026Page() {
           wardCode,
           wardNameKey,
         })
+      } else {
+        setFocusedWard(null)
       }
+    } else {
+      setSelectedLad(null)
+      setFocusedWard(null)
     }
   }, [router.isReady, router.query.council, router.query.ward, router.query.wardNameKey])
 
@@ -2623,6 +2628,32 @@ export default function Local2026Page() {
     void router.replace('/electoral-maps', undefined, { scroll: false })
   }
 
+  const handleSearchSelect = (option: (typeof searchOptions)[number]) => {
+    const nextQuery =
+      option.type === 'ward'
+        ? {
+            council: option.ladCode,
+            ward: option.wardCode ?? undefined,
+            wardNameKey: option.wardNameKey ?? undefined,
+          }
+        : {
+            council: option.ladCode,
+          }
+
+    setSelectedLad(option.ladCode)
+    setFocusedWard(
+      option.type === 'ward'
+        ? {
+            ladCode: option.ladCode,
+            wardCode: option.wardCode,
+            wardNameKey: option.wardNameKey,
+          }
+        : null
+    )
+    setSearchQuery(option.label)
+    void router.replace({ pathname: '/local-2026', query: nextQuery }, undefined, { scroll: false })
+  }
+
   return (
     <PageShell>
       {!isEmbed && (
@@ -2665,19 +2696,7 @@ export default function Local2026Page() {
               {searchResults.map(option => (
                 <button
                   key={`${option.type}-${option.label}`}
-                  onClick={() => {
-                    setSelectedLad(option.ladCode)
-                    setFocusedWard(
-                      option.type === 'ward'
-                        ? {
-                            ladCode: option.ladCode,
-                            wardCode: option.wardCode,
-                            wardNameKey: option.wardNameKey,
-                          }
-                        : null
-                    )
-                    setSearchQuery(option.label)
-                  }}
+                  onClick={() => handleSearchSelect(option)}
                   style={{
                     textAlign: 'left',
                     padding: '0.5rem 0.65rem',
