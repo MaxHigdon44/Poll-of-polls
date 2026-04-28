@@ -1050,14 +1050,6 @@ export default function ScottishMapPage() {
               <div style={{ fontWeight: 700 }}>Projected Constituency Seats</div>
               <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
                 {projectedSeatSummary.map(item => {
-                  const deltaLabel =
-                    item.delta === 0
-                      ? '-'
-                      : item.delta > 0
-                        ? `↑ ${item.delta}`
-                        : `↓ ${Math.abs(item.delta)}`
-                  const deltaColor =
-                    item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#9ca3af'
                   return (
                     <div
                       key={item.party}
@@ -1067,9 +1059,9 @@ export default function ScottishMapPage() {
                         justifyContent: 'space-between',
                         gap: '0.5rem',
                       }}
-                    >
-                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span
                           style={{
                             width: '10px',
                             height: '10px',
@@ -1079,12 +1071,7 @@ export default function ScottishMapPage() {
                         />
                         {item.party}
                       </span>
-                      <strong>
-                        {item.seats}
-                        <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
-                          ({deltaLabel})
-                        </span>
-                      </strong>
+                      <strong>{item.seats}</strong>
                     </div>
                   )
                 })}
@@ -1133,7 +1120,7 @@ export default function ScottishMapPage() {
               Click a constituency to see vote share per party.
             </div>
             <div style={{ marginTop: '0.5rem', color: '#f8fafc' }}>
-              To see how the Regional List Seats are split up by region, please see the{' '}
+              To see seat changes and how the Regional List Seats are split by region, please see the{' '}
               <a href="/scottish-parliament-projection" style={{ color: '#f8fafc' }}>
                 Scottish Parliamentary Elections Projections Page
               </a>

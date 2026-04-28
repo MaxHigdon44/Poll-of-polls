@@ -660,15 +660,9 @@ export default function WelshMapPage() {
                       marginTop: '1rem',
                       marginBottom: '1rem',
                     }}
-                  >
-                    <div style={{ fontWeight: 700 }}>{walesSummary.country}</div>
-                    <div
-                      className="poll-muted"
-                      style={{ fontSize: '0.82rem', marginBottom: '0.45rem' }}
-                    >
-                      {walesSummary.metric}
-                    </div>
-                    <div style={{ display: 'grid', gap: '0.3rem' }}>
+                >
+                    <div style={{ fontWeight: 700 }}>Projected MSs</div>
+                    <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
                       {walesSummary.rows.map(({ party, count }) => (
                         <div
                           key={party}
