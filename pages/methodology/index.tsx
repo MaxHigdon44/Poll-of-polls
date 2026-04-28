@@ -11,7 +11,7 @@ export default function MethodologyPage() {
       />
       <div className="poll-card poll-prose">
         <p>
-          This page documents the methodology behind Singal&apos;s election models, used to predict
+          This page documents the methodology behind Signal&apos;s election models, used to predict
           the May 2026 English Local Elections, the Scottish Parliamentary Elections, and the
           Senedd Elections.
         </p>

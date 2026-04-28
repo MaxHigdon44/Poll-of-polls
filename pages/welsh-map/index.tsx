@@ -24,6 +24,13 @@ const PARTY_COLORS: Record<string, string> = {
 
 const WelshSeneddMap = dynamic(() => import('../../components/WelshSeneddMap'), { ssr: false })
 
+type CountryProjectionSummary = {
+  country: string
+  view: 'england' | 'scotland' | 'wales'
+  metric: string
+  rows: Array<{ party: string; count: number; delta: number }>
+}
+
 function normalizeWelshName(name: string) {
   return String(name || '')
     .normalize('NFD')
@@ -52,6 +59,7 @@ export default function WelshMapPage() {
   const [degreeLookup, setDegreeLookup] = useState<any>(null)
   const [ruralLookup, setRuralLookup] = useState<any>(null)
   const [wardToSenedd, setWardToSenedd] = useState<any>(null)
+  const [countrySummaries, setCountrySummaries] = useState<CountryProjectionSummary[]>([])
   const [selectedSeat, setSelectedSeat] = useState<{
     name: string
     result: {
@@ -91,6 +99,10 @@ export default function WelshMapPage() {
     fetch('/api/welsh-polls')
       .then(res => res.json())
       .then(data => setPolls(data.polls ?? []))
+    fetch('/api/home-summaries')
+      .then(res => res.json())
+      .then(data => setCountrySummaries(Array.isArray(data?.summaries) ? data.summaries : []))
+      .catch(() => setCountrySummaries([]))
     fetch(`/data/leave-share.json?_=${cacheBust}`)
       .then(res => res.json())
       .then(setLeaveLookup)
@@ -113,6 +125,11 @@ export default function WelshMapPage() {
       .then(res => res.json())
       .then(setWardToSenedd)
   }, [cacheBust])
+
+  const walesSummary = useMemo(
+    () => countrySummaries.find(summary => summary.view === 'wales') || null,
+    [countrySummaries]
+  )
 
   const aggregate = useMemo(() => {
     if (!polls.length) return null
@@ -633,23 +650,52 @@ export default function WelshMapPage() {
               </>
             ) : (
               <>
-                <div style={{ marginTop: '1rem', fontWeight: 600, marginBottom: '0.5rem' }}>
-                  Parties
-                </div>
-                {Object.entries(PARTY_COLORS).map(([party, color]) => (
+                {walesSummary ? (
                   <div
-                    key={party}
                     style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      marginBottom: '0.35rem',
+                      border: '1px solid var(--poll-border)',
+                      borderRadius: '14px',
+                      padding: '0.75rem',
+                      background: 'rgba(255,255,255,0.05)',
+                      marginTop: '1rem',
+                      marginBottom: '1rem',
                     }}
                   >
-                    <span style={{ width: '12px', height: '12px', background: color }} />
-                    <span>{party}</span>
+                    <div style={{ fontWeight: 700 }}>{walesSummary.country}</div>
+                    <div
+                      className="poll-muted"
+                      style={{ fontSize: '0.82rem', marginBottom: '0.45rem' }}
+                    >
+                      {walesSummary.metric}
+                    </div>
+                    <div style={{ display: 'grid', gap: '0.3rem' }}>
+                      {walesSummary.rows.map(({ party, count }) => (
+                        <div
+                          key={party}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span
+                              style={{
+                                width: '10px',
+                                height: '10px',
+                                borderRadius: '999px',
+                                background: PARTY_COLORS[party] || '#9ca3af',
+                              }}
+                            />
+                            {party}
+                          </span>
+                          <strong>{count}</strong>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                ))}
+                ) : null}
                 <div className="poll-muted" style={{ marginTop: '0.75rem' }}>
                   Colour of the constituency represents the largest party in each constituency.
                   <br />

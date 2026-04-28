@@ -220,6 +220,13 @@ type AggregateResponse = {
   aggregates: AggregateRow[]
 }
 
+type CountryProjectionSummary = {
+  country: string
+  view: 'england' | 'scotland' | 'wales'
+  metric: string
+  rows: Array<{ party: string; count: number; delta: number }>
+}
+
 type WardVacancyLookup = {
   wards?: Record<string, number>
   wardNames?: Record<string, number>
@@ -234,6 +241,18 @@ const PARTY_COLORS: Record<string, string> = {
   SNP: '#FDF38E',
   'Plaid Cymru': '#008672',
   Other: '#9a9a9a',
+}
+
+const SUMMARY_COLORS: Record<string, string> = {
+  Labour: '#E4003B',
+  Conservative: '#0087DC',
+  Reform: '#12B6CF',
+  'Liberal Democrat': '#FAA61A',
+  Green: '#02A95B',
+  SNP: '#FDF38E',
+  'Plaid Cymru': '#008672',
+  Independent: '#9a9a9a',
+  'No overall control': '#9ca3af',
 }
 
 const ELECTION_LADS_2026 = new Set(
@@ -1068,6 +1087,7 @@ export default function Local2026Page() {
   const [councilSeats, setCouncilSeats] = useState<CouncilSeatData | null>(null)
   const [councilPrevious, setCouncilPrevious] = useState<CouncilPreviousData | null>(null)
   const [projectionSnapshot, setProjectionSnapshot] = useState<EnglandLocalProjectionSnapshot | null>(null)
+  const [countrySummaries, setCountrySummaries] = useState<CountryProjectionSummary[]>([])
   const [projectionSnapshotStatus, setProjectionSnapshotStatus] = useState<
     'loading' | 'ready' | 'missing'
   >('loading')
@@ -1147,6 +1167,11 @@ export default function Local2026Page() {
       .then(setCouncilPrevious)
       .catch(() => setCouncilPrevious(null))
 
+    fetch('/api/home-summaries')
+      .then(res => res.json())
+      .then(data => setCountrySummaries(Array.isArray(data?.summaries) ? data.summaries : []))
+      .catch(() => setCountrySummaries([]))
+
     fetch('/api/england-local-2026')
       .then(async res => {
         if (!res.ok) throw new Error('snapshot unavailable')
@@ -1223,6 +1248,11 @@ export default function Local2026Page() {
       })
       .catch(() => setAggregate(null))
   }, [projectionSnapshotStatus])
+
+  const englandSummary = useMemo(
+    () => countrySummaries.find(summary => summary.view === 'england') || null,
+    [countrySummaries]
+  )
 
   useEffect(() => {
     if (!selectedLad) return
@@ -2766,6 +2796,51 @@ export default function Local2026Page() {
             </>
           ) : (
             <>
+              {englandSummary ? (
+                <div
+                  style={{
+                    border: '1px solid var(--poll-border)',
+                    borderRadius: '14px',
+                    padding: '0.75rem',
+                    background: 'rgba(255,255,255,0.05)',
+                    marginBottom: '1rem',
+                  }}
+                >
+                  <div style={{ fontWeight: 700 }}>{englandSummary.country}</div>
+                  <div
+                    className="poll-muted"
+                    style={{ fontSize: '0.82rem', marginBottom: '0.45rem' }}
+                  >
+                    {englandSummary.metric}
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.3rem' }}>
+                    {englandSummary.rows.map(({ party, count }) => (
+                      <div
+                        key={party}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '0.5rem',
+                        }}
+                      >
+                        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                          <span
+                            style={{
+                              width: '10px',
+                              height: '10px',
+                              borderRadius: '999px',
+                              background: SUMMARY_COLORS[party] || '#9ca3af',
+                            }}
+                          />
+                          {party}
+                        </span>
+                        <strong>{count}</strong>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : null}
               <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>Council Types</div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem' }}>
                 <span style={{ width: '12px', height: '12px', background: '#2E8B57' }} />
