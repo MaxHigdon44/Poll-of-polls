@@ -106,6 +106,16 @@ const SUMMARY_COLORS: Record<string, string> = {
   'No overall control': '#9ca3af',
 }
 
+const COUNTRY_WINNER_PARTIES = new Set([
+  'Labour',
+  'Conservative',
+  'Reform',
+  'Liberal Democrat',
+  'Green',
+  'SNP',
+  'Plaid Cymru',
+])
+
 const RENEWABLE_SUPPORT = {
   'North East': 74,
   'North West': 81,
@@ -513,6 +523,17 @@ export default function ElectoralMapsPage() {
       ? Boolean(countriesGeo && englandRegionsGeo)
       : Boolean(countriesGeo && ladsGeo && walesSeneddGeo && scotlandConstituencies)
 
+  const countryWinnerColors = useMemo(() => {
+    return Object.fromEntries(
+      countrySummaries.map(summary => {
+        const topParty = summary.rows
+          .filter(row => COUNTRY_WINNER_PARTIES.has(row.party))
+          .sort((a, b) => b.count - a.count)[0]?.party
+        return [summary.view, SUMMARY_COLORS[topParty || ''] || '#64748b']
+      })
+    ) as Partial<Record<'england' | 'scotland' | 'wales', string>>
+  }, [countrySummaries])
+
   return (
     <PageShell>
       <TopNav title="Poll of Polls" items={MAIN_TOPNAV_ITEMS} />
@@ -758,6 +779,7 @@ export default function ElectoralMapsPage() {
                   walesGeo={walesSeneddGeo}
                   scotlandConstituencies={scotlandConstituencies}
                   scotlandRegions={scotlandRegions}
+                  countryWinnerColors={countryWinnerColors}
                   onSelectView={selectedView => {
                     setElectoralView(selectedView)
                     const href =

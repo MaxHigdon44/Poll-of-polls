@@ -1519,8 +1519,19 @@ export default function ScottishParliamentProjectionPage() {
         <div style={{ display: 'grid', gap: '1.5rem' }}>
           {regionGroups.map(([region, entries]) => (
             <div key={region} style={{ display: 'grid', gap: '0.5rem' }}>
-              <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
-                {REGION_LABELS.find(item => item.key === region)?.label || region}
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: '1fr 160px 160px',
+                  gap: '0.75rem',
+                  alignItems: 'center',
+                }}
+              >
+                <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
+                  {REGION_LABELS.find(item => item.key === region)?.label || region}
+                </div>
+                <div style={{ fontWeight: 700, color: '#f8fafc' }}>Incumbent</div>
+                <div style={{ fontWeight: 700, color: '#f8fafc' }}>Projected</div>
               </div>
               <div style={{ display: 'grid', gap: '0.35rem' }}>
                 {entries.map(entry => (

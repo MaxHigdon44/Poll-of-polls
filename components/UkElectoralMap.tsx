@@ -12,13 +12,8 @@ type UkElectoralMapProps = {
   walesGeo: FeatureCollection | null
   scotlandConstituencies: FeatureCollection | null
   scotlandRegions: FeatureCollection | null
+  countryWinnerColors?: Partial<Record<'england' | 'scotland' | 'wales', string>>
   onSelectView: (view: ViewMode) => void
-}
-
-const COUNTRY_WINNER_COLORS: Record<string, string> = {
-  england: '#12B6CF',
-  scotland: '#FDF38E',
-  wales: '#008672',
 }
 
 const COUNTRY_LABEL_OFFSETS: Record<string, { x: number; y: number }> = {
@@ -149,14 +144,22 @@ export default function UkElectoralMap({
   walesGeo,
   scotlandConstituencies,
   scotlandRegions,
+  countryWinnerColors,
   onSelectView,
 }: UkElectoralMapProps) {
+  const overviewColors = {
+    england: countryWinnerColors?.england || '#12B6CF',
+    scotland: countryWinnerColors?.scotland || '#FDF38E',
+    wales: countryWinnerColors?.wales || '#008672',
+  }
+
   const getOverviewStyle = (name: string) => {
     const isNi = name === 'northern ireland'
     return {
       color: isNi ? 'transparent' : '#dbeafe',
       weight: isNi ? 0 : 2.2,
-      fillColor: isNi ? 'transparent' : COUNTRY_WINNER_COLORS[name] || '#64748b',
+      fillColor:
+        isNi ? 'transparent' : overviewColors[name as keyof typeof overviewColors] || '#64748b',
       fillOpacity: isNi ? 0 : 0.72,
       opacity: isNi ? 0 : 0.98,
     }
