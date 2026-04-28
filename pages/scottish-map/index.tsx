@@ -32,6 +32,7 @@ import {
   type ScotlandTenureShare,
 } from '../../lib/scotland/tenure'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
+import type { ScotlandProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
 
 const ScottishParliamentMap = dynamic(
   () => import('../../components/ScottishParliamentMap'),
@@ -354,6 +355,10 @@ export default function ScottishMapPage() {
   const [focusConstituency, setFocusConstituency] = useState<string | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent'>('projected')
+  const [projectionSnapshot, setProjectionSnapshot] = useState<ScotlandProjectionSnapshot | null>(null)
+  const [projectionSnapshotStatus, setProjectionSnapshotStatus] = useState<
+    'loading' | 'ready' | 'missing'
+  >('loading')
   const settingsKey = 'scotlandModelSettings'
 
   useEffect(() => {
@@ -380,6 +385,22 @@ export default function ScottishMapPage() {
       setFocusConstituency(name)
     }
     setHasMounted(true)
+    fetch('/api/scottish-parliament-projection')
+      .then(async res => {
+        if (!res.ok) throw new Error('snapshot unavailable')
+        return (await res.json()) as ScotlandProjectionSnapshot
+      })
+      .then(data => {
+        if (!data?.constituencyRows || !data?.combinedSeatCounts) {
+          throw new Error('invalid snapshot')
+        }
+        setProjectionSnapshot(data)
+        setProjectionSnapshotStatus('ready')
+      })
+      .catch(() => {
+        setProjectionSnapshot(null)
+        setProjectionSnapshotStatus('missing')
+      })
     fetch('/data/scotland-constituencies.geojson')
       .then(res => res.json())
       .then(data => setConstituencyGeo(data))
@@ -395,6 +416,9 @@ export default function ScottishMapPage() {
       .then(data => {
         const map = new Map()
         ;(data.results ?? []).forEach((row: any) => {
+          const snapshotEntry = (projectionSnapshot?.constituencyRows || []).find(
+            entry => normalizeScottishConstituencyName(entry.name) === normalizeScottishConstituencyName(row.constituency)
+          )
           const value = {
             previousWinner2021: row.winner2021 ?? null,
             region: row.region ?? '',
@@ -402,12 +426,19 @@ export default function ScottishMapPage() {
             turnout: row.turnout ?? null,
             majority: row.majority ?? null,
             shares: row.shares ?? {},
+            projected: snapshotEntry?.projected || undefined,
+            projectedWinner: snapshotEntry?.projectedWinner || undefined,
           }
           map.set(row.constituency, value)
           map.set(normalizeScottishConstituencyName(row.constituency), value)
         })
         setConstituencyResults(map)
       })
+  }, [])
+
+  useEffect(() => {
+    if (projectionSnapshotStatus !== 'missing') return
+
     fetch('/api/scottish-polls')
       .then(res => res.json())
       .then(data => setConstituencyPolls(data.constituencyPolls ?? []))
@@ -439,7 +470,7 @@ export default function ScottishMapPage() {
       .then(res => res.json())
       .then(data => setNssecLookup(data))
       .catch(() => setNssecLookup(null))
-  }, [])
+  }, [projectionSnapshotStatus])
 
   useEffect(() => {
     if (!hasMounted || typeof window === 'undefined') return
@@ -495,6 +526,38 @@ export default function ScottishMapPage() {
   )
 
   const projectedResults = useMemo(() => {
+    if (projectionSnapshot) {
+      const map = new Map(constituencyResults)
+      projectionSnapshot.constituencyRows.forEach(entry => {
+        const normalizedName = normalizeScottishConstituencyName(entry.name)
+        const existing = map.get(entry.name) || map.get(normalizedName) || {
+          previousWinner2021: entry.previousWinner2021,
+          region: entry.region,
+          msp2021: null,
+          turnout: null,
+          majority: null,
+          shares: {
+            snp: null,
+            conservative: null,
+            labour: null,
+            libdem: null,
+            green: null,
+            reform: null,
+            other: null,
+          },
+        }
+        const nextValue = {
+          ...existing,
+          previousWinner2021: existing.previousWinner2021 ?? entry.previousWinner2021,
+          region: existing.region || entry.region,
+          projected: entry.projected || existing.projected,
+          projectedWinner: entry.projectedWinner || existing.projectedWinner,
+        }
+        map.set(entry.name, nextValue)
+        map.set(normalizedName, nextValue)
+      })
+      return map
+    }
     if (!constituencyAggregate) return constituencyResults
     const tenureBaseline: ScotlandTenureShare = tenureLookup?.meta?.baseline || {
       owned: 0,
@@ -733,6 +796,7 @@ export default function ScottishMapPage() {
     }
     return map
   }, [
+    projectionSnapshot,
     constituencyAggregate,
     constituencyResults,
     geLookup,
@@ -988,7 +1052,7 @@ export default function ScottishMapPage() {
                         flexShrink: 0,
                       }}
                     >
-                      <span style={{ color: '#172033' }}>{item.seats}</span>
+                      <span style={{ color: '#f8fafc' }}>{item.seats}</span>
                       <span style={{ color: deltaColor }}>({deltaLabel})</span>
                     </span>
                   </div>

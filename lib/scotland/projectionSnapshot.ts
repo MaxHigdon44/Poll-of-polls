@@ -78,6 +78,15 @@ export type ScotlandProjectionSnapshot = {
     region: string
     previousWinner2021: string | null
     projectedWinner: string
+    projected: {
+      snp: number
+      conservative: number
+      labour: number
+      libdem: number
+      green: number
+      reform: number
+      other: number
+    } | null
   }>
   regionalSeatsByRegion: Record<string, Record<string, number>>
   combinedSeatCounts: Record<string, number>
@@ -186,6 +195,7 @@ export function computeScottishProjectionSnapshot(args: {
     return {
       ...entry,
       projectedWinner: result?.projectedWinner || 'Unknown',
+      projected: result?.projected || null,
     }
   })
 
