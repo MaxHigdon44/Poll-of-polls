@@ -227,6 +227,16 @@ type CountryProjectionSummary = {
   rows: Array<{ party: string; count: number; delta: number }>
 }
 
+type SearchSelectionOption = {
+  type: 'council' | 'ward'
+  ladCode: string
+  wardCode: string | null
+  wardNameKey: string | null
+  label: string
+  searchKey: string
+  wardName?: string
+}
+
 type WardVacancyLookup = {
   wards?: Record<string, number>
   wardNames?: Record<string, number>
@@ -1097,6 +1107,7 @@ export default function Local2026Page() {
     wardCode: string | null
     wardNameKey: string | null
   } | null>(null)
+  const [pendingSearchSelection, setPendingSearchSelection] = useState<SearchSelectionOption | null>(null)
   const [hasMounted, setHasMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
   const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent'>('projected')
@@ -2029,7 +2040,7 @@ export default function Local2026Page() {
     return eligible
   }, [councilGeo])
 
-  const searchOptions = useMemo(() => {
+  const searchOptions = useMemo<SearchSelectionOption[]>(() => {
     if (!baseline?.wards?.length || eligibleLads.size === 0) return []
     const councilMap = new Map<string, { ladCode: string; ladName: string }>()
     const wardOptions = baseline.wards
@@ -2628,7 +2639,7 @@ export default function Local2026Page() {
     void router.replace('/electoral-maps', undefined, { scroll: false })
   }
 
-  const handleSearchSelect = (option: (typeof searchOptions)[number]) => {
+  const navigateToSearchSelection = (option: SearchSelectionOption) => {
     const nextQuery =
       option.type === 'ward'
         ? {
@@ -2650,9 +2661,35 @@ export default function Local2026Page() {
           }
         : null
     )
-    setSearchQuery(option.label)
     void router.replace({ pathname: '/local-2026', query: nextQuery }, undefined, { scroll: false })
   }
+
+  const handleSearchSelect = (option: SearchSelectionOption) => {
+    setSearchQuery(option.label)
+
+    if (selectedLad) {
+      setPendingSearchSelection(option)
+      setSelectedLad(null)
+      setFocusedWard(null)
+      void router.replace('/local-2026', undefined, { scroll: false })
+      return
+    }
+
+    navigateToSearchSelection(option)
+  }
+
+  useEffect(() => {
+    if (!pendingSearchSelection) return
+    if (selectedLad || focusedWard) return
+
+    const nextSelection = pendingSearchSelection
+    const timeoutId = window.setTimeout(() => {
+      setPendingSearchSelection(null)
+      navigateToSearchSelection(nextSelection)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [pendingSearchSelection, selectedLad, focusedWard])
 
   return (
     <PageShell>
