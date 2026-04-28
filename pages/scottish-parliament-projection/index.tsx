@@ -1530,8 +1530,8 @@ export default function ScottishParliamentProjectionPage() {
                 <div style={{ fontWeight: 700, fontSize: '1.05rem' }}>
                   {REGION_LABELS.find(item => item.key === region)?.label || region}
                 </div>
-                <div style={{ fontWeight: 700, color: '#f8fafc' }}>Incumbent</div>
-                <div style={{ fontWeight: 700, color: '#f8fafc' }}>Projected</div>
+                <div style={{ fontWeight: 700, color: '#f8fafc', textAlign: 'left' }}>Incumbent</div>
+                <div style={{ fontWeight: 700, color: '#f8fafc', textAlign: 'left' }}>Projected</div>
               </div>
               <div style={{ display: 'grid', gap: '0.35rem' }}>
                 {entries.map(entry => (
