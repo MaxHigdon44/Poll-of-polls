@@ -874,6 +874,25 @@ export default function ScottishMapPage() {
       .sort((a, b) => b.seats - a.seats)
   }, [projectedSeatCounts, previousSeatCounts])
 
+  const projectedRegionalSeatSummary = useMemo(() => {
+    const combinedSeatCounts = projectionSnapshot?.combinedSeatCounts || {}
+    const parties = new Set([
+      ...Object.keys(combinedSeatCounts),
+      ...Object.keys(projectedSeatCounts),
+    ])
+    return Array.from(parties)
+      .map(party => {
+        const totalSeats = combinedSeatCounts[party] || 0
+        const constituencySeats = projectedSeatCounts[party] || 0
+        return {
+          party,
+          seats: Math.max(0, totalSeats - constituencySeats),
+        }
+      })
+      .filter(item => item.seats > 0)
+      .sort((a, b) => b.seats - a.seats)
+  }, [projectionSnapshot, projectedSeatCounts])
+
   const focusFeature = useMemo(() => {
     if (!constituencyGeo || !focusConstituency) return null
     const target = normalizeScottishConstituencyName(focusConstituency)
@@ -1018,52 +1037,103 @@ export default function ScottishMapPage() {
                 })}
               </div>
             </div>
-            <div style={{ marginTop: '1rem', fontWeight: 600 }}>Projected Constituency Seats</div>
-            <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
-              {projectedSeatSummary.map(item => {
-                const deltaLabel =
-                  item.delta === 0
-                    ? '-'
-                    : item.delta > 0
-                      ? `↑ ${item.delta}`
-                      : `↓ ${Math.abs(item.delta)}`
-                const deltaColor =
-                  item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
-                const color = PARTY_COLORS[item.party] || '#172033'
-                return (
-                  <div
-                    key={item.party}
-                    style={{
-                      display: 'grid',
-                      gridTemplateColumns: 'minmax(0, 1fr) auto',
-                      alignItems: 'center',
-                      gap: '0.5rem',
-                      fontSize: '0.98rem',
-                    }}
-                  >
-                    <span style={{ color, minWidth: 0 }}>{item.party}</span>
-                    <span
+            <div
+              style={{
+                border: '1px solid var(--poll-border)',
+                borderRadius: '14px',
+                padding: '0.75rem',
+                background: 'rgba(255,255,255,0.05)',
+                marginTop: '1rem',
+                marginBottom: '1rem',
+              }}
+            >
+              <div style={{ fontWeight: 700 }}>Projected Constituency Seats</div>
+              <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
+                {projectedSeatSummary.map(item => {
+                  const deltaLabel =
+                    item.delta === 0
+                      ? '-'
+                      : item.delta > 0
+                        ? `↑ ${item.delta}`
+                        : `↓ ${Math.abs(item.delta)}`
+                  const deltaColor =
+                    item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#9ca3af'
+                  return (
+                    <div
+                      key={item.party}
                       style={{
-                        fontWeight: 600,
                         display: 'flex',
-                        gap: '0.5rem',
                         alignItems: 'center',
-                        whiteSpace: 'nowrap',
-                        flexShrink: 0,
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
                       }}
                     >
-                      <span style={{ color: '#f8fafc' }}>{item.seats}</span>
-                      <span style={{ color: deltaColor }}>({deltaLabel})</span>
-                    </span>
-                  </div>
-                )
-              })}
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span
+                          style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '999px',
+                            background: PARTY_COLORS[item.party] || '#9a9a9a',
+                          }}
+                        />
+                        {item.party}
+                      </span>
+                      <strong>
+                        {item.seats}
+                        <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
+                          ({deltaLabel})
+                        </span>
+                      </strong>
+                    </div>
+                  )
+                })}
+              </div>
             </div>
+            {projectedRegionalSeatSummary.length > 0 ? (
+              <div
+                style={{
+                  border: '1px solid var(--poll-border)',
+                  borderRadius: '14px',
+                  padding: '0.75rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  marginBottom: '1rem',
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>Projected Regional List Seats</div>
+                <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
+                  {projectedRegionalSeatSummary.map(item => (
+                    <div
+                      key={`regional-${item.party}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span
+                          style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '999px',
+                            background: PARTY_COLORS[item.party] || '#9a9a9a',
+                          }}
+                        />
+                        {item.party}
+                      </span>
+                      <strong>{item.seats}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <div style={{ marginTop: '0.75rem', color: '#555' }}>
               Click a constituency to see vote share per party.
             </div>
             <div style={{ marginTop: '0.5rem', color: '#f8fafc' }}>
-              For the Regional List Seats, please see the{' '}
+              To see how the Regional List Seats are split up by region, please see the{' '}
               <a href="/scottish-parliament-projection" style={{ color: '#f8fafc' }}>
                 Scottish Parliamentary Elections Projections Page
               </a>
