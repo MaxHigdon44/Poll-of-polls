@@ -442,6 +442,7 @@ export default function WelshSeneddMap({
             : ''
           const projectedLines = result
             ? Object.entries(result.projected)
+                .filter(([, value]) => Number(value) >= 2)
                 .sort((a, b) => b[1] - a[1])
                 .map(([party, value]) => `${party}: ${Math.round(value)}%`)
                 .join('<br/>')
