@@ -218,12 +218,35 @@ function buildColumnIndexMap($: ReturnType<typeof load>, table: CheerioElement) 
     else if (header.includes('reform') || header === 'ref') map.reform = index
     else if (header.includes('green') || header === 'grn') map.green = index
     else if (header.includes('snp')) map.snp = index
+    else if (header.includes('alba')) map.alba = index
     else if (header.includes('pc') || header.includes('plaid')) map.pc = index
     else if (header.includes('awa') || header.includes('abolish')) map.abolish = index
     else if (header.includes('other')) map.others = index
   })
 
+  map.__headerCount = headerCells.length
   return map
+}
+
+function getAdjustedRowCell(
+  tds: any,
+  columnMap: Record<string, number>,
+  index: number | undefined
+) {
+  if (index == null || index < 0) return undefined
+
+  const headerCount = columnMap.__headerCount
+  const albaIndex = columnMap.alba
+  const rowLooksLikeMissingAlba =
+    headerCount != null &&
+    albaIndex != null &&
+    tds.length === headerCount - 1
+
+  if (rowLooksLikeMissingAlba && index > albaIndex) {
+    return tds[index - 1]
+  }
+
+  return tds[index]
 }
 
 export async function scrapePolls(lastMonths = 2): Promise<{
@@ -370,7 +393,7 @@ function parsePollTable(
 
         const abolishValue =
           (columnMap as any).abolish != null
-            ? getCellPercent($, tds[(columnMap as any).abolish])
+            ? getCellPercent($, getAdjustedRowCell(tds, columnMap, (columnMap as any).abolish))
             : null
         const poll = {
           pollDate: parsedDate.toISOString().slice(0, 10),
@@ -378,15 +401,38 @@ function parsePollTable(
           pollster,
           sampleSize: sampleIndex >= 0 ? toSampleSize($(tds[sampleIndex]).text()) : null,
           area: areaIndex >= 0 ? $(tds[areaIndex]).text().trim() || null : null,
-          labour: columnMap.labour != null ? getCellPercent($, tds[columnMap.labour]) : null,
+          labour:
+            columnMap.labour != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.labour))
+              : null,
           conservative:
-            columnMap.conservative != null ? getCellPercent($, tds[columnMap.conservative]) : null,
-          libdem: columnMap.libdem != null ? getCellPercent($, tds[columnMap.libdem]) : null,
-          green: columnMap.green != null ? getCellPercent($, tds[columnMap.green]) : null,
-          reform: columnMap.reform != null ? getCellPercent($, tds[columnMap.reform]) : null,
-          snp: columnMap.snp != null ? getCellPercent($, tds[columnMap.snp]) : null,
-          pc: columnMap.pc != null ? getCellPercent($, tds[columnMap.pc]) : null,
-          others: columnMap.others != null ? getCellPercent($, tds[columnMap.others]) : null,
+            columnMap.conservative != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.conservative))
+              : null,
+          libdem:
+            columnMap.libdem != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.libdem))
+              : null,
+          green:
+            columnMap.green != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.green))
+              : null,
+          reform:
+            columnMap.reform != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.reform))
+              : null,
+          snp:
+            columnMap.snp != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.snp))
+              : null,
+          pc:
+            columnMap.pc != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.pc))
+              : null,
+          others:
+            columnMap.others != null
+              ? getCellPercent($, getAdjustedRowCell(tds, columnMap, columnMap.others))
+              : null,
         }
         if (abolishValue != null) {
           poll.others = (poll.others ?? 0) + abolishValue
