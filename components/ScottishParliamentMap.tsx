@@ -221,7 +221,6 @@ export default function ScottishParliamentMap({
     return entries
       .filter(([, value]) => value != null)
       .map(([party, value]) => [party, Number(value)] as [string, number])
-      .filter(([, value]) => value >= 2)
       .sort((a, b) => b[1] - a[1])
       .map(([party, value]) => `${party}: ${Math.round(value)}%`)
       .join('<br/>')
