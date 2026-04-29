@@ -3022,7 +3022,7 @@ export default function Local2026Page() {
               </div>
               <div style={{ marginTop: '0.75rem', color: '#555' }}>
                 For a full list of Council Results and Seat Changes, visit the{' '}
-                <a href="/council-projections" style={{ color: '#172033' }}>
+                <a href="/council-projections" style={{ color: '#f8fafc' }}>
                   Projected English Local Elections Page
                 </a>
                 .
