@@ -446,6 +446,41 @@ function FeatureNameLabels({
         area: Math.abs(area),
       }
     }
+    const isPointInRing = (point: L.Point, ring: L.Point[]) => {
+      let inside = false
+      for (let index = 0, previous = ring.length - 1; index < ring.length; previous = index, index += 1) {
+        const xi = ring[index].x
+        const yi = ring[index].y
+        const xj = ring[previous].x
+        const yj = ring[previous].y
+        const intersects =
+          yi > point.y !== yj > point.y &&
+          point.x < ((xj - xi) * (point.y - yi)) / ((yj - yi) || 1e-9) + xi
+        if (intersects) inside = !inside
+      }
+      return inside
+    }
+    const getLayerRings = (feature: GeoFeature) => {
+      const geometry = feature.geometry as any
+      const coordinates = geometry?.coordinates
+      if (!geometry?.type || !coordinates) return [] as L.Point[][]
+      const polygonRings: number[][][] =
+        geometry.type === 'Polygon'
+          ? [coordinates[0]]
+          : geometry.type === 'MultiPolygon'
+            ? coordinates.map((polygon: number[][][]) => polygon[0]).filter(Boolean)
+            : []
+      return polygonRings.map(ring =>
+        ring.map(vertex => {
+          const [lng, lat] = vertex as [number, number]
+          return map.latLngToLayerPoint(L.latLng(lat, lng))
+        })
+      )
+    }
+    const featureContainsLayerPoint = (feature: GeoFeature, point: L.Point) => {
+      const rings = getLayerRings(feature)
+      return rings.some(ring => ring.length >= 3 && isPointInRing(point, ring))
+    }
     const getFeatureCenter = (feature: GeoFeature, bounds: L.LatLngBounds) => {
       const geometry = feature.geometry as any
       const coordinates = geometry?.coordinates
@@ -473,10 +508,39 @@ function FeatureNameLabels({
       })
 
       if (totalArea > 0) {
-        return map.latLngToLayerPoint(L.latLng(weightedLat / totalArea, weightedLng / totalArea))
+        const centroidPoint = map.latLngToLayerPoint(
+          L.latLng(weightedLat / totalArea, weightedLng / totalArea)
+        )
+        if (featureContainsLayerPoint(feature, centroidPoint)) {
+          return centroidPoint
+        }
       }
 
-      return map.latLngToLayerPoint(bounds.getCenter())
+      const boundsCenter = map.latLngToLayerPoint(bounds.getCenter())
+      if (featureContainsLayerPoint(feature, boundsCenter)) {
+        return boundsCenter
+      }
+
+      const northWest = map.latLngToLayerPoint(bounds.getNorthWest())
+      const southEast = map.latLngToLayerPoint(bounds.getSouthEast())
+      let bestPoint: L.Point | null = null
+      let bestDistance = Number.POSITIVE_INFINITY
+      for (let row = 1; row <= 7; row += 1) {
+        for (let column = 1; column <= 7; column += 1) {
+          const candidate = L.point(
+            northWest.x + ((southEast.x - northWest.x) * column) / 8,
+            northWest.y + ((southEast.y - northWest.y) * row) / 8
+          )
+          if (!featureContainsLayerPoint(feature, candidate)) continue
+          const distance = candidate.distanceTo(boundsCenter)
+          if (distance < bestDistance) {
+            bestDistance = distance
+            bestPoint = candidate
+          }
+        }
+      }
+
+      return bestPoint || boundsCenter
     }
     const estimateBox = (label: string, point: L.Point) => {
       const width = Math.min(78, Math.max(28, label.length * 4.4 + 8))
@@ -488,6 +552,23 @@ function FeatureNameLabels({
         top: point.y - height / 2,
         bottom: point.y + height / 2,
       }
+    }
+    const boxFitsInsideFeature = (
+      feature: GeoFeature,
+      box: { left: number; right: number; top: number; bottom: number }
+    ) => {
+      const samplePoints = [
+        L.point(box.left, box.top),
+        L.point(box.right, box.top),
+        L.point(box.left, box.bottom),
+        L.point(box.right, box.bottom),
+        L.point((box.left + box.right) / 2, box.top),
+        L.point((box.left + box.right) / 2, box.bottom),
+        L.point(box.left, (box.top + box.bottom) / 2),
+        L.point(box.right, (box.top + box.bottom) / 2),
+        L.point((box.left + box.right) / 2, (box.top + box.bottom) / 2),
+      ]
+      return samplePoints.every(point => featureContainsLayerPoint(feature, point))
     }
     const clear = () => {
       while (markers.length) markers.pop()?.remove()
@@ -503,6 +584,7 @@ function FeatureNameLabels({
         if (!bounds.isValid()) return
         const point = getFeatureCenter(feature, bounds)
         const box = estimateBox(label, point)
+        if (!boxFitsInsideFeature(feature, box)) return
         if (collides(box, occupied)) return
         occupied.push(box)
         markers.push(
