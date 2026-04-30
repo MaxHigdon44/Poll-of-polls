@@ -420,10 +420,63 @@ function FeatureNameLabels({
           box.top < other.bottom &&
           box.bottom > other.top
       )
-    const getLayerCenter = (bounds: L.LatLngBounds) => {
-      const northWest = map.latLngToLayerPoint(bounds.getNorthWest())
-      const southEast = map.latLngToLayerPoint(bounds.getSouthEast())
-      return L.point((northWest.x + southEast.x) / 2, (northWest.y + southEast.y) / 2)
+    const getRingCentroid = (ring: number[][]) => {
+      let area = 0
+      let cx = 0
+      let cy = 0
+      for (let index = 0; index < ring.length - 1; index += 1) {
+        const [x1, y1] = ring[index]
+        const [x2, y2] = ring[index + 1]
+        const cross = x1 * y2 - x2 * y1
+        area += cross
+        cx += (x1 + x2) * cross
+        cy += (y1 + y2) * cross
+      }
+      area *= 0.5
+      if (Math.abs(area) < 1e-12) {
+        return {
+          lat: ring[0]?.[1] ?? 0,
+          lng: ring[0]?.[0] ?? 0,
+          area: 0,
+        }
+      }
+      return {
+        lat: cy / (6 * area),
+        lng: cx / (6 * area),
+        area: Math.abs(area),
+      }
+    }
+    const getFeatureCenter = (feature: GeoFeature, bounds: L.LatLngBounds) => {
+      const geometry = feature.geometry as any
+      const coordinates = geometry?.coordinates
+      if (!geometry?.type || !coordinates) {
+        return map.latLngToLayerPoint(bounds.getCenter())
+      }
+
+      const polygonRings: number[][][] =
+        geometry.type === 'Polygon'
+          ? [coordinates[0]]
+          : geometry.type === 'MultiPolygon'
+            ? coordinates.map((polygon: number[][][]) => polygon[0]).filter(Boolean)
+            : []
+
+      let totalArea = 0
+      let weightedLat = 0
+      let weightedLng = 0
+      polygonRings.forEach(ring => {
+        const centroid = getRingCentroid(ring)
+        if (!Number.isFinite(centroid.lat) || !Number.isFinite(centroid.lng)) return
+        if (centroid.area <= 0) return
+        totalArea += centroid.area
+        weightedLat += centroid.lat * centroid.area
+        weightedLng += centroid.lng * centroid.area
+      })
+
+      if (totalArea > 0) {
+        return map.latLngToLayerPoint(L.latLng(weightedLat / totalArea, weightedLng / totalArea))
+      }
+
+      return map.latLngToLayerPoint(bounds.getCenter())
     }
     const estimateBox = (label: string, point: L.Point) => {
       const width = Math.min(78, Math.max(28, label.length * 4.4 + 8))
@@ -448,7 +501,7 @@ function FeatureNameLabels({
         if (!label) return
         const bounds = L.geoJSON(feature as GeoJsonObject).getBounds()
         if (!bounds.isValid()) return
-        const point = getLayerCenter(bounds)
+        const point = getFeatureCenter(feature, bounds)
         const box = estimateBox(label, point)
         if (collides(box, occupied)) return
         occupied.push(box)

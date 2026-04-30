@@ -922,6 +922,23 @@ function getGeoWardNameKey(feature: GeoFeature) {
   return `${normalizeName(ladName)}|${normalizeName(wardName)}`
 }
 
+function mergeNorfolkCedOverride(base: GeoCollection | null, override: GeoCollection | null) {
+  if (!base || !Array.isArray(base.features) || !override || !Array.isArray(override.features)) {
+    return base
+  }
+
+  const retained = base.features.filter(feature => {
+    const props = feature.properties || {}
+    const countyName = String(props.countyName || props.ladName || '')
+    return normalizeName(countyName) !== 'norfolk'
+  })
+
+  return {
+    ...base,
+    features: [...retained, ...override.features],
+  }
+}
+
 function canonicalizePartyLabel(party: string | null | undefined) {
   const normalized = normalizeName(party)
   if (normalized === 'ind' || normalized === 'independent' || normalized === 'independents') {
@@ -1172,7 +1189,17 @@ export default function Local2026Page() {
       .catch(() => setCountyGeo(null))
 
     fetch('/data/ced.geojson')
-      .then(res => res.json())
+      .then(async res => {
+        const baseGeo = (await res.json()) as GeoCollection
+        try {
+          const overrideRes = await fetch('/data/norfolk-ced-2026.geojson')
+          if (!overrideRes.ok) throw new Error('norfolk override missing')
+          const overrideGeo = (await overrideRes.json()) as GeoCollection
+          return mergeNorfolkCedOverride(baseGeo, overrideGeo)
+        } catch {
+          return baseGeo
+        }
+      })
       .then(setCedGeo)
       .catch(() => setCedGeo(null))
 
@@ -3075,7 +3102,9 @@ export default function Local2026Page() {
               projectedControlByLad={projectedControlByLad}
               projectedControlByName={projectedControlByName}
               previousWinnerLabel={
-                selectedLad === 'surrey-east' || selectedLad === 'surrey-west'
+                selectedLad === 'E10000020'
+                  ? 'Incumbent (for previous electoral division that most closely matches the new boundaries)'
+                  : selectedLad === 'surrey-east' || selectedLad === 'surrey-west'
                   ? 'Incumbent of Surrey County Council Division'
                   : 'Incumbent'
               }

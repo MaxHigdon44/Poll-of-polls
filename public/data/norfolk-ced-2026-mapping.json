@@ -1,0 +1,677 @@
+{
+  "generatedAt": "2026-04-30",
+  "rows": [
+    {
+      "newName": "Acle",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Acle",
+      "mappedFromCode": "E58000956",
+      "mappedFromRepoName": "Acle ED",
+      "method": "name"
+    },
+    {
+      "newName": "Attleborough",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Attleborough",
+      "mappedFromCode": "E58000957",
+      "mappedFromRepoName": "Attleborough ED",
+      "method": "name"
+    },
+    {
+      "newName": "Aylsham",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Aylsham",
+      "mappedFromCode": "E58000958",
+      "mappedFromRepoName": "Aylsham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Blofield & Brundall",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Blofield & Brundall",
+      "mappedFromCode": "E58000959",
+      "mappedFromRepoName": "Blofield and Brundall ED",
+      "method": "name"
+    },
+    {
+      "newName": "Bowthorpe",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Bowthorpe",
+      "mappedFromCode": "E58000960",
+      "mappedFromRepoName": "Bowthorpe ED",
+      "method": "name"
+    },
+    {
+      "newName": "Breydon",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "Breydon",
+      "mappedFromCode": "E58000961",
+      "mappedFromRepoName": "Breydon ED",
+      "method": "name"
+    },
+    {
+      "newName": "Catton Grove",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Catton Grove",
+      "mappedFromCode": "E58000963",
+      "mappedFromRepoName": "Catton Grove ED",
+      "method": "name"
+    },
+    {
+      "newName": "Clenchwarton & King's Lynn South",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Clenchwarton & King's Lynn South",
+      "mappedFromCode": "E58000965",
+      "mappedFromRepoName": "Clenchwarton and King's Lynn South ED",
+      "method": "name"
+    },
+    {
+      "newName": "Coltishall & Spixworth",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Hevingham & Spixworth",
+      "mappedFromCode": "E58000992",
+      "mappedFromRepoName": "Hevingham and Spixworth ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Costessey",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Costessey",
+      "mappedFromCode": "E58001778",
+      "mappedFromRepoName": "Costessey ED",
+      "method": "name"
+    },
+    {
+      "newName": "Crome",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Crome",
+      "mappedFromCode": "E58000967",
+      "mappedFromRepoName": "Crome ED",
+      "method": "name"
+    },
+    {
+      "newName": "Cromer",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "Cromer",
+      "mappedFromCode": "E58000968",
+      "mappedFromRepoName": "Cromer ED",
+      "method": "name"
+    },
+    {
+      "newName": "Dereham North & Scarning",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Dereham North",
+      "mappedFromCode": "E58000969",
+      "mappedFromRepoName": "Dereham North ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Dereham South",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Dereham South",
+      "mappedFromCode": "E58000970",
+      "mappedFromRepoName": "Dereham South ED",
+      "method": "name"
+    },
+    {
+      "newName": "Dersingham",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Dersingham",
+      "mappedFromCode": "E58000971",
+      "mappedFromRepoName": "Dersingham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Diss & Roydon",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Diss & Roydon",
+      "mappedFromCode": "E58000972",
+      "mappedFromRepoName": "Diss and Roydon ED",
+      "method": "name"
+    },
+    {
+      "newName": "Docking",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Docking",
+      "mappedFromCode": "E58000973",
+      "mappedFromRepoName": "Docking ED",
+      "method": "name"
+    },
+    {
+      "newName": "Downham Market",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Downham Market",
+      "mappedFromCode": "E58000974",
+      "mappedFromRepoName": "Downham Market ED",
+      "method": "name"
+    },
+    {
+      "newName": "Drayton & Horsford",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Drayton & Horsford",
+      "mappedFromCode": "E58000975",
+      "mappedFromRepoName": "Drayton and Horsford ED",
+      "method": "name"
+    },
+    {
+      "newName": "East Depwade",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "East Depwade",
+      "mappedFromCode": "E58000976",
+      "mappedFromRepoName": "East Depwade ED",
+      "method": "name"
+    },
+    {
+      "newName": "Eaton",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Eaton",
+      "mappedFromCode": "E58000978",
+      "mappedFromRepoName": "Eaton ED",
+      "method": "name"
+    },
+    {
+      "newName": "Elmham & Mattishall",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Elmham & Mattishall",
+      "mappedFromCode": "E58000979",
+      "mappedFromRepoName": "Elmham and Mattishall ED",
+      "method": "name"
+    },
+    {
+      "newName": "Erpingham",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "North Walsham West & Erpingham",
+      "mappedFromCode": "E58001013",
+      "mappedFromRepoName": "North Walsham West and Erpingham ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Fakenham & The Raynhams",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "Fakenham",
+      "mappedFromCode": "E58000980",
+      "mappedFromRepoName": "Fakenham ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Feltwell",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Feltwell",
+      "mappedFromCode": "E58000981",
+      "mappedFromRepoName": "Feltwell ED",
+      "method": "name"
+    },
+    {
+      "newName": "Forehoe",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Forehoe",
+      "mappedFromCode": "E58000983",
+      "mappedFromRepoName": "Forehoe ED",
+      "method": "name"
+    },
+    {
+      "newName": "Freebridge Lynn",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Freebridge Lynn",
+      "mappedFromCode": "E58000984",
+      "mappedFromRepoName": "Freebridge Lynn ED",
+      "method": "name"
+    },
+    {
+      "newName": "Gaywood North & Central",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Gaywood North & Central",
+      "mappedFromCode": "E58000986",
+      "mappedFromRepoName": "Gaywood North and Central ED",
+      "method": "name"
+    },
+    {
+      "newName": "Gaywood South",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Gaywood South",
+      "mappedFromCode": "E58000987",
+      "mappedFromRepoName": "Gaywood South ED",
+      "method": "name"
+    },
+    {
+      "newName": "Gorleston",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "Gorleston St. Andrews",
+      "mappedFromCode": "E58000988",
+      "mappedFromRepoName": "Gorleston St. Andrews ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Guiltcross",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Guiltcross",
+      "mappedFromCode": "E58000989",
+      "mappedFromRepoName": "Guiltcross ED",
+      "method": "name"
+    },
+    {
+      "newName": "Hellesdon",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Hellesdon",
+      "mappedFromCode": "E58000990",
+      "mappedFromRepoName": "Hellesdon ED",
+      "method": "name"
+    },
+    {
+      "newName": "Henstead",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Henstead",
+      "mappedFromCode": "E58000991",
+      "mappedFromRepoName": "Henstead ED",
+      "method": "name"
+    },
+    {
+      "newName": "Hethersett",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Humbleyard",
+      "mappedFromCode": "E58001779",
+      "mappedFromRepoName": "Humbleyard ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Hingham",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Hingham",
+      "mappedFromCode": "E58000993",
+      "mappedFromRepoName": "Hingham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Holt",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "Holt",
+      "mappedFromCode": "E58000994",
+      "mappedFromRepoName": "Holt ED",
+      "method": "name"
+    },
+    {
+      "newName": "Hoveton",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "Hoveton & Stalham",
+      "mappedFromCode": "E58000995",
+      "mappedFromRepoName": "Hoveton and Stalham ED",
+      "method": "distance"
+    },
+    {
+      "newName": "King's Lynn North & Central",
+      "newDistrict": "KLWN",
+      "mappedFromName": "King's Lynn North & Central",
+      "mappedFromCode": "E58000997",
+      "mappedFromRepoName": "King's Lynn North and Central ED",
+      "method": "name"
+    },
+    {
+      "newName": "Lakenham",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Lakenham",
+      "mappedFromCode": "E58000998",
+      "mappedFromRepoName": "Lakenham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Launditch",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Necton & Launditch",
+      "mappedFromCode": "E58001009",
+      "mappedFromRepoName": "Necton and Launditch ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Loddon",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Loddon",
+      "mappedFromCode": "E58000999",
+      "mappedFromRepoName": "Loddon ED",
+      "method": "name"
+    },
+    {
+      "newName": "Long Stratton",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Long Stratton",
+      "mappedFromCode": "E58001000",
+      "mappedFromRepoName": "Long Stratton ED",
+      "method": "name"
+    },
+    {
+      "newName": "Lothingland",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "Lothingland",
+      "mappedFromCode": "E58001001",
+      "mappedFromRepoName": "Lothingland ED",
+      "method": "name"
+    },
+    {
+      "newName": "Magdalen",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "Magdalen",
+      "mappedFromCode": "E58001002",
+      "mappedFromRepoName": "Magdalen ED",
+      "method": "name"
+    },
+    {
+      "newName": "Mancroft",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Mancroft",
+      "mappedFromCode": "E58001003",
+      "mappedFromRepoName": "Mancroft ED",
+      "method": "name"
+    },
+    {
+      "newName": "Marshland North",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Marshland North",
+      "mappedFromCode": "E58001004",
+      "mappedFromRepoName": "Marshland North ED",
+      "method": "name"
+    },
+    {
+      "newName": "Marshland South",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Marshland South",
+      "mappedFromCode": "E58001005",
+      "mappedFromRepoName": "Marshland South ED",
+      "method": "name"
+    },
+    {
+      "newName": "Mile Cross",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Mile Cross",
+      "mappedFromCode": "E58001007",
+      "mappedFromRepoName": "Mile Cross ED",
+      "method": "name"
+    },
+    {
+      "newName": "Nar & Wissey Valleys",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Gayton & Nar Valley",
+      "mappedFromCode": "E58000985",
+      "mappedFromRepoName": "Gayton and Nar Valley ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Nelson",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Nelson",
+      "mappedFromCode": "E58001010",
+      "mappedFromRepoName": "Nelson ED",
+      "method": "name"
+    },
+    {
+      "newName": "North Caister & Ormesby",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "East Flegg",
+      "mappedFromCode": "E58000977",
+      "mappedFromRepoName": "East Flegg ED",
+      "method": "distance"
+    },
+    {
+      "newName": "North Coast",
+      "newDistrict": "KLWN",
+      "mappedFromName": "North Coast",
+      "mappedFromCode": "E58001011",
+      "mappedFromRepoName": "North Coast ED",
+      "method": "name"
+    },
+    {
+      "newName": "North Walsham East",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "North Walsham East",
+      "mappedFromCode": "E58001012",
+      "mappedFromRepoName": "North Walsham East ED",
+      "method": "name"
+    },
+    {
+      "newName": "North Walsham West & Mundesley",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "Mundesley",
+      "mappedFromCode": "E58001008",
+      "mappedFromRepoName": "Mundesley ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Old Catton",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Old Catton",
+      "mappedFromCode": "E58001014",
+      "mappedFromRepoName": "Old Catton ED",
+      "method": "name"
+    },
+    {
+      "newName": "Reepham",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Reepham",
+      "mappedFromCode": "E58001015",
+      "mappedFromRepoName": "Reepham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Sewell",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Sewell",
+      "mappedFromCode": "E58001016",
+      "mappedFromRepoName": "Sewell ED",
+      "method": "name"
+    },
+    {
+      "newName": "Sheringham",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "Sheringham",
+      "mappedFromCode": "E58001017",
+      "mappedFromRepoName": "Sheringham ED",
+      "method": "name"
+    },
+    {
+      "newName": "South Caister & Bure",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "Caister-on-Sea",
+      "mappedFromCode": "E58000962",
+      "mappedFromRepoName": "Caister-on-Sea ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Sprowston",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Sprowston",
+      "mappedFromCode": "E58001019",
+      "mappedFromRepoName": "Sprowston ED",
+      "method": "name"
+    },
+    {
+      "newName": "Stalham",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "South Smallburgh",
+      "mappedFromCode": "E58001018",
+      "mappedFromRepoName": "South Smallburgh ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Swaffham",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Swaffham",
+      "mappedFromCode": "E58001020",
+      "mappedFromRepoName": "Swaffham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Taverham",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Taverham",
+      "mappedFromCode": "E58001021",
+      "mappedFromRepoName": "Taverham ED",
+      "method": "name"
+    },
+    {
+      "newName": "The Brecks",
+      "newDistrict": "Breckland",
+      "mappedFromName": "The Brecks",
+      "mappedFromCode": "E58001022",
+      "mappedFromRepoName": "The Brecks ED",
+      "method": "name"
+    },
+    {
+      "newName": "The Fleggs",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "West Flegg",
+      "mappedFromCode": "E58001034",
+      "mappedFromRepoName": "West Flegg ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Thetford East",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Thetford East",
+      "mappedFromCode": "E58001023",
+      "mappedFromRepoName": "Thetford East ED",
+      "method": "name"
+    },
+    {
+      "newName": "Thetford West",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Thetford West",
+      "mappedFromCode": "E58001024",
+      "mappedFromRepoName": "Thetford West ED",
+      "method": "name"
+    },
+    {
+      "newName": "Thorpe Hamlet",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Thorpe Hamlet",
+      "mappedFromCode": "E58001025",
+      "mappedFromRepoName": "Thorpe Hamlet ED",
+      "method": "name"
+    },
+    {
+      "newName": "Thorpe St Andrew",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Thorpe St. Andrew",
+      "mappedFromCode": "E58001026",
+      "mappedFromRepoName": "Thorpe St. Andrew ED",
+      "method": "name"
+    },
+    {
+      "newName": "Town Close",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Town Close",
+      "mappedFromCode": "E58001028",
+      "mappedFromRepoName": "Town Close ED",
+      "method": "name"
+    },
+    {
+      "newName": "University",
+      "newDistrict": "Norwich",
+      "mappedFromName": "University",
+      "mappedFromCode": "E58001029",
+      "mappedFromRepoName": "University ED",
+      "method": "name"
+    },
+    {
+      "newName": "Watlington & The Fens",
+      "newDistrict": "KLWN",
+      "mappedFromName": "Fincham",
+      "mappedFromCode": "E58000982",
+      "mappedFromRepoName": "Fincham ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Watton",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Watton",
+      "mappedFromCode": "E58001030",
+      "mappedFromRepoName": "Watton ED",
+      "method": "name"
+    },
+    {
+      "newName": "Waveney Valley",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Clavering",
+      "mappedFromCode": "E58000964",
+      "mappedFromRepoName": "Clavering ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Wells",
+      "newDistrict": "North Norfolk",
+      "mappedFromName": "Wells",
+      "mappedFromCode": "E58001031",
+      "mappedFromRepoName": "Wells ED",
+      "method": "name"
+    },
+    {
+      "newName": "Wensum",
+      "newDistrict": "Norwich",
+      "mappedFromName": "Wensum",
+      "mappedFromCode": "E58001032",
+      "mappedFromRepoName": "Wensum ED",
+      "method": "name"
+    },
+    {
+      "newName": "West Depwade",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "West Depwade",
+      "mappedFromCode": "E58001033",
+      "mappedFromRepoName": "West Depwade ED",
+      "method": "name"
+    },
+    {
+      "newName": "Woodside",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Woodside",
+      "mappedFromCode": "E58001035",
+      "mappedFromRepoName": "Woodside ED",
+      "method": "name"
+    },
+    {
+      "newName": "Wroxham",
+      "newDistrict": "Broadland",
+      "mappedFromName": "Wroxham",
+      "mappedFromCode": "E58001036",
+      "mappedFromRepoName": "Wroxham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Wymondham",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Wymondham",
+      "mappedFromCode": "E58001037",
+      "mappedFromRepoName": "Wymondham ED",
+      "method": "name"
+    },
+    {
+      "newName": "Yare & Necton",
+      "newDistrict": "Breckland",
+      "mappedFromName": "Yare & All Saints",
+      "mappedFromCode": "E58001038",
+      "mappedFromRepoName": "Yare and All Saints ED",
+      "method": "distance"
+    },
+    {
+      "newName": "Yare Valley",
+      "newDistrict": "South Norfolk",
+      "mappedFromName": "Melton Constable",
+      "mappedFromCode": "E58001006",
+      "mappedFromRepoName": "Melton Constable ED",
+      "method": "cross-district"
+    },
+    {
+      "newName": "Yarmouth Nelson & Southtown",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "Yarmouth Nelson & Southtown",
+      "mappedFromCode": "E58001039",
+      "mappedFromRepoName": "Yarmouth Nelson and Southtown ED",
+      "method": "name"
+    },
+    {
+      "newName": "Yarmouth North & Central",
+      "newDistrict": "Great Yarmouth",
+      "mappedFromName": "Yarmouth North & Central",
+      "mappedFromCode": "E58001040",
+      "mappedFromRepoName": "Yarmouth North and Central ED",
+      "method": "name"
+    }
+  ]
+}
