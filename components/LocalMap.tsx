@@ -481,11 +481,22 @@ function FeatureNameLabels({
       const rings = getLayerRings(feature)
       return rings.some(ring => ring.length >= 3 && isPointInRing(point, ring))
     }
-    const getFeatureCenter = (feature: GeoFeature, bounds: L.LatLngBounds) => {
+    const getCandidateFeaturePoints = (feature: GeoFeature, bounds: L.LatLngBounds) => {
       const geometry = feature.geometry as any
       const coordinates = geometry?.coordinates
       if (!geometry?.type || !coordinates) {
-        return map.latLngToLayerPoint(bounds.getCenter())
+        return [map.latLngToLayerPoint(bounds.getCenter())]
+      }
+
+      const candidates: L.Point[] = []
+      const props = (feature.properties || {}) as Record<string, unknown>
+      const labelLat = Number(props.labelLat)
+      const labelLng = Number(props.labelLng)
+      if (Number.isFinite(labelLat) && Number.isFinite(labelLng)) {
+        const anchored = map.latLngToLayerPoint(L.latLng(labelLat, labelLng))
+        if (featureContainsLayerPoint(feature, anchored)) {
+          candidates.push(anchored)
+        }
       }
 
       const polygonRings: number[][][] =
@@ -512,35 +523,38 @@ function FeatureNameLabels({
           L.latLng(weightedLat / totalArea, weightedLng / totalArea)
         )
         if (featureContainsLayerPoint(feature, centroidPoint)) {
-          return centroidPoint
+          candidates.push(centroidPoint)
         }
       }
 
       const boundsCenter = map.latLngToLayerPoint(bounds.getCenter())
       if (featureContainsLayerPoint(feature, boundsCenter)) {
-        return boundsCenter
+        candidates.push(boundsCenter)
       }
 
       const northWest = map.latLngToLayerPoint(bounds.getNorthWest())
       const southEast = map.latLngToLayerPoint(bounds.getSouthEast())
-      let bestPoint: L.Point | null = null
-      let bestDistance = Number.POSITIVE_INFINITY
-      for (let row = 1; row <= 7; row += 1) {
-        for (let column = 1; column <= 7; column += 1) {
+      for (let row = 1; row <= 10; row += 1) {
+        for (let column = 1; column <= 10; column += 1) {
           const candidate = L.point(
-            northWest.x + ((southEast.x - northWest.x) * column) / 8,
-            northWest.y + ((southEast.y - northWest.y) * row) / 8
+            northWest.x + ((southEast.x - northWest.x) * column) / 11,
+            northWest.y + ((southEast.y - northWest.y) * row) / 11
           )
-          if (!featureContainsLayerPoint(feature, candidate)) continue
-          const distance = candidate.distanceTo(boundsCenter)
-          if (distance < bestDistance) {
-            bestDistance = distance
-            bestPoint = candidate
+          if (featureContainsLayerPoint(feature, candidate)) {
+            candidates.push(candidate)
           }
         }
       }
 
-      return bestPoint || boundsCenter
+      const deduped: L.Point[] = []
+      candidates.forEach(candidate => {
+        const exists = deduped.some(
+          point => Math.abs(point.x - candidate.x) < 1 && Math.abs(point.y - candidate.y) < 1
+        )
+        if (!exists) deduped.push(candidate)
+      })
+
+      return deduped.sort((a, b) => a.distanceTo(boundsCenter) - b.distanceTo(boundsCenter))
     }
     const estimateBox = (label: string, point: L.Point) => {
       const width = Math.min(78, Math.max(28, label.length * 4.4 + 8))
@@ -582,9 +596,13 @@ function FeatureNameLabels({
         if (!label) return
         const bounds = L.geoJSON(feature as GeoJsonObject).getBounds()
         if (!bounds.isValid()) return
-        const point = getFeatureCenter(feature, bounds)
+        const candidatePoints = getCandidateFeaturePoints(feature, bounds)
+        const point = candidatePoints.find(candidate => {
+          const box = estimateBox(label, candidate)
+          return boxFitsInsideFeature(feature, box)
+        })
+        if (!point) return
         const box = estimateBox(label, point)
-        if (!boxFitsInsideFeature(feature, box)) return
         if (collides(box, occupied)) return
         occupied.push(box)
         markers.push(
