@@ -92,6 +92,28 @@ const REGION_NAME_MAP: Record<string, string> = {
   yorkshire: 'Yorkshire and the Humber',
 }
 
+const OUTER_LONDON_REFORM_LADS = new Set([
+  'E09000002', // Barking and Dagenham
+  'E09000003', // Barnet
+  'E09000004', // Bexley
+  'E09000005', // Brent
+  'E09000006', // Bromley
+  'E09000008', // Croydon
+  'E09000009', // Ealing
+  'E09000010', // Enfield
+  'E09000011', // Greenwich
+  'E09000015', // Harrow
+  'E09000016', // Havering
+  'E09000017', // Hillingdon
+  'E09000018', // Hounslow
+  'E09000021', // Kingston upon Thames
+  'E09000024', // Merton
+  'E09000026', // Redbridge
+  'E09000027', // Richmond upon Thames
+  'E09000029', // Sutton
+  'E09000031', // Waltham Forest
+])
+
 function normalizeRegion(value: string | null | undefined) {
   const raw = String(value || '').trim()
   if (!raw) return ''
@@ -99,9 +121,21 @@ function normalizeRegion(value: string | null | undefined) {
   return REGION_NAME_MAP[key] || raw
 }
 
-export function getRegionAdjustment(party: string, regionName: string | null | undefined) {
+export function getRegionAdjustment(
+  party: string,
+  regionName: string | null | undefined,
+  ladCode?: string | null
+) {
   const normalized = normalizeRegion(regionName)
   if (!normalized) return 0
+  if (
+    party === 'Reform' &&
+    normalized === 'London' &&
+    ladCode &&
+    OUTER_LONDON_REFORM_LADS.has(ladCode)
+  ) {
+    return -2.5
+  }
   const deltas = REGION_DELTAS[party]
   if (!deltas) return 0
   return deltas[normalized] ?? 0

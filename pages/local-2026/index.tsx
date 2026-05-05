@@ -772,7 +772,7 @@ function computeWardProjection(
     }
     const leaveAdj = getCenteredPartyLeaveAdjustment(party, adjustedLeaveShare)
     const ageAdj = getAgeAdjustment(party, ageShare)
-    let regionAdj = getRegionAdjustment(party, regionName)
+    let regionAdj = getRegionAdjustment(party, regionName, ward.ladCode)
     if (
       party === 'Reform' &&
       regionName === 'London' &&
