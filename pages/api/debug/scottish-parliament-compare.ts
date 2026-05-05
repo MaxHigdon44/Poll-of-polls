@@ -1,10 +1,9 @@
-import fs from 'fs'
-import path from 'path'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
 import { computeScottishProjectionSnapshot, type ScotlandProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
 import { scrapeScottishPolls } from '@/lib/scrapePolls'
 import { loadScottishConstituencyResults } from '@/pages/api/scottish-constituency-results'
+import { loadScotlandProjectionInputs } from '@/lib/server/projectionData'
 
 type SnapshotRow = {
   run_id: number
@@ -16,11 +15,6 @@ function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
   return req.headers.authorization === `Bearer ${secret}`
-}
-
-function readDataFile<T>(filename: string): T {
-  const filePath = path.join(process.cwd(), 'public', 'data', filename)
-  return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T
 }
 
 function almostEqual(a: number, b: number, epsilon = 1e-9) {
@@ -155,20 +149,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       scrapeScottishPolls(90),
       loadScottishConstituencyResults(),
     ])
+    const inputs = loadScotlandProjectionInputs()
 
     const fresh = computeScottishProjectionSnapshot({
       generatedAt: snapshot.payload.generatedAt,
       constituencyPolls,
       regionalPolls,
       constituencyResultsRows: results,
-      constituencyGeo: readDataFile('scotland-constituencies.geojson'),
-      geLookup: readDataFile('ge2024-pcon.json'),
-      spcToWpcLookup: readDataFile('spc-to-wpc-lookup.json'),
-      wpcLeaveLookup: readDataFile('scotland-wpc-leave-share.json'),
-      tenureLookup: readDataFile('scotland-tenure-share.json'),
-      ageLookup: readDataFile('scotland-age-share.json'),
-      degreeLookup: readDataFile('scotland-degree-share.json'),
-      nssecLookup: readDataFile('scotland-nssec-share.json'),
+      ...inputs,
     })
 
     return res.status(200).json({

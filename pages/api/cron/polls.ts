@@ -1,7 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
-import fs from 'fs'
-import path from 'path'
 import { scrapePolls } from '../../../lib/scrapePolls'
 import { computeAggregate } from '../../../lib/aggregate'
 import {
@@ -20,6 +18,11 @@ import { RURAL_URBAN_EFFECT_STRENGTH } from '@/lib/local2026/ruralUrban'
 import { TENURE_EFFECT_STRENGTH } from '@/lib/local2026/tenure'
 import { scrapeScottishPolls, scrapeWelshPolls } from '@/lib/scrapePolls'
 import { loadScottishConstituencyResults } from '@/pages/api/scottish-constituency-results'
+import {
+  loadEnglandProjectionInputs,
+  loadScotlandProjectionInputs,
+  loadWalesProjectionInputs,
+} from '@/lib/server/projectionData'
 
 function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
@@ -27,37 +30,14 @@ function isAuthorized(req: NextApiRequest): boolean {
   return req.headers.authorization === `Bearer ${secret}`;
 }
 
-function readDataFile<T>(filename: string): T {
-  const filePath = path.join(process.cwd(), 'public', 'data', filename)
-  return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T
-}
-
 function buildEnglandSnapshot(
   aggregate: ReturnType<typeof computeAggregate>,
   generatedAt: string
 ): EnglandLocalProjectionSnapshot {
-  type SnapshotArgs = Parameters<typeof computeEnglandWardProjectionSnapshot>[0]
-
-  const baseline = readDataFile<SnapshotArgs['baseline']>('ward-baseline.json')
-  const councilSeats = readDataFile<SnapshotArgs['councilSeats']>('council-seats.json')
-  const councilPrevious = readDataFile<SnapshotArgs['councilPrevious']>('council-previous.json')
-  const ladGeo = readDataFile<SnapshotArgs['ladGeo']>('lads.geojson')
-  const countyGeo = readDataFile<SnapshotArgs['countyGeo']>('counties.geojson')
-  const leaveLookup = readDataFile<SnapshotArgs['leaveLookup']>('leave-share.json')
-  const ageLookup = readDataFile<SnapshotArgs['ageLookup']>('age-share.json')
-  const regionLookup = readDataFile<SnapshotArgs['regionLookup']>('lad-region.json')
-  const nssecLookup = readDataFile<SnapshotArgs['nssecLookup']>('nssec-share.json')
-  const degreeLookup = readDataFile<SnapshotArgs['degreeLookup']>('degree-share.json')
-  const tenureLookup = readDataFile<SnapshotArgs['tenureLookup']>('tenure-share.json')
-  const ruralUrbanLookup = readDataFile<SnapshotArgs['ruralUrbanLookup']>('rural-urban-share.json')
-  const wardVacancyLookup = readDataFile<SnapshotArgs['wardVacancyLookup']>('ward-vacancies.json')
-  const wardToPcon = readDataFile<SnapshotArgs['wardToPcon']>('ward-to-pcon.json')
-  const cedToPcon = readDataFile<SnapshotArgs['cedToPcon']>('ced-to-pcon.json')
-  const geLookup = readDataFile<SnapshotArgs['geLookup']>('ge2024-pcon.json')
+  const inputs = loadEnglandProjectionInputs()
 
   return computeEnglandWardProjectionSnapshot({
     generatedAt,
-    baseline,
     aggregate: {
       pollCount: 0,
       labour: aggregate.labour,
@@ -70,21 +50,7 @@ function buildEnglandSnapshot(
       others: aggregate.others,
       lead: aggregate.leadParty,
     },
-    councilSeats,
-    councilPrevious,
-    ladGeo,
-    countyGeo,
-    leaveLookup,
-    ageLookup,
-    regionLookup,
-    nssecLookup,
-    degreeLookup,
-    tenureLookup,
-    ruralUrbanLookup,
-    wardVacancyLookup,
-    wardToPcon,
-    cedToPcon,
-    geLookup,
+    ...inputs,
     weights: {
       leaveStrength: LEAVE_EFFECT_STRENGTH,
       ageStrength: AGE_EFFECT_STRENGTH,
@@ -105,38 +71,25 @@ async function buildScotlandSnapshot(generatedAt: string) {
     scrapeScottishPolls(90),
     loadScottishConstituencyResults(),
   ])
+  const inputs = loadScotlandProjectionInputs()
 
   return computeScottishProjectionSnapshot({
     generatedAt,
     constituencyPolls,
     regionalPolls,
     constituencyResultsRows: results,
-    constituencyGeo: readDataFile('scotland-constituencies.geojson'),
-    geLookup: readDataFile('ge2024-pcon.json'),
-    spcToWpcLookup: readDataFile('spc-to-wpc-lookup.json'),
-    wpcLeaveLookup: readDataFile('scotland-wpc-leave-share.json'),
-    tenureLookup: readDataFile('scotland-tenure-share.json'),
-    ageLookup: readDataFile('scotland-age-share.json'),
-    degreeLookup: readDataFile('scotland-degree-share.json'),
-    nssecLookup: readDataFile('scotland-nssec-share.json'),
+    ...inputs,
   })
 }
 
 async function buildWalesSnapshot(generatedAt: string) {
   const { polls } = await scrapeWelshPolls(90)
+  const inputs = loadWalesProjectionInputs()
 
   return computeWalesProjectionSnapshot({
     generatedAt,
     polls,
-    lookup: readDataFile('senedd-to-wpc-lookup.json'),
-    gePcon: readDataFile('ge2024-pcon.json'),
-    leaveLookup: readDataFile('leave-share.json'),
-    ageLookup: readDataFile('age-share.json'),
-    tenureLookup: readDataFile('tenure-share.json'),
-    nssecLookup: readDataFile('nssec-share.json'),
-    degreeLookup: readDataFile('degree-share.json'),
-    ruralLookup: readDataFile('rural-urban-share.json'),
-    wardToSenedd: readDataFile('ward-to-senedd.json'),
+    ...inputs,
   })
 }
 

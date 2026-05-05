@@ -1,9 +1,8 @@
-import fs from 'fs'
-import path from 'path'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
 import { computeWalesProjectionSnapshot, type WalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
 import { scrapeWelshPolls } from '@/lib/scrapePolls'
+import { loadWalesProjectionInputs } from '@/lib/server/projectionData'
 
 type SnapshotRow = {
   run_id: number
@@ -15,11 +14,6 @@ function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
   return req.headers.authorization === `Bearer ${secret}`
-}
-
-function readDataFile<T>(filename: string): T {
-  const filePath = path.join(process.cwd(), 'public', 'data', filename)
-  return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T
 }
 
 function compareSnapshots(snapshot: WalesProjectionSnapshot, fresh: WalesProjectionSnapshot) {
@@ -96,18 +90,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     const { polls } = await scrapeWelshPolls(90)
+    const inputs = loadWalesProjectionInputs()
     const fresh = computeWalesProjectionSnapshot({
       generatedAt: snapshot.payload.generatedAt,
       polls,
-      lookup: readDataFile('senedd-to-wpc-lookup.json'),
-      gePcon: readDataFile('ge2024-pcon.json'),
-      leaveLookup: readDataFile('leave-share.json'),
-      ageLookup: readDataFile('age-share.json'),
-      tenureLookup: readDataFile('tenure-share.json'),
-      nssecLookup: readDataFile('nssec-share.json'),
-      degreeLookup: readDataFile('degree-share.json'),
-      ruralLookup: readDataFile('rural-urban-share.json'),
-      wardToSenedd: readDataFile('ward-to-senedd.json'),
+      ...inputs,
     })
 
     return res.status(200).json({

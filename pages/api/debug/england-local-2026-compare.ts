@@ -1,5 +1,3 @@
-import fs from 'fs'
-import path from 'path'
 import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
 import {
@@ -14,6 +12,7 @@ import { NSSEC_EFFECT_STRENGTH } from '@/lib/local2026/nssec'
 import { REGION_EFFECT_STRENGTH } from '@/lib/local2026/region'
 import { RURAL_URBAN_EFFECT_STRENGTH } from '@/lib/local2026/ruralUrban'
 import { TENURE_EFFECT_STRENGTH } from '@/lib/local2026/tenure'
+import { loadEnglandProjectionInputs } from '@/lib/server/projectionData'
 
 type SnapshotRow = {
   run_id: number
@@ -34,11 +33,6 @@ function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
   return req.headers.authorization === `Bearer ${secret}`
-}
-
-function readDataFile<T>(filename: string): T {
-  const filePath = path.join(process.cwd(), 'public', 'data', filename)
-  return JSON.parse(fs.readFileSync(filePath, 'utf8')) as T
 }
 
 function almostEqual(a: number, b: number, epsilon = 1e-9) {
@@ -192,10 +186,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Snapshot not found' })
     }
 
-    type SnapshotArgs = Parameters<typeof computeEnglandWardProjectionSnapshot>[0]
+    const inputs = loadEnglandProjectionInputs()
     const fresh = computeEnglandWardProjectionSnapshot({
       generatedAt: snapshot.payload.generatedAt,
-      baseline: readDataFile<SnapshotArgs['baseline']>('ward-baseline.json'),
       aggregate: {
         pollCount: 0,
         labour: snapshot.labour,
@@ -208,21 +201,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         others: snapshot.others,
         lead: snapshot.lead_party,
       },
-      councilSeats: readDataFile<SnapshotArgs['councilSeats']>('council-seats.json'),
-      councilPrevious: readDataFile<SnapshotArgs['councilPrevious']>('council-previous.json'),
-      ladGeo: readDataFile<SnapshotArgs['ladGeo']>('lads.geojson'),
-      countyGeo: readDataFile<SnapshotArgs['countyGeo']>('counties.geojson'),
-      leaveLookup: readDataFile<SnapshotArgs['leaveLookup']>('leave-share.json'),
-      ageLookup: readDataFile<SnapshotArgs['ageLookup']>('age-share.json'),
-      regionLookup: readDataFile<SnapshotArgs['regionLookup']>('lad-region.json'),
-      nssecLookup: readDataFile<SnapshotArgs['nssecLookup']>('nssec-share.json'),
-      degreeLookup: readDataFile<SnapshotArgs['degreeLookup']>('degree-share.json'),
-      tenureLookup: readDataFile<SnapshotArgs['tenureLookup']>('tenure-share.json'),
-      ruralUrbanLookup: readDataFile<SnapshotArgs['ruralUrbanLookup']>('rural-urban-share.json'),
-      wardVacancyLookup: readDataFile<SnapshotArgs['wardVacancyLookup']>('ward-vacancies.json'),
-      wardToPcon: readDataFile<SnapshotArgs['wardToPcon']>('ward-to-pcon.json'),
-      cedToPcon: readDataFile<SnapshotArgs['cedToPcon']>('ced-to-pcon.json'),
-      geLookup: readDataFile<SnapshotArgs['geLookup']>('ge2024-pcon.json'),
+      ...inputs,
       weights: {
         leaveStrength: LEAVE_EFFECT_STRENGTH,
         ageStrength: AGE_EFFECT_STRENGTH,
