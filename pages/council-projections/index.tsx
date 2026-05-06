@@ -43,6 +43,7 @@ import {
   blendShare,
   getGeWeightForParty,
   getRelativeGeShare,
+  getRelativeGeSwingMultiplier,
 } from '@/lib/local2026/ge'
 import { getConcentrationMultiplier } from '@/lib/local2026/concentration'
 import { allocateProjectedSeats } from '@/lib/local2026/multiMember'
@@ -67,6 +68,7 @@ type WardBaseline = {
   totalVotes: number
   nationalShares: Record<string, number>
   localShares: Record<string, number>
+  geSwingMultipliers?: Record<string, number>
 }
 
 type BaselineData = {
@@ -508,7 +510,8 @@ function computeWardProjection(
       return
     }
     const base = (ward.nationalShares[party] ?? 0) * (party === 'Labour' ? labourBaselineCarry : 1)
-    const rawDelta = (aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)
+    const swingMultiplier = ward.geSwingMultipliers?.[party] ?? 1
+    const rawDelta = ((aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)) * swingMultiplier
     let delta = party === 'Labour' && rawDelta < 0 ? rawDelta * labourDeltaMultiplier : rawDelta
     if (party === 'Conservative' && ward.lastYear === 2021 && delta < 0) {
       delta *= 0.9
@@ -1160,6 +1163,7 @@ export default function CouncilProjectionsPage() {
       const geShares = pconCode ? geLookup?.pcon?.[pconCode] : null
       if (geShares) {
         const blendedNational = { ...adjustedWard.nationalShares }
+        const blendedSwingMultipliers = { ...(adjustedWard.geSwingMultipliers || {}) }
         ;[
           'Labour',
           'Conservative',
@@ -1173,13 +1177,22 @@ export default function CouncilProjectionsPage() {
           if (!weight) return
           const baseShare = adjustedWard.nationalShares?.[party] ?? 0
           const geShare = geShares?.[party]
-          if (baseShare === 0 && (party === 'Reform' || party === 'Green')) {
+          if (baseShare === 0 && party === 'Reform') {
+            blendedNational[party] = 0
+            blendedSwingMultipliers[party] = getRelativeGeSwingMultiplier(party, geShare)
+            return
+          }
+          if (baseShare === 0 && party === 'Green') {
             blendedNational[party] = getRelativeGeShare(party, geShare)
             return
           }
           blendedNational[party] = blendShare(baseShare, geShare, weight)
         })
-        adjustedWard = { ...adjustedWard, nationalShares: blendedNational }
+        adjustedWard = {
+          ...adjustedWard,
+          nationalShares: blendedNational,
+          geSwingMultipliers: blendedSwingMultipliers,
+        }
       }
       const leaveShare = getLeaveShareForWard(
         ward.wardCode,
