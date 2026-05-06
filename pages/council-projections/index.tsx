@@ -816,7 +816,11 @@ export default function CouncilProjectionsPage() {
 
   useEffect(() => {
     router.prefetch('/local-2026')
-    fetch('/api/england-local-2026')
+    const snapshotUrl =
+      process.env.NODE_ENV === 'development'
+        ? '/api/england-local-2026?live=1'
+        : '/api/england-local-2026'
+    fetch(snapshotUrl)
       .then(async res => {
         if (!res.ok) throw new Error('snapshot unavailable')
         return (await res.json()) as EnglandLocalProjectionSnapshot
