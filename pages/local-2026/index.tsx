@@ -1244,7 +1244,7 @@ export default function Local2026Page() {
 
     const snapshotUrl =
       process.env.NODE_ENV === 'development'
-        ? '/api/england-local-2026?live=1'
+        ? '/api/debug/england-local-2026-live'
         : '/api/england-local-2026'
     fetch(snapshotUrl)
       .then(async res => {
