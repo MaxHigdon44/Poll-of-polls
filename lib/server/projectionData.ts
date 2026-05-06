@@ -9,13 +9,18 @@ function readJsonFile<T>(relativePath: string): T {
 
 type EnglandSnapshotArgs = Parameters<typeof computeEnglandWardProjectionSnapshot>[0]
 
-export function loadEnglandProjectionInputs() {
+export function loadEnglandProjectionInputs(options?: { includeGeo?: boolean }) {
+  const includeGeo = options?.includeGeo ?? true
   return {
     baseline: readJsonFile<EnglandSnapshotArgs['baseline']>('ward-baseline.json'),
     councilSeats: readJsonFile<EnglandSnapshotArgs['councilSeats']>('council-seats.json'),
     councilPrevious: readJsonFile<EnglandSnapshotArgs['councilPrevious']>('council-previous.json'),
-    ladGeo: readJsonFile<EnglandSnapshotArgs['ladGeo']>('lads.geojson'),
-    countyGeo: readJsonFile<EnglandSnapshotArgs['countyGeo']>('counties.geojson'),
+    ...(includeGeo
+      ? {
+          ladGeo: readJsonFile<EnglandSnapshotArgs['ladGeo']>('lads.geojson'),
+          countyGeo: readJsonFile<EnglandSnapshotArgs['countyGeo']>('counties.geojson'),
+        }
+      : {}),
     leaveLookup: readJsonFile<EnglandSnapshotArgs['leaveLookup']>('leave-share.json'),
     ageLookup: readJsonFile<EnglandSnapshotArgs['ageLookup']>('age-share.json'),
     regionLookup: readJsonFile<EnglandSnapshotArgs['regionLookup']>('lad-region.json'),

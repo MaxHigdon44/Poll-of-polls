@@ -740,8 +740,8 @@ export function computeCouncilProjectionRows(args: {
   aggregate: AggregateRow
   councilSeats: CouncilSeatData
   councilPrevious: CouncilPreviousData | null
-  ladGeo: GeoCollection
-  countyGeo: GeoCollection | null
+  ladGeo?: GeoCollection | null
+  countyGeo?: GeoCollection | null
   leaveLookup: LeaveShareLookup | null
   ageLookup: AgeShareLookup | null
   regionLookup: RegionLookup | null
@@ -775,6 +775,11 @@ export function computeCouncilProjectionRows(args: {
     geLookup,
     weights,
   } = args
+
+  type CouncilDescriptor = {
+    ladCode: string
+    ladName: string
+  }
 
   const byLad = new Map<string, WardBaseline[]>()
   baseline.wards.forEach(ward => {
@@ -1144,20 +1149,42 @@ export function computeCouncilProjectionRows(args: {
   })
 
   const projections: CouncilProjectionRow[] = []
-  const surreyCouncilFeatures = [
-    { properties: { reference: 'surrey-east', name: 'East Surrey' } },
-    { properties: { reference: 'surrey-west', name: 'West Surrey' } },
-  ]
-  const councilFeatures = [
-    ...(countyGeo?.features || []),
-    ...ladGeo.features,
-    ...surreyCouncilFeatures,
-  ]
-  councilFeatures.forEach(feature => {
-    const ladCode =
-      typeof feature.properties?.reference === 'string' ? feature.properties.reference : null
-    const ladName = typeof feature.properties?.name === 'string' ? feature.properties.name : null
-    if (!ladCode || !ladName) return
+  const councilDescriptors = (() => {
+    if (ladGeo?.features?.length) {
+      return [
+        ...(countyGeo?.features || []),
+        ...ladGeo.features,
+        { properties: { reference: 'surrey-east', name: 'East Surrey' } },
+        { properties: { reference: 'surrey-west', name: 'West Surrey' } },
+      ]
+        .map(feature => {
+          const ladCode =
+            typeof feature.properties?.reference === 'string' ? feature.properties.reference : null
+          const ladName = typeof feature.properties?.name === 'string' ? feature.properties.name : null
+          if (!ladCode || !ladName) return null
+          return { ladCode, ladName }
+        })
+        .filter((value): value is CouncilDescriptor => Boolean(value))
+    }
+
+    const byName = new Map<string, CouncilDescriptor>()
+    baseline.wards.forEach(ward => {
+      const normalized = normalizeCouncilName(ward.ladName)
+      if (!normalized || byName.has(normalized)) return
+      byName.set(normalized, { ladCode: ward.ladCode, ladName: ward.ladName })
+    })
+    councilSeats.councils.forEach(row => {
+      const normalized = normalizeCouncilName(row.council)
+      if (normalized === 'east surrey') {
+        byName.set(normalized, { ladCode: 'surrey-east', ladName: 'East Surrey' })
+      } else if (normalized === 'west surrey') {
+        byName.set(normalized, { ladCode: 'surrey-west', ladName: 'West Surrey' })
+      }
+    })
+    return Array.from(byName.values())
+  })()
+
+  councilDescriptors.forEach(({ ladCode, ladName }) => {
     const normalized = normalizeCouncilName(ladName)
     const seatRow = councilSeats.councils.find(
       row => normalizeCouncilName(row.council) === normalized
@@ -1417,8 +1444,8 @@ export function computeEnglandWardProjectionSnapshot(args: {
   aggregate: AggregateRow
   councilSeats: CouncilSeatData
   councilPrevious: CouncilPreviousData | null
-  ladGeo: GeoCollection
-  countyGeo: GeoCollection | null
+  ladGeo?: GeoCollection | null
+  countyGeo?: GeoCollection | null
   leaveLookup: LeaveShareLookup | null
   ageLookup: AgeShareLookup | null
   regionLookup: RegionLookup | null

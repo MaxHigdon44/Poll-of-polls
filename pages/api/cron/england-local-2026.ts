@@ -70,7 +70,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         others: aggregate.others,
         lead: aggregate.lead_party,
       },
-      ...loadEnglandProjectionInputs(),
+      ...loadEnglandProjectionInputs({ includeGeo: false }),
       weights: {
         leaveStrength: LEAVE_EFFECT_STRENGTH,
         ageStrength: AGE_EFFECT_STRENGTH,
