@@ -12,7 +12,6 @@ import { NSSEC_EFFECT_STRENGTH } from '@/lib/local2026/nssec'
 import { REGION_EFFECT_STRENGTH } from '@/lib/local2026/region'
 import { RURAL_URBAN_EFFECT_STRENGTH } from '@/lib/local2026/ruralUrban'
 import { TENURE_EFFECT_STRENGTH } from '@/lib/local2026/tenure'
-import { loadEnglandProjectionInputs } from '@/lib/server/englandProjectionData'
 
 type AggregateRunRow = {
   run_id: number
@@ -28,10 +27,32 @@ type AggregateRunRow = {
   lead_party: string | null
 }
 
+type EnglandSnapshotArgs = Parameters<typeof computeEnglandWardProjectionSnapshot>[0]
+
 function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
   return req.headers.authorization === `Bearer ${secret}`
+}
+
+function getBaseUrl(req: NextApiRequest) {
+  const protoHeader = String(req.headers['x-forwarded-proto'] || '')
+  const proto = protoHeader.split(',')[0]?.trim() || 'https'
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0]
+    ?.trim()
+  if (!host) {
+    throw new Error('Missing host header')
+  }
+  return `${proto}://${host}`
+}
+
+async function fetchJson<T>(baseUrl: string, relativePath: string): Promise<T> {
+  const response = await fetch(`${baseUrl}${relativePath}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${relativePath}: ${response.status} ${response.statusText}`)
+  }
+  return (await response.json()) as T
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -45,6 +66,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const baseUrl = getBaseUrl(req)
     const aggregateResult = await sql<AggregateRunRow>`
       SELECT run_id, aggregate_date, labour, conservative, reform, libdem, green, snp, pc, others, lead_party
       FROM aggregate_runs
@@ -56,8 +78,41 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Aggregate not found' })
     }
 
+    const [
+      baseline,
+      councilSeats,
+      councilPrevious,
+      leaveLookup,
+      ageLookup,
+      regionLookup,
+      nssecLookup,
+      degreeLookup,
+      tenureLookup,
+      ruralUrbanLookup,
+      wardVacancyLookup,
+      wardToPcon,
+      cedToPcon,
+      geLookup,
+    ] = await Promise.all([
+      fetchJson<EnglandSnapshotArgs['baseline']>(baseUrl, '/data/ward-baseline.json'),
+      fetchJson<EnglandSnapshotArgs['councilSeats']>(baseUrl, '/data/council-seats.json'),
+      fetchJson<EnglandSnapshotArgs['councilPrevious']>(baseUrl, '/data/council-previous.json'),
+      fetchJson<EnglandSnapshotArgs['leaveLookup']>(baseUrl, '/data/leave-share.json'),
+      fetchJson<EnglandSnapshotArgs['ageLookup']>(baseUrl, '/data/age-share.json'),
+      fetchJson<EnglandSnapshotArgs['regionLookup']>(baseUrl, '/data/lad-region.json'),
+      fetchJson<EnglandSnapshotArgs['nssecLookup']>(baseUrl, '/data/nssec-share.json'),
+      fetchJson<EnglandSnapshotArgs['degreeLookup']>(baseUrl, '/data/degree-share.json'),
+      fetchJson<EnglandSnapshotArgs['tenureLookup']>(baseUrl, '/data/tenure-share.json'),
+      fetchJson<EnglandSnapshotArgs['ruralUrbanLookup']>(baseUrl, '/data/rural-urban-share.json'),
+      fetchJson<EnglandSnapshotArgs['wardVacancyLookup']>(baseUrl, '/data/ward-vacancies.json'),
+      fetchJson<EnglandSnapshotArgs['wardToPcon']>(baseUrl, '/data/ward-to-pcon.json'),
+      fetchJson<EnglandSnapshotArgs['cedToPcon']>(baseUrl, '/data/ced-to-pcon.json'),
+      fetchJson<EnglandSnapshotArgs['geLookup']>(baseUrl, '/data/ge2024-pcon.json'),
+    ])
+
     const snapshot = computeEnglandWardProjectionSnapshot({
       generatedAt: aggregate.aggregate_date,
+      baseline,
       aggregate: {
         pollCount: 0,
         labour: aggregate.labour,
@@ -70,7 +125,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         others: aggregate.others,
         lead: aggregate.lead_party,
       },
-      ...loadEnglandProjectionInputs({ includeGeo: false }),
+      councilSeats,
+      councilPrevious,
+      leaveLookup,
+      ageLookup,
+      regionLookup,
+      nssecLookup,
+      degreeLookup,
+      tenureLookup,
+      ruralUrbanLookup,
+      wardVacancyLookup,
+      wardToPcon,
+      cedToPcon,
+      geLookup,
       weights: {
         leaveStrength: LEAVE_EFFECT_STRENGTH,
         ageStrength: AGE_EFFECT_STRENGTH,

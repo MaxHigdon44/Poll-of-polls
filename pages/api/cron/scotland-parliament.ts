@@ -2,18 +2,38 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
 import { computeScottishProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
 import { scrapeScottishPolls } from '@/lib/scrapePolls'
-import { loadScottishConstituencyResults } from '@/pages/api/scottish-constituency-results'
-import { loadScotlandProjectionInputs } from '@/lib/server/scotlandProjectionData'
 
 type AggregateRunRow = {
   run_id: number
   aggregate_date: string
 }
 
+type ScotlandSnapshotArgs = Parameters<typeof computeScottishProjectionSnapshot>[0]
+
 function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
   return req.headers.authorization === `Bearer ${secret}`
+}
+
+function getBaseUrl(req: NextApiRequest) {
+  const protoHeader = String(req.headers['x-forwarded-proto'] || '')
+  const proto = protoHeader.split(',')[0]?.trim() || 'https'
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '')
+    .split(',')[0]
+    ?.trim()
+  if (!host) {
+    throw new Error('Missing host header')
+  }
+  return `${proto}://${host}`
+}
+
+async function fetchJson<T>(baseUrl: string, relativePath: string): Promise<T> {
+  const response = await fetch(`${baseUrl}${relativePath}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${relativePath}: ${response.status} ${response.statusText}`)
+  }
+  return (await response.json()) as T
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -27,6 +47,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   try {
+    const baseUrl = getBaseUrl(req)
     const aggregateResult = await sql<AggregateRunRow>`
       SELECT run_id, aggregate_date
       FROM aggregate_runs
@@ -38,16 +59,45 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Aggregate not found' })
     }
 
-    const [{ constituencyPolls, regionalPolls }, { results }] = await Promise.all([
+    const [
+      { constituencyPolls, regionalPolls },
+      { results },
+      constituencyGeo,
+      geLookup,
+      spcToWpcLookup,
+      wpcLeaveLookup,
+      tenureLookup,
+      ageLookup,
+      degreeLookup,
+      nssecLookup,
+    ] = await Promise.all([
       scrapeScottishPolls(90),
-      loadScottishConstituencyResults(),
+      fetchJson<{ results: ScotlandSnapshotArgs['constituencyResultsRows'] }>(
+        baseUrl,
+        '/api/scottish-constituency-results'
+      ),
+      fetchJson<ScotlandSnapshotArgs['constituencyGeo']>(baseUrl, '/data/scotland-constituencies.geojson'),
+      fetchJson<ScotlandSnapshotArgs['geLookup']>(baseUrl, '/data/ge2024-pcon.json'),
+      fetchJson<ScotlandSnapshotArgs['spcToWpcLookup']>(baseUrl, '/data/spc-to-wpc-lookup.json'),
+      fetchJson<ScotlandSnapshotArgs['wpcLeaveLookup']>(baseUrl, '/data/scotland-wpc-leave-share.json'),
+      fetchJson<ScotlandSnapshotArgs['tenureLookup']>(baseUrl, '/data/scotland-tenure-share.json'),
+      fetchJson<ScotlandSnapshotArgs['ageLookup']>(baseUrl, '/data/scotland-age-share.json'),
+      fetchJson<ScotlandSnapshotArgs['degreeLookup']>(baseUrl, '/data/scotland-degree-share.json'),
+      fetchJson<ScotlandSnapshotArgs['nssecLookup']>(baseUrl, '/data/scotland-nssec-share.json'),
     ])
     const snapshot = computeScottishProjectionSnapshot({
       generatedAt: aggregate.aggregate_date,
       constituencyPolls,
       regionalPolls,
       constituencyResultsRows: results,
-      ...loadScotlandProjectionInputs(),
+      constituencyGeo,
+      geLookup,
+      spcToWpcLookup,
+      wpcLeaveLookup,
+      tenureLookup,
+      ageLookup,
+      degreeLookup,
+      nssecLookup,
     })
 
     await sql`
