@@ -12,7 +12,7 @@ import { NSSEC_EFFECT_STRENGTH } from '@/lib/local2026/nssec'
 import { REGION_EFFECT_STRENGTH } from '@/lib/local2026/region'
 import { RURAL_URBAN_EFFECT_STRENGTH } from '@/lib/local2026/ruralUrban'
 import { TENURE_EFFECT_STRENGTH } from '@/lib/local2026/tenure'
-import { loadEnglandProjectionInputs } from '@/lib/server/projectionData'
+import { loadEnglandProjectionInputs } from '@/lib/server/englandProjectionData'
 
 type AggregateRunRow = {
   run_id: number

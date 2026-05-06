@@ -3,7 +3,7 @@ import { sql } from '@vercel/postgres'
 import { computeScottishProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
 import { scrapeScottishPolls } from '@/lib/scrapePolls'
 import { loadScottishConstituencyResults } from '@/pages/api/scottish-constituency-results'
-import { loadScotlandProjectionInputs } from '@/lib/server/projectionData'
+import { loadScotlandProjectionInputs } from '@/lib/server/scotlandProjectionData'
 
 type AggregateRunRow = {
   run_id: number

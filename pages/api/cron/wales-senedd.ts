@@ -2,7 +2,7 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
 import { computeWalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
 import { scrapeWelshPolls } from '@/lib/scrapePolls'
-import { loadWalesProjectionInputs } from '@/lib/server/projectionData'
+import { loadWalesProjectionInputs } from '@/lib/server/walesProjectionData'
 
 type AggregateRunRow = {
   run_id: number
