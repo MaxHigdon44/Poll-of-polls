@@ -2,99 +2,46 @@ import type { NextApiRequest, NextApiResponse } from 'next'
 import { sql } from '@vercel/postgres'
 import { scrapePolls } from '../../../lib/scrapePolls'
 import { computeAggregate } from '../../../lib/aggregate'
-import {
-  computeEnglandWardProjectionSnapshot,
-  type EnglandLocalProjectionSnapshot,
-} from '../../../lib/local2026/councilProjections'
-import { computeScottishProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
-import { computeWalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
-import { AGE_EFFECT_STRENGTH } from '@/lib/local2026/age'
-import { DEGREE_EFFECT_STRENGTH } from '@/lib/local2026/degree'
-import { GE_WEIGHT_GREEN, GE_WEIGHT_MAJOR, GE_WEIGHT_REFORM } from '@/lib/local2026/ge'
-import { LEAVE_EFFECT_STRENGTH } from '@/lib/local2026/leaveRemain'
-import { NSSEC_EFFECT_STRENGTH } from '@/lib/local2026/nssec'
-import { REGION_EFFECT_STRENGTH } from '@/lib/local2026/region'
-import { RURAL_URBAN_EFFECT_STRENGTH } from '@/lib/local2026/ruralUrban'
-import { TENURE_EFFECT_STRENGTH } from '@/lib/local2026/tenure'
-import { scrapeScottishPolls, scrapeWelshPolls } from '@/lib/scrapePolls'
-import { loadScottishConstituencyResults } from '@/pages/api/scottish-constituency-results'
-import {
-  loadEnglandProjectionInputs,
-  loadScotlandProjectionInputs,
-  loadWalesProjectionInputs,
-} from '@/lib/server/projectionData'
 
 function isAuthorized(req: NextApiRequest): boolean {
   const secret = process.env.CRON_SECRET
   if (!secret) return false
-  return req.headers.authorization === `Bearer ${secret}`;
+  return req.headers.authorization === `Bearer ${secret}`
 }
 
-function buildEnglandSnapshot(
-  aggregate: ReturnType<typeof computeAggregate>,
-  generatedAt: string
-): EnglandLocalProjectionSnapshot {
-  const inputs = loadEnglandProjectionInputs()
+function getBaseUrl(req: NextApiRequest) {
+  const protoHeader = String(req.headers['x-forwarded-proto'] || '')
+  const proto = protoHeader.split(',')[0]?.trim() || 'https'
+  const host = String(req.headers['x-forwarded-host'] || req.headers.host || '').split(',')[0]?.trim()
+  if (!host) {
+    throw new Error('Missing host header')
+  }
+  return `${proto}://${host}`
+}
 
-  return computeEnglandWardProjectionSnapshot({
-    generatedAt,
-    aggregate: {
-      pollCount: 0,
-      labour: aggregate.labour,
-      conservative: aggregate.conservative,
-      reform: aggregate.reform,
-      libdem: aggregate.libdem,
-      green: aggregate.green,
-      snp: aggregate.snp,
-      pc: aggregate.pc,
-      others: aggregate.others,
-      lead: aggregate.leadParty,
-    },
-    ...inputs,
-    weights: {
-      leaveStrength: LEAVE_EFFECT_STRENGTH,
-      ageStrength: AGE_EFFECT_STRENGTH,
-      regionStrength: REGION_EFFECT_STRENGTH,
-      nssecStrength: NSSEC_EFFECT_STRENGTH,
-      degreeStrength: DEGREE_EFFECT_STRENGTH,
-      tenureStrength: TENURE_EFFECT_STRENGTH,
-      ruralUrbanStrength: RURAL_URBAN_EFFECT_STRENGTH,
-      geReformWeight: GE_WEIGHT_REFORM,
-      geGreenWeight: GE_WEIGHT_GREEN,
-      geMajorWeight: GE_WEIGHT_MAJOR,
+async function triggerProjection(baseUrl: string, path: string, secret: string) {
+  const response = await fetch(`${baseUrl}${path}`, {
+    headers: {
+      Authorization: `Bearer ${secret}`,
     },
   })
-}
 
-async function buildScotlandSnapshot(generatedAt: string) {
-  const [{ constituencyPolls, regionalPolls }, { results }] = await Promise.all([
-    scrapeScottishPolls(90),
-    loadScottishConstituencyResults(),
-  ])
-  const inputs = loadScotlandProjectionInputs()
+  let body: unknown = null
+  try {
+    body = await response.json()
+  } catch {
+    body = null
+  }
 
-  return computeScottishProjectionSnapshot({
-    generatedAt,
-    constituencyPolls,
-    regionalPolls,
-    constituencyResultsRows: results,
-    ...inputs,
-  })
-}
+  if (!response.ok) {
+    throw new Error(`Projection refresh failed for ${path}: ${response.status} ${JSON.stringify(body)}`)
+  }
 
-async function buildWalesSnapshot(generatedAt: string) {
-  const { polls } = await scrapeWelshPolls(90)
-  const inputs = loadWalesProjectionInputs()
-
-  return computeWalesProjectionSnapshot({
-    generatedAt,
-    polls,
-    ...inputs,
-  })
+  return body
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== "GET"){
+  if (req.method !== 'GET') {
     res.setHeader('Allow', 'GET')
     return res.status(405).json({ error: 'Method Not Allowed' })
   }
@@ -165,31 +112,23 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       )
     `
 
-    const [englandSnapshot, scotlandSnapshot, walesSnapshot] = await Promise.all([
-      Promise.resolve(buildEnglandSnapshot(aggregate, runDate.toISOString())),
-      buildScotlandSnapshot(runDate.toISOString()),
-      buildWalesSnapshot(runDate.toISOString()),
-    ])
-    await sql`
-      INSERT INTO projection_snapshots (run_id, snapshot_date, view_key, payload)
-      VALUES (${runId}, ${runDate.toISOString()}, ${'england-local-2026'}, ${JSON.stringify(englandSnapshot)})
-      ON CONFLICT (view_key, snapshot_date)
-      DO UPDATE SET run_id = EXCLUDED.run_id, payload = EXCLUDED.payload
-    `
-    await sql`
-      INSERT INTO projection_snapshots (run_id, snapshot_date, view_key, payload)
-      VALUES (${runId}, ${runDate.toISOString()}, ${'scotland-parliament'}, ${JSON.stringify(scotlandSnapshot)})
-      ON CONFLICT (view_key, snapshot_date)
-      DO UPDATE SET run_id = EXCLUDED.run_id, payload = EXCLUDED.payload
-    `
-    await sql`
-      INSERT INTO projection_snapshots (run_id, snapshot_date, view_key, payload)
-      VALUES (${runId}, ${runDate.toISOString()}, ${'wales-senedd'}, ${JSON.stringify(walesSnapshot)})
-      ON CONFLICT (view_key, snapshot_date)
-      DO UPDATE SET run_id = EXCLUDED.run_id, payload = EXCLUDED.payload
-    `
+    const secret = process.env.CRON_SECRET
+    if (!secret) {
+      throw new Error('Missing CRON_SECRET')
+    }
 
-    return res.status(200).json({ runId, count: polls.length })
+    const baseUrl = getBaseUrl(req)
+    const [england, scotland, wales] = await Promise.all([
+      triggerProjection(baseUrl, '/api/cron/england-local-2026', secret),
+      triggerProjection(baseUrl, '/api/cron/scotland-parliament', secret),
+      triggerProjection(baseUrl, '/api/cron/wales-senedd', secret),
+    ])
+
+    return res.status(200).json({
+      runId,
+      count: polls.length,
+      projections: { england, scotland, wales },
+    })
   } catch (err) {
     console.error(err)
     const detail = err instanceof Error ? err.message : String(err)
