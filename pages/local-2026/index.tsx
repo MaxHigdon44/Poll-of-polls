@@ -36,7 +36,10 @@ import {
   type RuralUrbanBaseline,
   type RuralUrbanShare,
 } from '@/lib/local2026/ruralUrban'
-import type { EnglandLocalProjectionSnapshot } from '@/lib/local2026/councilProjections'
+import {
+  computeCouncilProjectionRows,
+  type EnglandLocalProjectionSnapshot,
+} from '@/lib/local2026/councilProjections'
 import {
   GE_WEIGHT_GREEN,
   GE_WEIGHT_MAJOR,
@@ -1118,6 +1121,7 @@ export default function Local2026Page() {
   const router = useRouter()
   const embedParam = router.query.embed
   const isEmbed = embedParam === '1' || (Array.isArray(embedParam) && embedParam[0] === '1')
+  const forceLiveEnglandProjection = process.env.NODE_ENV === 'development'
   const [wardGeo, setWardGeo] = useState<GeoCollection | null>(null)
   const [ladGeo, setLadGeo] = useState<GeoCollection | null>(null)
   const [countriesGeo, setCountriesGeo] = useState<GeoCollection | null>(null)
@@ -1238,7 +1242,11 @@ export default function Local2026Page() {
       .then(data => setCountrySummaries(Array.isArray(data?.summaries) ? data.summaries : []))
       .catch(() => setCountrySummaries([]))
 
-    fetch('/api/england-local-2026')
+    const snapshotUrl =
+      process.env.NODE_ENV === 'development'
+        ? '/api/england-local-2026?live=1'
+        : '/api/england-local-2026'
+    fetch(snapshotUrl)
       .then(async res => {
         if (!res.ok) throw new Error('snapshot unavailable')
         return (await res.json()) as EnglandLocalProjectionSnapshot
@@ -1319,6 +1327,20 @@ export default function Local2026Page() {
     () => countrySummaries.find(summary => summary.view === 'england') || null,
     [countrySummaries]
   )
+  const showLocalSnapshotDebug = process.env.NODE_ENV === 'development'
+  const localSnapshotDebugLabel = useMemo(() => {
+    if (process.env.NODE_ENV === 'development') {
+      return 'England data source: live shared snapshot calculation (localhost)'
+    }
+    if (projectionSnapshotStatus === 'loading') return 'England data source: checking cached snapshot'
+    if (projectionSnapshotStatus === 'missing') return 'England data source: live fallback calculation'
+    if (projectionSnapshot?.generatedAt) {
+      const date = new Date(projectionSnapshot.generatedAt)
+      const formatted = Number.isNaN(date.getTime()) ? projectionSnapshot.generatedAt : date.toLocaleString()
+      return `England data source: cached snapshot from ${formatted}`
+    }
+    return 'England data source: cached snapshot'
+  }, [projectionSnapshot, projectionSnapshotStatus])
 
   useEffect(() => {
     if (!selectedLad) return
@@ -2562,10 +2584,109 @@ export default function Local2026Page() {
     selectedBaselineWards,
   ])
 
+  const liveCouncilRows = useMemo(() => {
+    if (
+      !forceLiveEnglandProjection ||
+      !baseline ||
+      !aggregate ||
+      !councilSeats ||
+      !councilPrevious ||
+      !ladGeo ||
+      !leaveLookup ||
+      !ageLookup ||
+      !regionLookup ||
+      !nssecLookup ||
+      !degreeLookup ||
+      !tenureLookup ||
+      !ruralUrbanLookup ||
+      !wardVacancyLookup ||
+      !wardToPcon ||
+      !cedToPcon ||
+      !geLookup
+    ) {
+      return []
+    }
+    return computeCouncilProjectionRows({
+      baseline,
+      aggregate: {
+        pollCount: 0,
+        labour: aggregate.labour,
+        conservative: aggregate.conservative,
+        reform: aggregate.reform,
+        libdem: aggregate.libdem,
+        green: aggregate.green,
+        snp: aggregate.snp,
+        pc: aggregate.pc,
+        others: aggregate.others,
+        lead: aggregate.lead_party,
+      },
+      councilSeats,
+      councilPrevious,
+      ladGeo,
+      countyGeo,
+      leaveLookup,
+      ageLookup,
+      regionLookup,
+      nssecLookup,
+      degreeLookup,
+      tenureLookup,
+      ruralUrbanLookup,
+      wardVacancyLookup,
+      wardToPcon,
+      cedToPcon,
+      geLookup,
+      weights: {
+        leaveStrength,
+        ageStrength,
+        regionStrength,
+        nssecStrength,
+        degreeStrength,
+        tenureStrength,
+        ruralUrbanStrength,
+        geReformWeight,
+        geGreenWeight,
+        geMajorWeight,
+      },
+    })
+  }, [
+    forceLiveEnglandProjection,
+    baseline,
+    aggregate,
+    councilSeats,
+    councilPrevious,
+    ladGeo,
+    countyGeo,
+    leaveLookup,
+    ageLookup,
+    regionLookup,
+    nssecLookup,
+    degreeLookup,
+    tenureLookup,
+    ruralUrbanLookup,
+    wardVacancyLookup,
+    wardToPcon,
+    cedToPcon,
+    geLookup,
+    leaveStrength,
+    ageStrength,
+    regionStrength,
+    nssecStrength,
+    degreeStrength,
+    tenureStrength,
+    ruralUrbanStrength,
+    geReformWeight,
+    geGreenWeight,
+    geMajorWeight,
+  ])
+
   const projectedControlByLad = useMemo(() => {
+    const rows =
+      projectionSnapshot?.councilRows ||
+      (forceLiveEnglandProjection ? liveCouncilRows : null) ||
+      []
     const map = new Map<string, string>()
-    if (projectionSnapshot?.councilRows?.length) {
-      projectionSnapshot.councilRows.forEach(row => {
+    if (rows.length) {
+      rows.forEach(row => {
         if (row.ladCode) map.set(row.ladCode, row.projectedControl)
       })
       return map
@@ -2574,10 +2695,13 @@ export default function Local2026Page() {
       map.set(selectedLad, councilComposition.projectedControl.replace(/\s+majority$/i, ''))
     }
     return map
-  }, [projectionSnapshot, selectedLad, councilComposition])
+  }, [projectionSnapshot, forceLiveEnglandProjection, liveCouncilRows, selectedLad, councilComposition])
 
   const seatChangeSummary = useMemo(() => {
-    const rows = projectionSnapshot?.councilRows || []
+    const rows =
+      projectionSnapshot?.councilRows ||
+      (forceLiveEnglandProjection ? liveCouncilRows : null) ||
+      []
     const totals: Record<string, number> = {}
     rows.forEach(row => {
       Object.entries(row.projectedSeatsUp || {}).forEach(([party, seats]) => {
@@ -2600,7 +2724,7 @@ export default function Local2026Page() {
       })
     if (otherSeats > 0) keptRows.push({ party: 'Other', seats: otherSeats })
     return keptRows.sort((a, b) => b.seats - a.seats)
-  }, [projectionSnapshot])
+  }, [projectionSnapshot, forceLiveEnglandProjection, liveCouncilRows])
 
   const showNoComposition =
     Boolean(selectedLad) && (!councilComposition || !Object.keys(councilComposition.totals).length)
@@ -2642,9 +2766,13 @@ export default function Local2026Page() {
   }, [selectedLadFeature])
 
   const projectedControlByName = useMemo(() => {
+    const rows =
+      projectionSnapshot?.councilRows ||
+      (forceLiveEnglandProjection ? liveCouncilRows : null) ||
+      []
     const map = new Map<string, string>()
-    if (projectionSnapshot?.councilRows?.length) {
-      projectionSnapshot.councilRows.forEach(row => {
+    if (rows.length) {
+      rows.forEach(row => {
         const key = normalizeCouncilLookupName(row.council)
         if (key) map.set(key, row.projectedControl)
       })
@@ -2654,7 +2782,7 @@ export default function Local2026Page() {
       map.set(normalizeCouncilLookupName(selectedCouncilName), councilComposition.projectedControl)
     }
     return map
-  }, [projectionSnapshot, selectedCouncilName, councilComposition])
+  }, [projectionSnapshot, forceLiveEnglandProjection, liveCouncilRows, selectedCouncilName, councilComposition])
 
   const isCountySelection = useMemo(() => {
     if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') return true
@@ -2863,9 +2991,25 @@ export default function Local2026Page() {
             </div>
           )}
         </div>
-      <div className="poll-card poll-map-card">
+        <div className="poll-card poll-map-card">
         <div className="poll-map-layout" style={{ height: '100%' }}>
         <div className="poll-card poll-map-sidebar" style={{ maxHeight: '100%', overflow: 'auto' }}>
+          {showLocalSnapshotDebug ? (
+            <div
+              style={{
+                marginBottom: '1rem',
+                padding: '0.65rem 0.75rem',
+                borderRadius: '10px',
+                border: '1px solid #8b5cf6',
+                background: 'rgba(139,92,246,0.12)',
+                color: '#f8fafc',
+                fontSize: '0.9rem',
+                lineHeight: 1.35,
+              }}
+            >
+              {localSnapshotDebugLabel}
+            </div>
+          ) : null}
           {selectedLad ? (
             <>
               <div style={{ marginBottom: '1rem' }}>
