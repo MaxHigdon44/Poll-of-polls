@@ -577,7 +577,7 @@ function computeWardProjection(
       : ward.lastYear === 2022
         ? 1.3
         : ward.lastYear === 2024
-          ? 1.15
+          ? 1.3
           : 1
   const labourBaselineCarry = labourStronghold
     ? 1
@@ -630,9 +630,6 @@ function computeWardProjection(
     const swingMultiplier = ward.geSwingMultipliers?.[party] ?? 1
     const rawDelta = ((aggregateMap[party] ?? 0) - (baselineNational[party] ?? 0)) * swingMultiplier
     let delta = party === 'Labour' && rawDelta < 0 ? rawDelta * labourDeltaMultiplier : rawDelta
-    if (party === 'Conservative' && ward.lastYear === 2021 && delta < 0) {
-      delta *= 0.9
-    }
     if (
       party === 'Reform' &&
       delta > 0 &&
