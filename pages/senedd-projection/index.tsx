@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import PageShell from '../../components/PageShell'
+import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
 import { getPartyLeaveAdjustment, LEAVE_EFFECT_STRENGTH } from '../../lib/local2026/leaveRemain'
@@ -803,6 +804,7 @@ export default function SeneddProjectionPage() {
 
   return (
     <PageShell>
+      <ElectionFreezeNotice />
       <TopNav
         title="Poll of Polls"
         items={MAIN_TOPNAV_ITEMS}

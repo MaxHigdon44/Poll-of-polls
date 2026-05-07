@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import PageShell from '../../components/PageShell'
+import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import {
   LEAVE_EFFECT_STRENGTH,
@@ -1621,6 +1622,7 @@ export default function CouncilProjectionsPage() {
 
   return (
     <PageShell>
+      <ElectionFreezeNotice />
       <TopNav
         title="Council Projections"
         items={MAIN_TOPNAV_ITEMS}

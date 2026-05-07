@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import type { FeatureCollection } from 'geojson'
 import PageShell from '../../components/PageShell'
+import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 
 const UkElectoralMap = dynamic(() => import('../../components/UkElectoralMap'), { ssr: false })
@@ -536,6 +537,7 @@ export default function ElectoralMapsPage() {
 
   return (
     <PageShell>
+      <ElectionFreezeNotice />
       <TopNav title="Poll of Polls" items={MAIN_TOPNAV_ITEMS} />
       <div className="poll-card poll-stack" style={{ marginBottom: '0.75rem' }}>
         <div style={{ fontWeight: 700, fontSize: '1.08rem' }}>How to use the map</div>

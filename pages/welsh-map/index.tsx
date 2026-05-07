@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import type { FeatureCollection } from 'geojson'
 import PageShell from '../../components/PageShell'
+import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
 import { getPartyLeaveAdjustment, LEAVE_EFFECT_STRENGTH } from '../../lib/local2026/leaveRemain'
@@ -526,6 +527,7 @@ export default function WelshMapPage() {
 
   return (
     <PageShell>
+      <ElectionFreezeNotice />
       {!isEmbed && (
         <TopNav
           title="Poll of Polls"

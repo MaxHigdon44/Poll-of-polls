@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FeatureCollection } from 'geojson'
 import PageShell from '../../components/PageShell'
+import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import { blendShare } from '../../lib/local2026/ge'
 import {
@@ -1447,6 +1448,7 @@ export default function ScottishParliamentProjectionPage() {
 
   return (
     <PageShell>
+      <ElectionFreezeNotice />
       <TopNav
         title="Poll of Polls"
         items={MAIN_TOPNAV_ITEMS}

@@ -3,6 +3,7 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import PageShell from '../../components/PageShell'
+import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import {
   LEAVE_EFFECT_STRENGTH,
@@ -2941,6 +2942,7 @@ export default function Local2026Page() {
 
   return (
     <PageShell>
+      <ElectionFreezeNotice />
       {!isEmbed && (
         <TopNav
           title="Local Elections 2026"
