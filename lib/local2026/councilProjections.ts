@@ -710,11 +710,19 @@ function computeWardProjection(
   } else {
     scaledLocal = localBaseline
     if (sumNational > 0) {
-      const scale = remaining / sumNational
-      nationalParties.forEach(party => {
-        adjustedNational[party] = adjustedNational[party] * scale
-      })
-      sumNational = remaining
+      const otherParties = nationalParties.filter(party => party !== 'Labour')
+      const otherSum = otherParties.reduce((acc, party) => acc + (adjustedNational[party] || 0), 0)
+      if (otherSum <= remaining) {
+        adjustedNational['Labour'] = Math.max(0, remaining - otherSum)
+        sumNational = remaining
+      } else {
+        const scale = remaining / otherSum
+        otherParties.forEach(party => {
+          adjustedNational[party] = adjustedNational[party] * scale
+        })
+        adjustedNational['Labour'] = 0
+        sumNational = remaining
+      }
     }
   }
 

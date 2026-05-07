@@ -4,8 +4,8 @@ export function getConcentrationMultiplier(party: string, baselineShare: number)
     if (baselineShare >= 15) return 1.1
   }
   if (party === 'Green') {
-    if (baselineShare >= 20) return 1.2
-    if (baselineShare >= 12) return 1.1
+    if (baselineShare >= 20) return 1.4
+    if (baselineShare >= 12) return 1.2
   }
   return 1
 }
