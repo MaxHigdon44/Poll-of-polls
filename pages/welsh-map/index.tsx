@@ -11,6 +11,7 @@ import { TENURE_EFFECT_STRENGTH, getTenureAdjustment } from '../../lib/local2026
 import { NSSEC_EFFECT_STRENGTH, getNssecAdjustment } from '../../lib/local2026/nssec'
 import { DEGREE_EFFECT_STRENGTH, getDegreeAdjustment } from '../../lib/local2026/degree'
 import { RURAL_URBAN_EFFECT_STRENGTH, getRuralUrbanAdjustment } from '../../lib/local2026/ruralUrban'
+import type { WalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
 
 const PARTY_COLORS: Record<string, string> = {
   Labour: '#E4003B',
@@ -59,6 +60,7 @@ export default function WelshMapPage() {
   const [degreeLookup, setDegreeLookup] = useState<any>(null)
   const [ruralLookup, setRuralLookup] = useState<any>(null)
   const [wardToSenedd, setWardToSenedd] = useState<any>(null)
+  const [projectionSnapshot, setProjectionSnapshot] = useState<WalesProjectionSnapshot | null>(null)
   const [countrySummaries, setCountrySummaries] = useState<CountryProjectionSummary[]>([])
   const [selectedSeat, setSelectedSeat] = useState<{
     name: string
@@ -103,6 +105,12 @@ export default function WelshMapPage() {
       .then(res => res.json())
       .then(data => setCountrySummaries(Array.isArray(data?.summaries) ? data.summaries : []))
       .catch(() => setCountrySummaries([]))
+    fetch('/api/senedd-projection')
+      .then(res => res.json())
+      .then(data => {
+        if (data?.projectedConstituencies && data?.seatCounts) setProjectionSnapshot(data)
+      })
+      .catch(() => setProjectionSnapshot(null))
     fetch(`/data/leave-share.json?_=${cacheBust}`)
       .then(res => res.json())
       .then(setLeaveLookup)
@@ -225,6 +233,11 @@ export default function WelshMapPage() {
       Green: (aggregateSafe.Green ?? baselineNational.Green) - baselineNational.Green,
       Other: (aggregateSafe.Other ?? baselineNational.Other) - baselineNational.Other,
     }
+
+    const snapshotSeatsByName = new Map<string, Record<string, number>>()
+    projectionSnapshot?.projectedConstituencies?.forEach(entry => {
+      snapshotSeatsByName.set(normalizeWelshName(entry.name), entry.seats || {})
+    })
 
     const hasAdjustors =
       wardToSenedd?.wards &&
@@ -454,12 +467,12 @@ export default function WelshMapPage() {
         projected[party] = (projectedRaw[party] / total) * 100
       })
       const winner = Object.entries(projected).sort((a, b) => b[1] - a[1])[0]?.[0] || null
-      const seats = allocateDhondt(projected, 6)
       const key = normalizeWelshName(row.seneddName || row.seneddCode || '')
+      const seats = snapshotSeatsByName.get(key) || allocateDhondt(projected, 6)
       map.set(key, { baseline, projected, projectedWinner: winner, seats })
     })
     return map
-  }, [lookup, gePcon, aggregate])
+  }, [lookup, gePcon, aggregate, projectionSnapshot, wardToSenedd, ageLookup, tenureLookup, nssecLookup, degreeLookup, ruralLookup, leaveLookup])
 
   const constituencyNameIndex = useMemo(() => {
     const map = new Map<string, string>()
