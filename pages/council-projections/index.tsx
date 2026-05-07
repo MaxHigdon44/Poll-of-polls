@@ -1593,6 +1593,7 @@ export default function CouncilProjectionsPage() {
         const previous = previousTotals[party] || 0
         return { party, projected, delta: projected - previous }
       })
+      .filter(item => normalizeName(item.party) !== 'new council')
       .sort((a, b) => b.projected - a.projected)
   }, [rows])
 

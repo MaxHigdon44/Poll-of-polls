@@ -1130,6 +1130,7 @@ export default function Local2026Page() {
   const [cedGeo, setCedGeo] = useState<GeoCollection | null>(null)
   const [surreyOverlay, setSurreyOverlay] = useState<GeoCollection | null>(null)
   const [surreyBoundary, setSurreyBoundary] = useState<GeoCollection | null>(null)
+  const [isleOfWightOverlay, setIsleOfWightOverlay] = useState<GeoCollection | null>(null)
   const [baseline, setBaseline] = useState<BaselineData | null>(null)
   const [aggregate, setAggregate] = useState<AggregateRow | null>(null)
   const [leaveLookup, setLeaveLookup] = useState<LeaveShareLookup | null>(null)
@@ -1211,6 +1212,11 @@ export default function Local2026Page() {
       .then(res => res.json())
       .then(setSurreyOverlay)
       .catch(() => setSurreyOverlay(null))
+
+    fetch('/data/isle-of-wight-council.geojson')
+      .then(res => res.json())
+      .then(setIsleOfWightOverlay)
+      .catch(() => setIsleOfWightOverlay(null))
 
     fetch('/data/surrey-unitaries-boundary.geojson')
       .then(res => res.json())
@@ -2114,6 +2120,7 @@ export default function Local2026Page() {
     eligible.add('surrey-east')
     eligible.add('surrey-west')
     eligible.add('E07000245')
+    eligible.add('E06000046')
     return eligible
   }, [councilGeo])
 
@@ -2238,20 +2245,21 @@ export default function Local2026Page() {
   const syntheticCouncilOverlay = useMemo(() => {
     const features: GeoFeature[] = [
       ...(surreyOverlay?.features || []),
+      ...(isleOfWightOverlay?.features || []),
     ]
     return features.length ? ({ type: 'FeatureCollection' as const, features } satisfies GeoCollection) : null
-  }, [surreyOverlay])
+  }, [surreyOverlay, isleOfWightOverlay])
 
   const councilComposition = useMemo<CouncilComposition | null>(() => {
-    if (!baseline || !selectedLad || !councilSeats?.councils?.length || !councilGeo) return null
+    if (!baseline || !selectedLad || !councilSeats?.councils?.length) return null
     const selectedFeature = (() => {
       if (!selectedLad) return null
-      if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') {
-        return surreyOverlay?.features.find(
+      if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west' || selectedLad === 'E06000046') {
+        return syntheticCouncilOverlay?.features.find(
           feature => feature.properties?.reference === selectedLad
         )
       }
-      return councilGeo.features.find(feature => feature.properties?.reference === selectedLad) ?? null
+      return councilGeo?.features.find(feature => feature.properties?.reference === selectedLad) ?? null
     })()
     if (!selectedFeature) return null
     const councilName = String(selectedFeature.properties?.name || '')
@@ -2581,6 +2589,7 @@ export default function Local2026Page() {
     wardGeo,
     cedGeo,
     surreyOverlay,
+    syntheticCouncilOverlay,
     selectedBaselineWards,
   ])
 
@@ -2730,11 +2739,12 @@ export default function Local2026Page() {
     Boolean(selectedLad) && (!councilComposition || !Object.keys(councilComposition.totals).length)
 
   const selectedLadFeature = useMemo(() => {
-    if (!selectedLad || !councilGeo) return null
+    if (!selectedLad) return null
     if (
       selectedLad === 'surrey-east' ||
       selectedLad === 'surrey-west' ||
-      selectedLad === 'E07000245'
+      selectedLad === 'E07000245' ||
+      selectedLad === 'E06000046'
     ) {
       return (
         syntheticCouncilOverlay?.features.find(
@@ -2743,7 +2753,7 @@ export default function Local2026Page() {
         null
       )
     }
-    return councilGeo.features.find(feature => feature.properties?.reference === selectedLad) ?? null
+    return councilGeo?.features.find(feature => feature.properties?.reference === selectedLad) ?? null
   }, [selectedLad, councilGeo, syntheticCouncilOverlay])
 
   const selectedCouncilName = useMemo(() => {
@@ -3221,7 +3231,7 @@ export default function Local2026Page() {
               }}
               overlayAreas={syntheticCouncilOverlay}
               boundaryAreas={surreyBoundary}
-              overlayAreaCodes={new Set(['surrey-east', 'surrey-west', 'E07000245'])}
+              overlayAreaCodes={new Set(['surrey-east', 'surrey-west', 'E07000245', 'E06000046'])}
               hiddenLadCodes={surreyLadCodes}
               wardFeatures={wardFeatures}
               contestedWardCodes={contestedWardKeys.codes}
