@@ -1058,7 +1058,8 @@ export function computeCouncilProjectionRows(args: {
           return
         }
         if (baseShare === 0 && party === 'Green') {
-          blendedNational[party] = getRelativeGeShare(party, geShare)
+          blendedNational[party] = 0
+          blendedSwingMultipliers[party] = getRelativeGeSwingMultiplier(party, geShare)
           return
         }
         blendedNational[party] = blendShare(baseShare, geShare, weight)
@@ -1660,7 +1661,8 @@ export function computeEnglandWardProjectionSnapshot(args: {
           return
         }
         if (baseShare === 0 && party === 'Green') {
-          blendedNational[party] = getRelativeGeShare(party, geShare)
+          blendedNational[party] = 0
+          blendedSwingMultipliers[party] = getRelativeGeSwingMultiplier(party, geShare)
           return
         }
         blendedNational[party] = blendShare(baseShare, geShare, weight)
