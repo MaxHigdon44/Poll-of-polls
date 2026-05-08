@@ -473,6 +473,34 @@ function sumShares(shares: Record<string, number>) {
   return Object.values(shares).reduce((acc, value) => acc + (value || 0), 0)
 }
 
+function dedupeWardsByName(wards: WardBaseline[]) {
+  const byName = new Map<string, WardBaseline>()
+  wards.forEach(ward => {
+    const key = normalizeName(ward.wardName)
+    const existing = byName.get(key)
+    if (!existing) {
+      byName.set(key, ward)
+      return
+    }
+    const existingYear = existing.lastYear || 0
+    const nextYear = ward.lastYear || 0
+    if (nextYear !== existingYear) {
+      if (nextYear > existingYear) byName.set(key, ward)
+      return
+    }
+    const existingVacancies = Math.max(existing.vacancies || 0, 1)
+    const nextVacancies = Math.max(ward.vacancies || 0, 1)
+    if (nextVacancies !== existingVacancies) {
+      if (nextVacancies > existingVacancies) byName.set(key, ward)
+      return
+    }
+    if ((ward.totalVotes || 0) > (existing.totalVotes || 0)) {
+      byName.set(key, ward)
+    }
+  })
+  return Array.from(byName.values())
+}
+
 function getSeatsPerWard(
   wards: WardBaseline[],
   seatRow: CouncilSeatRow | null | undefined,
@@ -1215,7 +1243,8 @@ export function computeCouncilProjectionRows(args: {
       else cycle = 'all_out'
     }
 
-    const allWards =
+    const allWards = dedupeWardsByName(
+      (
       ladCode === 'surrey-east'
         ? baseline.wards.filter(
             ward => ward.ladCode === 'E10000030' && SURREY_EAST_DIVISIONS.has(ward.wardCode)
@@ -1225,6 +1254,8 @@ export function computeCouncilProjectionRows(args: {
               ward => ward.ladCode === 'E10000030' && SURREY_WEST_DIVISIONS.has(ward.wardCode)
             )
           : byLad.get(ladCode) || []
+      )
+    )
     const inferredContestedSeats = allWards.reduce((acc, ward) => {
       const lastYear = ward.lastYear || 2026
       let contested = true
