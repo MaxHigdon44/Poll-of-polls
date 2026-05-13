@@ -29,6 +29,7 @@ function PollTable({
 }) {
   const displayedPolls = useMemo(() => {
     return polls.filter(poll => {
+      if (poll.pollster === '2026 Scottish Parliament election') return false
       if (pollsterFilter && poll.pollster !== pollsterFilter) return false
       return true
     })
@@ -164,6 +165,7 @@ export default function ScottishPollsPage() {
   const pollsterOptions = useMemo(() => {
     const unique = new Set<string>()
     ;[...constituencyPolls, ...regionalPolls].forEach(poll => {
+      if (poll.pollster === '2026 Scottish Parliament election') return
       if (poll.pollster) unique.add(poll.pollster)
     })
     return Array.from(unique).sort((a, b) => a.localeCompare(b))
@@ -173,7 +175,7 @@ export default function ScottishPollsPage() {
     <PageShell>
       <TopNav title="Poll of Polls" items={MAIN_TOPNAV_ITEMS} />
       <div className="poll-card poll-stack">
-        <div className="poll-muted">Scottish Parliament poll results from the past 90 days</div>
+        <div className="poll-muted">Scottish Parliament poll results frozen at May 7, 2026</div>
         <div className="poll-toolbar">
           <label>
             Pollster
@@ -196,7 +198,7 @@ export default function ScottishPollsPage() {
         />
         <PollTable title="Regional Vote" polls={regionalPolls} pollsterFilter={pollsterFilter} />
       </div>
-      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Updated on request.</div>
+      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Frozen at May 7, 2026.</div>
     </PageShell>
   )
 }

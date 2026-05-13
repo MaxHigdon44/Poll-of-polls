@@ -48,7 +48,7 @@ type LocalMapProps = {
   countriesGeo?: GeoCollection | null
   onSelectCountry?: (country: 'england' | 'scotland' | 'wales') => void
   ladGeo: GeoCollection
-  displayMode?: 'projected' | 'incumbent'
+  displayMode?: 'projected' | 'incumbent' | 'results'
   overlayAreas?: GeoCollection | null
   boundaryAreas?: GeoCollection | null
   overlayAreaCodes?: Set<string>
@@ -79,6 +79,56 @@ type LocalMapProps = {
     }
   >
   wardMapByWardName?: Map<
+    string,
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
+  >
+  projectedWardMap?: Map<
+    string,
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
+  >
+  projectedWardMapByName?: Map<
+    string,
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
+  >
+  projectedWardMapByWardName?: Map<
+    string,
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
+  >
+  resultsWardMapByName?: Map<
+    string,
+    {
+      winner: string
+      shares: Record<string, number>
+      color: string
+      prevWinner?: string | null
+      seatAllocation?: Record<string, number>
+    }
+  >
+  resultsWardMapByWardName?: Map<
     string,
     {
       winner: string
@@ -281,6 +331,7 @@ function getWardNameKey(feature: GeoFeature) {
   const wardName = String(
     props.CED25NM || props.CED24NM || props.WD25NM || props.WD23NM || props.WD22NM || props.name || ''
   )
+    .replace(/[’']/g, "'")
     .replace(/\s+ed$/i, '')
     .replace(/'s\b/gi, 's')
     .toLowerCase()
@@ -325,6 +376,8 @@ function getWardDisplayName(feature: GeoFeature) {
 function normalizeMapName(value: string | null | undefined) {
   return String(value || '')
     .toLowerCase()
+    .replace(/[’']/g, "'")
+    .replace(/'s\b/gi, 's')
     .replace(/\bcounty council\b/g, ' ')
     .replace(/\bcouncil\b/g, ' ')
     .replace(/&/g, ' and ')
@@ -649,6 +702,11 @@ export default function LocalMap({
   wardMap,
   wardMapByName,
   wardMapByWardName,
+  projectedWardMap,
+  projectedWardMapByName,
+  projectedWardMapByWardName,
+  resultsWardMapByName,
+  resultsWardMapByWardName,
   fallbackProjection,
   selectedLad,
   selectedLadFeature,
@@ -880,7 +938,7 @@ export default function LocalMap({
     const projection =
       wardMap.get(wardCode) ||
       wardMapByName.get(getWardNameKey(feature) || '') ||
-      wardMapByWardName?.get(String(getWardDisplayName(feature)).toLowerCase()) ||
+      wardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
       fallbackProjection
     const vacancies =
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
@@ -934,8 +992,28 @@ export default function LocalMap({
       wardMapByWardName?.get(String(getWardDisplayName(feature)).toLowerCase()) ||
       fallbackProjection
     if (!projection) return
+    const projectedProjection =
+      projectedWardMap?.get(wardCode || '') ||
+      projectedWardMapByName?.get(getWardNameKey(feature) || '') ||
+      projectedWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
+      fallbackProjection ||
+      projection
+    const resultsProjection =
+      resultsWardMapByName?.get(getWardNameKey(feature) || '') ||
+      resultsWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
+      null
 
     const sorted = Object.entries(projection.shares)
+      .map(([party, value]) => ({ party, value: Number(value) }))
+      .filter(entry => Number.isFinite(entry.value))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3)
+    const projectedSorted = Object.entries(projectedProjection?.shares || {})
+      .map(([party, value]) => ({ party, value: Number(value) }))
+      .filter(entry => Number.isFinite(entry.value))
+      .sort((a, b) => b.value - a.value)
+      .slice(0, 3)
+    const resultsSorted = Object.entries(resultsProjection?.shares || {})
       .map(([party, value]) => ({ party, value: Number(value) }))
       .filter(entry => Number.isFinite(entry.value))
       .sort((a, b) => b.value - a.value)
@@ -961,11 +1039,28 @@ export default function LocalMap({
         return `${formatDisplayPartyLabel(entry.party)}: ${Math.round(entry.value)}%${suffix}`
       })
       .join('<br/>')
+    const projectedPopupLines = projectedSorted
+      .map(entry => {
+        const seats = (projectedProjection?.seatAllocation?.[entry.party] || seatAllocation[entry.party] || 0)
+        const suffix =
+          electedParties.length >= 2 && seats > 0 ? ` (${getSeatAllocationLabel(seats)})` : ''
+        return `${formatDisplayPartyLabel(entry.party)}: ${Math.round(entry.value)}%${suffix}`
+      })
+      .join('<br/>')
+    const resultsPopupLines = resultsSorted
+      .map(entry => `${formatDisplayPartyLabel(entry.party)}: ${Math.round(entry.value)}%`)
+      .join('<br/>')
     const prev = projection.prevWinner
       ? `${previousWinnerLabel}: ${formatDisplayPartyLabel(projection.prevWinner)}`
       : null
+    const popupSections = [
+      resultsPopupLines ? `Results:<br/>${resultsPopupLines}` : null,
+      projectedPopupLines ? `Signal Projected Vote Share:<br/>${projectedPopupLines}` : null,
+    ]
+      .filter(Boolean)
+      .join('<br/><br/>')
     layer.bindPopup(
-      `<strong>${wardName}</strong><br/><br/>Projected Vote Share:<br/>${popupLines}<br/><br/>Seats up: ${vacancies}${
+      `<strong>${wardName}</strong><br/><br/>${popupSections || popupLines}<br/><br/>Seats up: ${vacancies}${
         prev ? `<br/>${prev}` : ''
       }`,
       { autoPan: false }

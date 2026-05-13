@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
 import PageShell from '../../components/PageShell'
-import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
 import { getPartyLeaveAdjustment, LEAVE_EFFECT_STRENGTH } from '../../lib/local2026/leaveRemain'
@@ -10,6 +9,12 @@ import { NSSEC_EFFECT_STRENGTH, getNssecAdjustment } from '../../lib/local2026/n
 import { DEGREE_EFFECT_STRENGTH, getDegreeAdjustment } from '../../lib/local2026/degree'
 import { RURAL_URBAN_EFFECT_STRENGTH, getRuralUrbanAdjustment } from '../../lib/local2026/ruralUrban'
 import type { WalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
+import {
+  computeWalesElectedMsTotals,
+  computeWalesSeatCountsByConstituency,
+  normalizeWalesResultName,
+  WALES_RESULTS_2026_BY_NAME,
+} from '@/lib/wales/electionResults2026'
 
 type Poll = {
   poll_date: string
@@ -802,9 +807,34 @@ export default function SeneddProjectionPage() {
     }))
   }, [hemicycle.dots, seatAssignments])
 
+  const electedMsTotals = useMemo(() => computeWalesElectedMsTotals(), [])
+  const actualSeatOrder = useMemo(() => {
+    const entries = Object.entries(electedMsTotals).sort((a, b) => b[1] - a[1])
+    return entries.map(([party]) => party)
+  }, [electedMsTotals])
+
+  const actualSeatAssignments = useMemo(() => {
+    const seats: string[] = []
+    actualSeatOrder.forEach(party => {
+      const count = electedMsTotals[party] || 0
+      for (let i = 0; i < count; i += 1) seats.push(party)
+    })
+    return seats.slice(0, TOTAL_SEATS)
+  }, [actualSeatOrder, electedMsTotals])
+
+  const actualHemicycleDots = useMemo(() => {
+    const ordered = [...hemicycle.dots].sort((a, b) => {
+      if (a.angle !== b.angle) return b.angle - a.angle
+      return b.radius - a.radius
+    })
+    return ordered.map((dot, index) => ({
+      ...dot,
+      party: actualSeatAssignments[index] || 'Other',
+    }))
+  }, [hemicycle.dots, actualSeatAssignments])
+
   return (
     <PageShell>
-      <ElectionFreezeNotice />
       <TopNav
         title="Poll of Polls"
         items={MAIN_TOPNAV_ITEMS}
@@ -817,18 +847,18 @@ export default function SeneddProjectionPage() {
         </div>
       </div>
       <div className="poll-card poll-stack">
-        <div className="poll-section-title">Projected Senedd (96 seats)</div>
+        <div className="poll-section-title">Senedd (96 seats)</div>
         <div style={{ display: 'grid', gap: '1.25rem' }}>
           <svg
             viewBox={`0 0 ${HEMICYCLE_WIDTH} ${HEMICYCLE_HEIGHT}`}
             width="100%"
             height="340"
             role="img"
-            aria-label="Projected Senedd hemicycle"
+            aria-label="Senedd hemicycle"
             preserveAspectRatio="xMidYMid meet"
             style={{ display: 'block' }}
           >
-            {hemicycleDots.map((dot, index) => (
+            {actualHemicycleDots.map((dot, index) => (
               <circle
                 key={`${dot.party}-${index}`}
                 className="poll-hemicycle-seat"
@@ -845,7 +875,7 @@ export default function SeneddProjectionPage() {
             ))}
           </svg>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.5rem' }}>
-            {Object.entries(seatCounts)
+            {Object.entries(electedMsTotals)
               .sort((a, b) => b[1] - a[1])
               .map(([party, count]) => {
                 const baseline = SENEDD_2021_BASELINE[party] ?? 0
@@ -872,46 +902,100 @@ export default function SeneddProjectionPage() {
           </div>
         </div>
       </div>
+      <div className="poll-card poll-stack">
+        <div className="poll-section-title">Signal Projected MSs</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.5rem' }}>
+          {Object.entries(seatCounts)
+            .sort((a, b) => b[1] - a[1])
+            .map(([party, count]) => {
+              const baseline = SENEDD_2021_BASELINE[party] ?? 0
+              const delta = count - baseline
+              const deltaLabel =
+                delta === 0 ? '-' : delta > 0 ? `↑ ${delta}` : `↓ ${Math.abs(delta)}`
+              const deltaColor = delta > 0 ? '#1B8A3A' : delta < 0 ? '#B02A37' : '#666'
+              return (
+                <div key={`signal-${party}`} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                  <span
+                    style={{
+                      width: '10px',
+                      height: '10px',
+                      borderRadius: '999px',
+                      background: PARTY_COLORS[party] || '#ccc',
+                    }}
+                  />
+                  <span style={{ fontWeight: 600 }}>{party}</span>
+                  <span style={{ color: 'var(--poll-nav-muted)' }}>{count}</span>
+                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
+                </div>
+              )
+            })}
+        </div>
+      </div>
       <div className="poll-card poll-stack poll-projection-card">
-        <div className="poll-section-title">Projected Constituencies</div>
+        <div className="poll-section-title">Constituency Results and Signal Projections</div>
         <div style={{ display: 'grid', gap: '0.5rem' }}>
           {projectedConstituencies
             .slice()
             .sort((a, b) => a.name.localeCompare(b.name))
-            .map(entry => (
-              <div
-                className="poll-projection-row"
-                key={entry.name}
-                style={{
-                  display: 'grid',
-                  gridTemplateColumns: '1fr 1.5fr',
-                  gap: '0.75rem',
-                  alignItems: 'center',
-                  padding: '0.45rem 0.6rem',
-                  borderBottom: '1px solid rgba(248, 250, 252, 0.1)',
-                }}
-              >
-                <a
-                  href={`/welsh-map?constituency=${encodeURIComponent(entry.name)}`}
-                  style={{ color: '#172033', textDecoration: 'none' }}
+            .map(entry => {
+              const actualResult = WALES_RESULTS_2026_BY_NAME.get(normalizeWalesResultName(entry.name))
+              const actualSeats = actualResult
+                ? computeWalesSeatCountsByConstituency(actualResult.members)
+                : null
+              return (
+                <div
+                  className="poll-projection-row"
+                  key={entry.name}
+                  style={{
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 1.3fr 1.3fr',
+                    gap: '0.75rem',
+                    alignItems: 'center',
+                    padding: '0.45rem 0.6rem',
+                    borderBottom: '1px solid rgba(248, 250, 252, 0.1)',
+                  }}
                 >
-                  {entry.name}
-                </a>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1.25rem' }}>
-                  {Object.entries(entry.seats)
-                    .filter(([, seats]) => seats > 0)
-                    .sort((a, b) => b[1] - a[1])
-                    .map(([party, count]) => (
-                      <div key={`${entry.name}-${party}`} style={{ display: 'flex', gap: '0.4rem' }}>
-                        <span style={{ color: PARTY_COLORS[party] || '#333' }}>
-                          {party}:
-                        </span>
-                        <span style={{ color: 'var(--poll-nav-muted)' }}>{count}</span>
-                      </div>
-                    ))}
+                  <a
+                    href={`/welsh-map?constituency=${encodeURIComponent(entry.name)}`}
+                    style={{ color: '#172033', textDecoration: 'none' }}
+                  >
+                    {entry.name}
+                  </a>
+                  <div style={{ display: 'grid', gap: '0.2rem' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--poll-nav-muted)' }}>Result</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem' }}>
+                      {actualSeats
+                        ? Object.entries(actualSeats)
+                            .filter(([, seats]) => seats > 0)
+                            .sort((a, b) => b[1] - a[1])
+                            .map(([party, count]) => (
+                              <div key={`actual-${entry.name}-${party}`} style={{ display: 'flex', gap: '0.4rem' }}>
+                                <span style={{ color: PARTY_COLORS[party] || '#333' }}>{party}:</span>
+                                <span style={{ color: 'var(--poll-nav-muted)' }}>{count}</span>
+                              </div>
+                            ))
+                        : <span style={{ color: 'var(--poll-nav-muted)' }}>-</span>}
+                    </div>
+                  </div>
+                  <div style={{ display: 'grid', gap: '0.2rem' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--poll-nav-muted)' }}>Signal Projection</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem 1rem' }}>
+                      {Object.entries(entry.seats)
+                        .filter(([, seats]) => seats > 0)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([party, count]) => (
+                          <div key={`signal-${entry.name}-${party}`} style={{ display: 'flex', gap: '0.4rem' }}>
+                            <span style={{ color: PARTY_COLORS[party] || '#333' }}>
+                              {party}:
+                            </span>
+                            <span style={{ color: 'var(--poll-nav-muted)' }}>{count}</span>
+                          </div>
+                        ))}
+                    </div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              )
+            })}
         </div>
       </div>
       <div className="poll-note">

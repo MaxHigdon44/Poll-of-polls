@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import type { FeatureCollection } from 'geojson'
 import PageShell from '../../components/PageShell'
-import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
 import { getPartyLeaveAdjustment, LEAVE_EFFECT_STRENGTH } from '../../lib/local2026/leaveRemain'
@@ -13,6 +12,13 @@ import { NSSEC_EFFECT_STRENGTH, getNssecAdjustment } from '../../lib/local2026/n
 import { DEGREE_EFFECT_STRENGTH, getDegreeAdjustment } from '../../lib/local2026/degree'
 import { RURAL_URBAN_EFFECT_STRENGTH, getRuralUrbanAdjustment } from '../../lib/local2026/ruralUrban'
 import type { WalesProjectionSnapshot } from '@/lib/wales/projectionSnapshot'
+import {
+  computeWalesElectedMsTotals,
+  computeWalesSeatCountsByConstituency,
+  computeWalesVoteShares,
+  normalizeWalesResultName,
+  WALES_RESULTS_2026_BY_NAME,
+} from '@/lib/wales/electionResults2026'
 
 const PARTY_COLORS: Record<string, string> = {
   Labour: '#E4003B',
@@ -33,17 +39,7 @@ type CountryProjectionSummary = {
   rows: Array<{ party: string; count: number; delta: number }>
 }
 
-function normalizeWelshName(name: string) {
-  return String(name || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[’']/g, '')
-    .replace(/&/g, ' and ')
-    .replace(/[-]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
+const normalizeWelshName = normalizeWalesResultName
 
 export default function WelshMapPage() {
   const router = useRouter()
@@ -139,6 +135,18 @@ export default function WelshMapPage() {
     () => countrySummaries.find(summary => summary.view === 'wales') || null,
     [countrySummaries]
   )
+
+  const electedMsTotals = useMemo(() => computeWalesElectedMsTotals(), [])
+
+  const actualWinners = useMemo(() => {
+    const map = new Map<string, string>()
+    WALES_RESULTS_2026_BY_NAME.forEach((result, normalizedName) => {
+      const winner =
+        Object.entries(result.votes).sort((a, b) => Number(b[1]) - Number(a[1]))[0]?.[0] || null
+      if (winner) map.set(normalizedName, winner)
+    })
+    return map
+  }, [])
 
   const aggregate = useMemo(() => {
     if (!polls.length) return null
@@ -527,7 +535,6 @@ export default function WelshMapPage() {
 
   return (
     <PageShell>
-      <ElectionFreezeNotice />
       {!isEmbed && (
         <TopNav
           title="Poll of Polls"
@@ -600,18 +607,69 @@ export default function WelshMapPage() {
                   {selectedSeat.name}
                 </div>
                 {selectedSeat.result ? (
-                  <>
-                    <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>2024 GE baseline</div>
-                    {Object.entries(selectedSeat.result.baseline)
+                  (() => {
+                    const actualResult = WALES_RESULTS_2026_BY_NAME.get(
+                      normalizeWelshName(selectedSeat.name)
+                    )
+                    const actualVoteShares = actualResult
+                      ? computeWalesVoteShares(actualResult.votes)
+                      : null
+                    const actualSeatCounts = actualResult
+                      ? computeWalesSeatCountsByConstituency(actualResult.members)
+                      : null
+                    return (
+                      <>
+                    {actualVoteShares ? (
+                      <>
+                    <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>Election Vote Share</div>
+                    {Object.entries(actualVoteShares)
                       .sort((a, b) => b[1] - a[1])
                       .map(([party, value]) => (
-                        <div key={`baseline-${party}`} style={{ display: 'flex', gap: '0.5rem' }}>
+                        <div key={`actual-vote-${party}`} style={{ display: 'flex', gap: '0.5rem' }}>
                           <span>{party}:</span>
                           <span>{Math.round(value)}%</span>
                         </div>
                       ))}
+                      </>
+                    ) : null}
+                    {actualSeatCounts ? (
+                      <>
+                    <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>Constituency MSs</div>
+                    {Object.entries(actualSeatCounts)
+                      .filter(([, seats]) => seats > 0)
+                      .sort((a, b) => {
+                        const shareA = actualVoteShares?.[a[0] as keyof typeof actualVoteShares] ?? 0
+                        const shareB = actualVoteShares?.[b[0] as keyof typeof actualVoteShares] ?? 0
+                        if (shareB !== shareA) return shareB - shareA
+                        return b[1] - a[1]
+                      })
+                      .map(([party, seats]) => (
+                      <div
+                        key={`actual-seats-${party}`}
+                        style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}
+                      >
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          {Array.from({ length: seats }).map((_, idx) => (
+                            <span
+                              key={`${party}-actual-dot-${idx}`}
+                              style={{
+                                width: '8px',
+                                height: '8px',
+                                borderRadius: '999px',
+                                background: PARTY_COLORS[party] || '#999',
+                                display: 'inline-block',
+                              }}
+                            />
+                          ))}
+                        </div>
+                        <span>{party}:</span>
+                        <span>{seats}</span>
+                      </div>
+                    ))}
+                      </>
+                    ) : null}
                     <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>
-                      Projected 2026 vote share
+                      Signal Projected Vote Share
                     </div>
                     {Object.entries(selectedSeat.result.projected)
                       .sort((a, b) => b[1] - a[1])
@@ -621,9 +679,7 @@ export default function WelshMapPage() {
                           <span>{Math.round(value)}%</span>
                         </div>
                       ))}
-                    <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>
-                      Projected Constituency MSs
-                    </div>
+                    <div style={{ fontWeight: 600, marginTop: '0.75rem' }}>Signal Projected Constituency MSs</div>
                     {Object.entries(selectedSeat.result.seats)
                       .filter(([, seats]) => seats > 0)
                       .sort((a, b) => {
@@ -655,7 +711,9 @@ export default function WelshMapPage() {
                           <span>{seats}</span>
                         </div>
                       ))}
-                  </>
+                      </>
+                    )
+                  })()
                 ) : (
                   <div className="poll-muted">No projection loaded.</div>
                 )}
@@ -665,6 +723,48 @@ export default function WelshMapPage() {
               </>
             ) : (
               <>
+                {Object.keys(electedMsTotals).length ? (
+                  <div
+                    style={{
+                      border: '1px solid var(--poll-border)',
+                      borderRadius: '14px',
+                      padding: '0.75rem',
+                      background: 'rgba(255,255,255,0.05)',
+                      marginTop: '1rem',
+                      marginBottom: '1rem',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700 }}>Elected MSs</div>
+                    <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
+                      {Object.entries(electedMsTotals)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([party, count]) => (
+                        <div
+                          key={party}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.5rem',
+                          }}
+                        >
+                          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span
+                              style={{
+                                width: '10px',
+                                height: '10px',
+                                borderRadius: '999px',
+                                background: PARTY_COLORS[party] || '#9ca3af',
+                              }}
+                            />
+                            {party}
+                          </span>
+                          <strong>{count}</strong>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : null}
                 {walesSummary ? (
                   <div
                     style={{
@@ -675,12 +775,12 @@ export default function WelshMapPage() {
                       marginTop: '1rem',
                       marginBottom: '1rem',
                     }}
-                >
-                    <div style={{ fontWeight: 700 }}>Projected MSs</div>
+                  >
+                    <div style={{ fontWeight: 700 }}>Signal Projected MSs</div>
                     <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
                       {walesSummary.rows.map(({ party, count }) => (
                         <div
-                          key={party}
+                          key={`signal-${party}`}
                           style={{
                             display: 'flex',
                             alignItems: 'center',
@@ -709,7 +809,7 @@ export default function WelshMapPage() {
                   Colour of the constituency represents the largest party in each constituency.
                   <br />
                   <br />
-                  Click a constituency to see the MSs elected, and the projected vote share per party.
+                  Click a constituency to see the MSs elected, and the vote share per party.
                 </div>
                 <button
                   style={{ marginTop: '1rem' }}
@@ -724,6 +824,7 @@ export default function WelshMapPage() {
             {constituencyGeo ? (
               <div className="poll-map-frame" style={{ height: '100%' }}>
                 <WelshSeneddMap
+                  actualWinners={actualWinners}
                   constituencyGeo={constituencyGeo}
                   countriesGeo={countriesGeo}
                   projectedResults={projectedResults}

@@ -1,0 +1,2295 @@
+{
+  "generatedAt": "2026-05-13T00:00:00.000Z",
+  "constituencyRows": [
+    {
+      "name": "Aberdeen Central",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11974,
+        "Labour": 5002,
+        "Conservative": 3688,
+        "Green": 0,
+        "Liberal Democrat": 2563,
+        "Reform": 3936,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 44.1,
+        "Labour": 18.4,
+        "Conservative": 13.6,
+        "Green": 0,
+        "Liberal Democrat": 9.4,
+        "Reform": 14.5,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Jack Middleton",
+        "Labour": "Jenny Laing",
+        "Conservative": "Stewart Whyte",
+        "Green": null,
+        "Liberal Democrat": "Yi-pei Chou Turvey",
+        "Reform": "James Wyllie",
+        "Other": null
+      }
+    },
+    {
+      "name": "Aberdeen Deeside and North Kincardine",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11788,
+        "Labour": 2805,
+        "Conservative": 10544,
+        "Green": 0,
+        "Liberal Democrat": 2880,
+        "Reform": 6113,
+        "Other": 431
+      },
+      "shares": {
+        "SNP": 34.1,
+        "Labour": 8.1,
+        "Conservative": 30.5,
+        "Green": 0,
+        "Liberal Democrat": 8.3,
+        "Reform": 17.7,
+        "Other": 1.2
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Stephen Flynn",
+        "Labour": "Matthew Lee",
+        "Conservative": "Liam Kerr",
+        "Green": null,
+        "Liberal Democrat": "Mel Sullivan",
+        "Reform": "Duncan Massey",
+        "Other": "Iris Alexandra Leask (Ind"
+      }
+    },
+    {
+      "name": "Aberdeen Donside",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11760,
+        "Labour": 3907,
+        "Conservative": 4496,
+        "Green": 0,
+        "Liberal Democrat": 2823,
+        "Reform": 7029,
+        "Other": 481
+      },
+      "shares": {
+        "SNP": 38.6,
+        "Labour": 12.8,
+        "Conservative": 14.7,
+        "Green": 0,
+        "Liberal Democrat": 9.3,
+        "Reform": 23,
+        "Other": 1.6
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Jackie Dunbar",
+        "Labour": "Lynn Thomson",
+        "Conservative": "Hannah Powell",
+        "Green": null,
+        "Liberal Democrat": "Michael Turvey",
+        "Reform": "Claudia Leith",
+        "Other": "Stephen Bowie (AtLS/Sovereignty"
+      }
+    },
+    {
+      "name": "Aberdeenshire East",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11624,
+        "Labour": 1487,
+        "Conservative": 10681,
+        "Green": 0,
+        "Liberal Democrat": 3999,
+        "Reform": 7008,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 33.4,
+        "Labour": 4.3,
+        "Conservative": 30.7,
+        "Green": 0,
+        "Liberal Democrat": 11.5,
+        "Reform": 20.1,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Gillian Martin",
+        "Labour": "Janine Langler",
+        "Conservative": "Douglas Lumsden",
+        "Green": null,
+        "Liberal Democrat": "David Evans",
+        "Reform": "John Crawley",
+        "Other": null
+      }
+    },
+    {
+      "name": "Aberdeenshire West",
+      "winner": "Conservative",
+      "votes": {
+        "SNP": 10113,
+        "Labour": 1569,
+        "Conservative": 15897,
+        "Green": 0,
+        "Liberal Democrat": 3995,
+        "Reform": 5467,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 27.3,
+        "Labour": 4.2,
+        "Conservative": 42.9,
+        "Green": 0,
+        "Liberal Democrat": 10.8,
+        "Reform": 14.8,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Fatima Joji",
+        "Labour": "Kate Blake",
+        "Conservative": "style=\"background:#CCEBFF;\" | Alexander Burnett",
+        "Green": null,
+        "Liberal Democrat": "Jeff Goodhall",
+        "Reform": "Jo Hart",
+        "Other": null
+      }
+    },
+    {
+      "name": "Airdrie",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 10711,
+        "Labour": 6201,
+        "Conservative": 1145,
+        "Green": 0,
+        "Liberal Democrat": 660,
+        "Reform": 5821,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 43.7,
+        "Labour": 25.3,
+        "Conservative": 4.7,
+        "Green": 0,
+        "Liberal Democrat": 2.7,
+        "Reform": 23.7,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Neil Gray",
+        "Labour": "Suzanne Macleod",
+        "Conservative": "Euan Blockley",
+        "Green": null,
+        "Liberal Democrat": "Ed Thornley",
+        "Reform": "Graham Simpson",
+        "Other": null
+      }
+    },
+    {
+      "name": "Almond Valley",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 16944,
+        "Labour": 8035,
+        "Conservative": 2501,
+        "Green": 0,
+        "Liberal Democrat": 2307,
+        "Reform": 6831,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 46.3,
+        "Labour": 21.9,
+        "Conservative": 6.8,
+        "Green": 0,
+        "Liberal Democrat": 6.3,
+        "Reform": 18.7,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Angela Constance",
+        "Labour": "Jordan Stokoe",
+        "Conservative": "Damian Doran-Timson",
+        "Green": null,
+        "Liberal Democrat": "Caron Lindsay",
+        "Reform": "Malcolm Jones",
+        "Other": null
+      }
+    },
+    {
+      "name": "Angus North and Mearns",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11308,
+        "Labour": 1676,
+        "Conservative": 8058,
+        "Green": 0,
+        "Liberal Democrat": 2647,
+        "Reform": 4844,
+        "Other": 468
+      },
+      "shares": {
+        "SNP": 39,
+        "Labour": 5.8,
+        "Conservative": 27.8,
+        "Green": 0,
+        "Liberal Democrat": 9.1,
+        "Reform": 16.7,
+        "Other": 1.6
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Dawn Black",
+        "Labour": "Simon Watson",
+        "Conservative": "Tracey Smith",
+        "Green": null,
+        "Liberal Democrat": "Martyn Knights",
+        "Reform": "Laurie Carnie",
+        "Other": "David Allen Neil (Ind"
+      }
+    },
+    {
+      "name": "Angus South",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13289,
+        "Labour": 3344,
+        "Conservative": 6681,
+        "Green": 0,
+        "Liberal Democrat": 2488,
+        "Reform": 5583,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 42.3,
+        "Labour": 10.7,
+        "Conservative": 21.3,
+        "Green": 0,
+        "Liberal Democrat": 7.9,
+        "Reform": 17.8,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Lloyd Melville",
+        "Labour": "Heather Doran",
+        "Conservative": "Angus MacMillan Douglas",
+        "Green": null,
+        "Liberal Democrat": "Isobel Knights",
+        "Reform": "Bill Reid",
+        "Other": null
+      }
+    },
+    {
+      "name": "Argyll and Bute",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11019,
+        "Labour": 1740,
+        "Conservative": 1703,
+        "Green": 0,
+        "Liberal Democrat": 8468,
+        "Reform": 3678,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 41.4,
+        "Labour": 6.5,
+        "Conservative": 6.4,
+        "Green": 0,
+        "Liberal Democrat": 31.8,
+        "Reform": 13.8,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Jenni Minto",
+        "Labour": "Callum George",
+        "Conservative": "Peter Wallace",
+        "Green": null,
+        "Liberal Democrat": "Alan Reid",
+        "Reform": "Amanda Hampsey",
+        "Other": null
+      }
+    },
+    {
+      "name": "Ayr",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12848,
+        "Labour": 6394,
+        "Conservative": 8448,
+        "Green": 0,
+        "Liberal Democrat": 1427,
+        "Reform": 5355,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 37.3,
+        "Labour": 18.5,
+        "Conservative": 24.5,
+        "Green": 0,
+        "Liberal Democrat": 4.1,
+        "Reform": 15.5,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Siobhian Brown",
+        "Labour": "Brian McGinley",
+        "Conservative": "Sharon Dowey",
+        "Green": null,
+        "Liberal Democrat": "Desmond Buchanan",
+        "Reform": "Andrew Russell",
+        "Other": null
+      }
+    },
+    {
+      "name": "Banffshire and Buchan Coast",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 10374,
+        "Labour": 1049,
+        "Conservative": 6348,
+        "Green": 0,
+        "Liberal Democrat": 1162,
+        "Reform": 10010,
+        "Other": 555
+      },
+      "shares": {
+        "SNP": 35.2,
+        "Labour": 3.6,
+        "Conservative": 21.5,
+        "Green": 0,
+        "Liberal Democrat": 3.9,
+        "Reform": 33.9,
+        "Other": 1.9
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Karen Adam",
+        "Labour": "Brooke Ritchie",
+        "Conservative": "James Adams",
+        "Green": null,
+        "Liberal Democrat": "Leslie Tarr",
+        "Reform": "Conrad Ritchie",
+        "Other": "N. D. R. McLennan (Ind, 555)"
+      }
+    },
+    {
+      "name": "Bathgate",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13594,
+        "Labour": 8007,
+        "Conservative": 2091,
+        "Green": 0,
+        "Liberal Democrat": 1937,
+        "Reform": 7511,
+        "Other": 227
+      },
+      "shares": {
+        "SNP": 40.7,
+        "Labour": 24,
+        "Conservative": 6.3,
+        "Green": 0,
+        "Liberal Democrat": 5.8,
+        "Reform": 22.5,
+        "Other": 0.7
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Pauline Stafford",
+        "Labour": "Jenny Young",
+        "Conservative": "Peter Heggie",
+        "Green": null,
+        "Liberal Democrat": "Stephen Harte",
+        "Reform": "David McLennan",
+        "Other": "Gus Ferguson (BUP"
+      }
+    },
+    {
+      "name": "Caithness, Sutherland and Ross",
+      "winner": "Liberal Democrat",
+      "votes": {
+        "SNP": 9574,
+        "Labour": 894,
+        "Conservative": 1117,
+        "Green": 0,
+        "Liberal Democrat": 14666,
+        "Reform": 3900,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 31.8,
+        "Labour": 3,
+        "Conservative": 3.7,
+        "Green": 0,
+        "Liberal Democrat": 48.6,
+        "Reform": 12.9,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Maree Todd",
+        "Labour": "Eva Kestner",
+        "Conservative": "Donald MacKenzie",
+        "Green": null,
+        "Liberal Democrat": "style=\"background:#FDE6C1;\" |David Green",
+        "Reform": "Steven Welsh",
+        "Other": null
+      }
+    },
+    {
+      "name": "Carrick, Cumnock and Doon Valley",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 9610,
+        "Labour": 6671,
+        "Conservative": 3680,
+        "Green": 0,
+        "Liberal Democrat": 1187,
+        "Reform": 6988,
+        "Other": 413
+      },
+      "shares": {
+        "SNP": 33.7,
+        "Labour": 23.4,
+        "Conservative": 12.9,
+        "Green": 0,
+        "Liberal Democrat": 4.2,
+        "Reform": 24.5,
+        "Other": 1.4
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Katie Hagmann",
+        "Labour": "Carol Mochan",
+        "Conservative": "Tracey Clark",
+        "Green": null,
+        "Liberal Democrat": "Karen Utting",
+        "Reform": "Andrew Scott",
+        "Other": "Sean Davis (Ind, 412) Alison Hewett (Ind"
+      }
+    },
+    {
+      "name": "Clackmannanshire and Dunblane",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12222,
+        "Labour": 7958,
+        "Conservative": 3592,
+        "Green": 0,
+        "Liberal Democrat": 1841,
+        "Reform": 5181,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 39.7,
+        "Labour": 25.8,
+        "Conservative": 11.7,
+        "Green": 0,
+        "Liberal Democrat": 6,
+        "Reform": 16.8,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Keith Brown",
+        "Labour": "Suzanne Grahame",
+        "Conservative": "|Alexander Stewart",
+        "Green": null,
+        "Liberal Democrat": "Sally Pattle",
+        "Reform": "Mike Collier",
+        "Other": null
+      }
+    },
+    {
+      "name": "Clydebank and Milngavie",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12126,
+        "Labour": 7929,
+        "Conservative": 1820,
+        "Green": 0,
+        "Liberal Democrat": 4419,
+        "Reform": 4510,
+        "Other": 647
+      },
+      "shares": {
+        "SNP": 38.6,
+        "Labour": 25.2,
+        "Conservative": 5.8,
+        "Green": 0,
+        "Liberal Democrat": 14.1,
+        "Reform": 14.3,
+        "Other": 2.1
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Marie McNair",
+        "Labour": "Callum McNally",
+        "Conservative": "Alix Mathieson",
+        "Green": null,
+        "Liberal Democrat": "Ben Langmead",
+        "Reform": "Andy White",
+        "Other": "Claire Gallagher (Scottish Common"
+      }
+    },
+    {
+      "name": "Clydesdale",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13006,
+        "Labour": 8618,
+        "Conservative": 4344,
+        "Green": 0,
+        "Liberal Democrat": 1957,
+        "Reform": 7898,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 36.3,
+        "Labour": 24.1,
+        "Conservative": 12.1,
+        "Green": 0,
+        "Liberal Democrat": 5.5,
+        "Reform": 22,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Màiri McAllan",
+        "Labour": "Lynsey Hamilton",
+        "Conservative": "Julie Pirone",
+        "Green": null,
+        "Liberal Democrat": "Richard Brodie",
+        "Reform": "Daniel Clarke",
+        "Other": null
+      }
+    },
+    {
+      "name": "Coatbridge and Chryston",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14458,
+        "Labour": 7682,
+        "Conservative": 1109,
+        "Green": 0,
+        "Liberal Democrat": 1048,
+        "Reform": 5145,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 49.1,
+        "Labour": 26.1,
+        "Conservative": 3.8,
+        "Green": 0,
+        "Liberal Democrat": 3.6,
+        "Reform": 17.5,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Fulton MacGregor",
+        "Labour": "Kieron Higgins",
+        "Conservative": "Andy Bruce",
+        "Green": null,
+        "Liberal Democrat": "Daniel Mancini",
+        "Reform": "Mandy Lindsay",
+        "Other": null
+      }
+    },
+    {
+      "name": "Cowdenbeath",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11994,
+        "Labour": 6307,
+        "Conservative": 2201,
+        "Green": 0,
+        "Liberal Democrat": 1547,
+        "Reform": 4708,
+        "Other": 304
+      },
+      "shares": {
+        "SNP": 44.3,
+        "Labour": 23.3,
+        "Conservative": 8.1,
+        "Green": 0,
+        "Liberal Democrat": 5.7,
+        "Reform": 17.4,
+        "Other": 1.1
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |David Barratt",
+        "Labour": "Fiona Sword",
+        "Conservative": "Darren Watt",
+        "Green": null,
+        "Liberal Democrat": "James Calder",
+        "Reform": "Mark Davies",
+        "Other": "Laurie Moffat (AtLS/Sovereignty"
+      }
+    },
+    {
+      "name": "Cumbernauld and Kilsyth",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13787,
+        "Labour": 6472,
+        "Conservative": 1129,
+        "Green": 0,
+        "Liberal Democrat": 949,
+        "Reform": 4580,
+        "Other": 226
+      },
+      "shares": {
+        "SNP": 50.8,
+        "Labour": 23.8,
+        "Conservative": 4.2,
+        "Green": 0,
+        "Liberal Democrat": 3.5,
+        "Reform": 16.9,
+        "Other": 0.8
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Jamie Hepburn",
+        "Labour": "James McPhilemy",
+        "Conservative": "Keith Allan",
+        "Green": null,
+        "Liberal Democrat": "William Brian Howieson",
+        "Reform": "Steve Grant",
+        "Other": "Alan McManus (AtLS/Sovereignty"
+      }
+    },
+    {
+      "name": "Cunninghame North",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11814,
+        "Labour": 6022,
+        "Conservative": 4904,
+        "Green": 0,
+        "Liberal Democrat": 1592,
+        "Reform": 5404,
+        "Other": 411
+      },
+      "shares": {
+        "SNP": 39.2,
+        "Labour": 20,
+        "Conservative": 16.3,
+        "Green": 0,
+        "Liberal Democrat": 5.3,
+        "Reform": 17.9,
+        "Other": 1.4
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Kenneth Gibson",
+        "Labour": "Matthew McGowan",
+        "Conservative": "Ronnie Stalker",
+        "Green": null,
+        "Liberal Democrat": "Christine Murdoch",
+        "Reform": "Mike Mann",
+        "Other": "Ian Gibson (ADF"
+      }
+    },
+    {
+      "name": "Cunninghame South",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11375,
+        "Labour": 7208,
+        "Conservative": 2222,
+        "Green": 0,
+        "Liberal Democrat": 1442,
+        "Reform": 7049,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 38.8,
+        "Labour": 24.6,
+        "Conservative": 7.6,
+        "Green": 0,
+        "Liberal Democrat": 4.9,
+        "Reform": 24.1,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Patricia Gibson",
+        "Labour": "Katy Clark",
+        "Conservative": "Maurice Corry",
+        "Green": null,
+        "Liberal Democrat": "Emma Farthing-Sykes",
+        "Reform": "Matthew McLean",
+        "Other": null
+      }
+    },
+    {
+      "name": "Dumbarton",
+      "winner": "Labour",
+      "votes": {
+        "SNP": 10961,
+        "Labour": 12747,
+        "Conservative": 1368,
+        "Green": 0,
+        "Liberal Democrat": 1196,
+        "Reform": 5040,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 35,
+        "Labour": 40.7,
+        "Conservative": 4.4,
+        "Green": 0,
+        "Liberal Democrat": 3.8,
+        "Reform": 16.1,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Sophie Traynor",
+        "Labour": "style=\"background:#FFCCD9;\" |Jackie Baillie",
+        "Conservative": "Gary Mulvaney",
+        "Green": null,
+        "Liberal Democrat": "Elaine Ford",
+        "Reform": "David Smith",
+        "Other": null
+      }
+    },
+    {
+      "name": "Dumfriesshire",
+      "winner": "Conservative",
+      "votes": {
+        "SNP": 10262,
+        "Labour": 3364,
+        "Conservative": 11370,
+        "Green": 0,
+        "Liberal Democrat": 1660,
+        "Reform": 5783,
+        "Other": 200
+      },
+      "shares": {
+        "SNP": 31.4,
+        "Labour": 10.3,
+        "Conservative": 34.8,
+        "Green": 0,
+        "Liberal Democrat": 5.1,
+        "Reform": 17.7,
+        "Other": 0.6
+      },
+      "candidates": {
+        "SNP": "Stephen Thompson",
+        "Labour": "Linda Dorward",
+        "Conservative": "style=\"background:#CCEBFF;\" |Craig Hoy",
+        "Green": null,
+        "Liberal Democrat": "Iain McDonald",
+        "Reform": "David Kirkwood",
+        "Other": "Paul Adkins (Common"
+      }
+    },
+    {
+      "name": "Dundee City East",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12969,
+        "Labour": 4792,
+        "Conservative": 1999,
+        "Green": 0,
+        "Liberal Democrat": 2086,
+        "Reform": 4135,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 49.9,
+        "Labour": 18.4,
+        "Conservative": 7.7,
+        "Green": 0,
+        "Liberal Democrat": 8,
+        "Reform": 15.9,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Stephen Gethins",
+        "Labour": "Cheryl-Ann Cruickshank",
+        "Conservative": "Jack Cruickshanks",
+        "Green": null,
+        "Liberal Democrat": "Tanvir Ahmad",
+        "Reform": "Mark Simpson",
+        "Other": null
+      }
+    },
+    {
+      "name": "Dundee City West",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12722,
+        "Labour": 6365,
+        "Conservative": 881,
+        "Green": 0,
+        "Liberal Democrat": 1980,
+        "Reform": 0,
+        "Other": 649
+      },
+      "shares": {
+        "SNP": 56.3,
+        "Labour": 28.2,
+        "Conservative": 3.9,
+        "Green": 0,
+        "Liberal Democrat": 8.8,
+        "Reform": 0,
+        "Other": 2.9
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Heather Anderson",
+        "Labour": "Michael Marra",
+        "Conservative": "Abigail Brooks",
+        "Green": null,
+        "Liberal Democrat": "Daniel Coleman",
+        "Reform": "Arthur Keith 3,315 }}",
+        "Other": "Jim McFarlane (TUSC"
+      }
+    },
+    {
+      "name": "Dunfermline",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14206,
+        "Labour": 8769,
+        "Conservative": 2209,
+        "Green": 0,
+        "Liberal Democrat": 3849,
+        "Reform": 5093,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 41.6,
+        "Labour": 25.7,
+        "Conservative": 6.5,
+        "Green": 0,
+        "Liberal Democrat": 11.3,
+        "Reform": 14.9,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Shirley-Anne Somerville",
+        "Labour": "Joe Long",
+        "Conservative": "Thomas Heald",
+        "Green": null,
+        "Liberal Democrat": "Lauren Buchanan-Quigley",
+        "Reform": "Otto Inglis",
+        "Other": null
+      }
+    },
+    {
+      "name": "East Kilbride",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14339,
+        "Labour": 9395,
+        "Conservative": 2251,
+        "Green": 0,
+        "Liberal Democrat": 1424,
+        "Reform": 5683,
+        "Other": 716
+      },
+      "shares": {
+        "SNP": 42.4,
+        "Labour": 27.8,
+        "Conservative": 6.7,
+        "Green": 0,
+        "Liberal Democrat": 4.2,
+        "Reform": 16.8,
+        "Other": 2.1
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Collette Stevenson",
+        "Labour": "Joe Fagan",
+        "Conservative": "Brian Whittle",
+        "Green": null,
+        "Liberal Democrat": "Leigh Butler",
+        "Reform": "Tim Kelly",
+        "Other": "Kristofer Keane (Ind"
+      }
+    },
+    {
+      "name": "East Lothian Coast and Lammermuirs",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11677,
+        "Labour": 11259,
+        "Conservative": 4719,
+        "Green": 0,
+        "Liberal Democrat": 2802,
+        "Reform": 4611,
+        "Other": 597
+      },
+      "shares": {
+        "SNP": 32.7,
+        "Labour": 31.6,
+        "Conservative": 13.2,
+        "Green": 0,
+        "Liberal Democrat": 7.9,
+        "Reform": 12.9,
+        "Other": 1.7
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Paul McLennan",
+        "Labour": "Martin Whitfield",
+        "Conservative": "Miles Briggs",
+        "Green": null,
+        "Liberal Democrat": "Tim McKay",
+        "Reform": "Nigel Douglas",
+        "Other": "Morgwn Carter Davies (Ind"
+      }
+    },
+    {
+      "name": "Eastwood",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12722,
+        "Labour": 8368,
+        "Conservative": 11990,
+        "Green": 0,
+        "Liberal Democrat": 1748,
+        "Reform": 3453,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 33.2,
+        "Labour": 21.9,
+        "Conservative": 31.3,
+        "Green": 0,
+        "Liberal Democrat": 4.6,
+        "Reform": 9,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Kirsten Oswald",
+        "Labour": "Kayleigh Quinn",
+        "Conservative": "Jackson Carlaw",
+        "Green": null,
+        "Liberal Democrat": "Euan Davidson",
+        "Reform": "John Mooney",
+        "Other": null
+      }
+    },
+    {
+      "name": "Edinburgh Central",
+      "winner": "Green",
+      "votes": {
+        "SNP": 7702,
+        "Labour": 8098,
+        "Conservative": 2262,
+        "Green": 12680,
+        "Liberal Democrat": 2168,
+        "Reform": 1876,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 22.1,
+        "Labour": 23.3,
+        "Conservative": 6.5,
+        "Green": 36.5,
+        "Liberal Democrat": 6.2,
+        "Reform": 5.4,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Angus Robertson",
+        "Labour": "James Dalgleish",
+        "Conservative": "Jo Mowat",
+        "Green": "style=\"background:#ccffc6;\" |Lorna Slater",
+        "Liberal Democrat": "Charles Dundas",
+        "Reform": "Gary Neill",
+        "Other": null
+      }
+    },
+    {
+      "name": "Edinburgh Eastern, Musselburgh and Tranent",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14083,
+        "Labour": 9097,
+        "Conservative": 1819,
+        "Green": 0,
+        "Liberal Democrat": 2057,
+        "Reform": 4120,
+        "Other": 305
+      },
+      "shares": {
+        "SNP": 44.7,
+        "Labour": 28.9,
+        "Conservative": 5.8,
+        "Green": 0,
+        "Liberal Democrat": 6.5,
+        "Reform": 13.1,
+        "Other": 1
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Kate Campbell",
+        "Labour": "Katherine Sangster",
+        "Conservative": "Tim Jones",
+        "Green": null,
+        "Liberal Democrat": "Alan Grant",
+        "Reform": "Angela Ross",
+        "Other": "Joe Smith (AtLS"
+      }
+    },
+    {
+      "name": "Edinburgh North Eastern and Leith",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13630,
+        "Labour": 7894,
+        "Conservative": 1297,
+        "Green": 10559,
+        "Liberal Democrat": 1895,
+        "Reform": 2746,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 35.8,
+        "Labour": 20.8,
+        "Conservative": 3.4,
+        "Green": 27.8,
+        "Liberal Democrat": 5,
+        "Reform": 7.2,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Ben Macpherson",
+        "Labour": "Oliver Thomas",
+        "Conservative": "Haris Young",
+        "Green": "Kate Nevens",
+        "Liberal Democrat": "Liss Owen",
+        "Reform": "David Lees",
+        "Other": null
+      }
+    },
+    {
+      "name": "Edinburgh North Western",
+      "winner": "Liberal Democrat",
+      "votes": {
+        "SNP": 9943,
+        "Labour": 1879,
+        "Conservative": 1749,
+        "Green": 0,
+        "Liberal Democrat": 22959,
+        "Reform": 3342,
+        "Other": 268
+      },
+      "shares": {
+        "SNP": 24.8,
+        "Labour": 4.7,
+        "Conservative": 4.4,
+        "Green": 0,
+        "Liberal Democrat": 57.2,
+        "Reform": 8.3,
+        "Other": 0.7
+      },
+      "candidates": {
+        "SNP": "Lyn Jardine",
+        "Labour": "Irshad Ahmed",
+        "Conservative": "Rachel Cairns",
+        "Green": null,
+        "Liberal Democrat": "style=\"background:#FDE6C1;\" |Alex Cole-Hamilton",
+        "Reform": "Davie Thomson",
+        "Other": "David Henry (WPB"
+      }
+    },
+    {
+      "name": "Edinburgh Northern",
+      "winner": "Liberal Democrat",
+      "votes": {
+        "SNP": 10479,
+        "Labour": 3744,
+        "Conservative": 1900,
+        "Green": 5289,
+        "Liberal Democrat": 12972,
+        "Reform": 2867,
+        "Other": 258
+      },
+      "shares": {
+        "SNP": 27.9,
+        "Labour": 10,
+        "Conservative": 5.1,
+        "Green": 14.1,
+        "Liberal Democrat": 34.6,
+        "Reform": 7.6,
+        "Other": 0.7
+      },
+      "candidates": {
+        "SNP": "Euan Hyslop",
+        "Labour": "Eleanor Ryan-Saha",
+        "Conservative": "Christopher Cowdy",
+        "Green": "Kayleigh Kinross-O'Neill",
+        "Liberal Democrat": "style=\"background:#FDE6C1;\" |Sanne Dijkstra-Downie",
+        "Reform": "Andrew McLaughlin",
+        "Other": "Abu Meron (SWP"
+      }
+    },
+    {
+      "name": "Edinburgh South Western",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11727,
+        "Labour": 8438,
+        "Conservative": 4636,
+        "Green": 0,
+        "Liberal Democrat": 3672,
+        "Reform": 3936,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 36.2,
+        "Labour": 26,
+        "Conservative": 14.3,
+        "Green": 0,
+        "Liberal Democrat": 11.3,
+        "Reform": 12.1,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Simita Kumar",
+        "Labour": "Catriona Munro",
+        "Conservative": "Sue Webber",
+        "Green": null,
+        "Liberal Democrat": "Andy Williamson",
+        "Reform": "Cameron Rose",
+        "Other": null
+      }
+    },
+    {
+      "name": "Edinburgh Southern",
+      "winner": "Labour",
+      "votes": {
+        "SNP": 12000,
+        "Labour": 16963,
+        "Conservative": 3421,
+        "Green": 0,
+        "Liberal Democrat": 3334,
+        "Reform": 3317,
+        "Other": 524
+      },
+      "shares": {
+        "SNP": 30.3,
+        "Labour": 42.9,
+        "Conservative": 8.6,
+        "Green": 0,
+        "Liberal Democrat": 8.4,
+        "Reform": 8.4,
+        "Other": 1.3
+      },
+      "candidates": {
+        "SNP": "Deidre Brock",
+        "Labour": "style=\"background:#FFCCD9;\" |Daniel Johnson",
+        "Conservative": "Marie-Clair Munro",
+        "Green": null,
+        "Liberal Democrat": "Jane Alliston Pickard",
+        "Reform": "Charles Turner",
+        "Other": "Mar Wilkinson (EELP"
+      }
+    },
+    {
+      "name": "Ettrick, Roxburgh and Berwickshire",
+      "winner": "Conservative",
+      "votes": {
+        "SNP": 8206,
+        "Labour": 1577,
+        "Conservative": 13483,
+        "Green": 0,
+        "Liberal Democrat": 2358,
+        "Reform": 3569,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 28.1,
+        "Labour": 5.4,
+        "Conservative": 46.2,
+        "Green": 0,
+        "Liberal Democrat": 8.1,
+        "Reform": 12.2,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "John Redpath",
+        "Labour": "Kaymarie Hughes",
+        "Conservative": "style=\"background:#CCEBFF;\" |Rachael Hamilton",
+        "Green": null,
+        "Liberal Democrat": "Ray Georgeson",
+        "Reform": "Jamie Langan",
+        "Other": null
+      }
+    },
+    {
+      "name": "Falkirk East and Linlithgow",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14465,
+        "Labour": 9030,
+        "Conservative": 2861,
+        "Green": 0,
+        "Liberal Democrat": 2501,
+        "Reform": 7906,
+        "Other": 759
+      },
+      "shares": {
+        "SNP": 38.6,
+        "Labour": 24.1,
+        "Conservative": 7.6,
+        "Green": 0,
+        "Liberal Democrat": 6.7,
+        "Reform": 21.1,
+        "Other": 2
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Martyn Day",
+        "Labour": "Siobhan Paterson",
+        "Conservative": "Lewis Stein",
+        "Green": null,
+        "Liberal Democrat": "Paul McGarry",
+        "Reform": "Amanda Bland",
+        "Other": "Ian Wallace El-Paget (Ind"
+      }
+    },
+    {
+      "name": "Falkirk West",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14896,
+        "Labour": 7859,
+        "Conservative": 2297,
+        "Green": 0,
+        "Liberal Democrat": 2037,
+        "Reform": 8160,
+        "Other": 865
+      },
+      "shares": {
+        "SNP": 41.2,
+        "Labour": 21.8,
+        "Conservative": 6.4,
+        "Green": 0,
+        "Liberal Democrat": 5.6,
+        "Reform": 22.6,
+        "Other": 2.4
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Gary Bouse",
+        "Labour": "Paul Godzik",
+        "Conservative": "Neil Benny",
+        "Green": null,
+        "Liberal Democrat": "Lucy Smith",
+        "Reform": "Richard Fairley",
+        "Other": "Stuart James McArthur (Ind, 865)"
+      }
+    },
+    {
+      "name": "Fife North East",
+      "winner": "Liberal Democrat",
+      "votes": {
+        "SNP": 7876,
+        "Labour": 818,
+        "Conservative": 936,
+        "Green": 0,
+        "Liberal Democrat": 21350,
+        "Reform": 2524,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 23.5,
+        "Labour": 2.4,
+        "Conservative": 2.8,
+        "Green": 0,
+        "Liberal Democrat": 63.7,
+        "Reform": 7.5,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "John Beare",
+        "Labour": "Elizabeth Carr-Ellis",
+        "Conservative": "Edward Sheasby",
+        "Green": null,
+        "Liberal Democrat": "style=\"background:#FDE6C1;\" |Willie Rennie",
+        "Reform": "William Docherty",
+        "Other": null
+      }
+    },
+    {
+      "name": "Galloway and West Dumfries",
+      "winner": "Conservative",
+      "votes": {
+        "SNP": 9903,
+        "Labour": 2544,
+        "Conservative": 11502,
+        "Green": 0,
+        "Liberal Democrat": 1380,
+        "Reform": 4674,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 33,
+        "Labour": 8.5,
+        "Conservative": 38.3,
+        "Green": 0,
+        "Liberal Democrat": 4.6,
+        "Reform": 15.6,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Emma Harper",
+        "Labour": "Jack McConnel",
+        "Conservative": "style=\"background:#CCEBFF;\" | Finlay Carson",
+        "Green": null,
+        "Liberal Democrat": "Tracey Warman",
+        "Reform": "Senga Beresford",
+        "Other": null
+      }
+    },
+    {
+      "name": "Glasgow Anniesland",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13281,
+        "Labour": 9162,
+        "Conservative": 1404,
+        "Green": 0,
+        "Liberal Democrat": 1688,
+        "Reform": 4839,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 43.7,
+        "Labour": 30.2,
+        "Conservative": 4.6,
+        "Green": 0,
+        "Liberal Democrat": 5.6,
+        "Reform": 15.9,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Colm Merrick",
+        "Labour": "Eunis Jassemi",
+        "Conservative": "Sandesh Gulhane",
+        "Green": null,
+        "Liberal Democrat": "James Speirs",
+        "Reform": "Sean O'Hagan",
+        "Other": null
+      }
+    },
+    {
+      "name": "Glasgow Baillieston and Shettleston",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12075,
+        "Labour": 5885,
+        "Conservative": 1006,
+        "Green": 0,
+        "Liberal Democrat": 1082,
+        "Reform": 6972,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 44.7,
+        "Labour": 21.8,
+        "Conservative": 3.7,
+        "Green": 0,
+        "Liberal Democrat": 4,
+        "Reform": 25.8,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |David Linden",
+        "Labour": "Pauline McNeill",
+        "Conservative": "John Murray",
+        "Green": null,
+        "Liberal Democrat": "Amy Carman",
+        "Reform": "Thomas Kerr",
+        "Other": null
+      }
+    },
+    {
+      "name": "Glasgow Cathcart and Pollok",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14270,
+        "Labour": 9107,
+        "Conservative": 1325,
+        "Green": 0,
+        "Liberal Democrat": 1407,
+        "Reform": 5320,
+        "Other": 749
+      },
+      "shares": {
+        "SNP": 44.3,
+        "Labour": 28.3,
+        "Conservative": 4.1,
+        "Green": 0,
+        "Liberal Democrat": 4.4,
+        "Reform": 16.5,
+        "Other": 2.3
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Zen Ghani",
+        "Labour": "Anas Sarwar",
+        "Conservative": "Kyle Park",
+        "Green": null,
+        "Liberal Democrat": "Peter McLaughlin",
+        "Reform": "Kim Schmulian",
+        "Other": "Yvonne Ridley (WPGB, 586), Adnan Zafar Rafiq (Scottish Common, 163)"
+      }
+    },
+    {
+      "name": "Glasgow Central",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 15085,
+        "Labour": 5094,
+        "Conservative": 835,
+        "Green": 0,
+        "Liberal Democrat": 1262,
+        "Reform": 3988,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 57.4,
+        "Labour": 19.4,
+        "Conservative": 3.2,
+        "Green": 0,
+        "Liberal Democrat": 4.8,
+        "Reform": 15.2,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"| Alison Thewliss",
+        "Labour": "Vonnie Sandlan",
+        "Conservative": "Naveed Asghar",
+        "Green": null,
+        "Liberal Democrat": "Paul Kennedy",
+        "Reform": "Paul Bennie",
+        "Other": null
+      }
+    },
+    {
+      "name": "Glasgow Easterhouse and Springburn",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11926,
+        "Labour": 6772,
+        "Conservative": 706,
+        "Green": 0,
+        "Liberal Democrat": 788,
+        "Reform": 5309,
+        "Other": 301
+      },
+      "shares": {
+        "SNP": 46.2,
+        "Labour": 26.2,
+        "Conservative": 2.7,
+        "Green": 0,
+        "Liberal Democrat": 3.1,
+        "Reform": 20.6,
+        "Other": 1.2
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Ivan McKee",
+        "Labour": "Paul Sweeney",
+        "Conservative": "Josephine Macleod",
+        "Green": null,
+        "Liberal Democrat": "Nicholas Moohan",
+        "Reform": "Audrey Dempsey",
+        "Other": "Kenneth Nwosu (Scottish Common"
+      }
+    },
+    {
+      "name": "Glasgow Kelvin and Maryhill",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11174,
+        "Labour": 7531,
+        "Conservative": 1309,
+        "Green": 9003,
+        "Liberal Democrat": 1374,
+        "Reform": 3592,
+        "Other": 130
+      },
+      "shares": {
+        "SNP": 32.8,
+        "Labour": 22.1,
+        "Conservative": 3.8,
+        "Green": 26.4,
+        "Liberal Democrat": 4,
+        "Reform": 10.5,
+        "Other": 0.4
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Bob Doris",
+        "Labour": "James Adams",
+        "Conservative": "Danny Bowman",
+        "Green": "Iris Duane",
+        "Liberal Democrat": "Daniel Khan-O'Malley",
+        "Reform": "Aimee Alexander",
+        "Other": "Thomas Adkins (Scottish Common"
+      }
+    },
+    {
+      "name": "Glasgow Southside",
+      "winner": "Green",
+      "votes": {
+        "SNP": 10947,
+        "Labour": 7300,
+        "Conservative": 1383,
+        "Green": 14048,
+        "Liberal Democrat": 1143,
+        "Reform": 3019,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 28.9,
+        "Labour": 19.3,
+        "Conservative": 3.7,
+        "Green": 37.1,
+        "Liberal Democrat": 3,
+        "Reform": 8,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Kaukab Stewart",
+        "Labour": "Rashid Hussain",
+        "Conservative": "Ross Hutton",
+        "Green": "style=\"background:#ccffc6;\"|Holly Bruce",
+        "Liberal Democrat": "Rachel Park",
+        "Reform": "Gordon Millar",
+        "Other": null
+      }
+    },
+    {
+      "name": "Hamilton, Larkhall and Stonehouse",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11825,
+        "Labour": 9120,
+        "Conservative": 1617,
+        "Green": 0,
+        "Liberal Democrat": 1156,
+        "Reform": 7193,
+        "Other": 348
+      },
+      "shares": {
+        "SNP": 37.8,
+        "Labour": 29.2,
+        "Conservative": 5.2,
+        "Green": 0,
+        "Liberal Democrat": 3.7,
+        "Reform": 23,
+        "Other": 1.1
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Alex Kerr",
+        "Labour": "Davy Russell",
+        "Conservative": "Alexandra Herdman",
+        "Green": null,
+        "Liberal Democrat": "Michael Weatherhead",
+        "Reform": "John McNamee",
+        "Other": null
+      }
+    },
+    {
+      "name": "Inverclyde",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14193,
+        "Labour": 8876,
+        "Conservative": 1351,
+        "Green": 0,
+        "Liberal Democrat": 1954,
+        "Reform": 5649,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 44.3,
+        "Labour": 27.7,
+        "Conservative": 4.2,
+        "Green": 0,
+        "Liberal Democrat": 6.1,
+        "Reform": 17.6,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Stuart McMillan",
+        "Labour": "Francesca Brennan",
+        "Conservative": "Ted Runciman",
+        "Green": null,
+        "Liberal Democrat": "Jamie Greene",
+        "Reform": "Malcolm Offord",
+        "Other": null
+      }
+    },
+    {
+      "name": "Inverness and Nairn",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11162,
+        "Labour": 1723,
+        "Conservative": 1372,
+        "Green": 0,
+        "Liberal Democrat": 10735,
+        "Reform": 3791,
+        "Other": 7950
+      },
+      "shares": {
+        "SNP": 30.4,
+        "Labour": 4.7,
+        "Conservative": 3.7,
+        "Green": 0,
+        "Liberal Democrat": 29.2,
+        "Reform": 10.3,
+        "Other": 21.6
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Emma Roddick",
+        "Labour": "Shaun Fraser",
+        "Conservative": "Ruraidh Stewart",
+        "Green": null,
+        "Liberal Democrat": "Neil Alexander",
+        "Reform": "Fred Campbell",
+        "Other": "Fergus Ewing (Ind, 7,840), Steve Skerrett (Advance UK, 110)"
+      }
+    },
+    {
+      "name": "Kilmarnock and Irvine Valley",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11919,
+        "Labour": 7458,
+        "Conservative": 2780,
+        "Green": 0,
+        "Liberal Democrat": 1169,
+        "Reform": 5441,
+        "Other": 407
+      },
+      "shares": {
+        "SNP": 40.9,
+        "Labour": 25.6,
+        "Conservative": 9.5,
+        "Green": 0,
+        "Liberal Democrat": 4,
+        "Reform": 18.7,
+        "Other": 1.4
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Alan Brown",
+        "Labour": "Ewan McPhee",
+        "Conservative": "James Adams",
+        "Green": null,
+        "Liberal Democrat": "Michael Gregori",
+        "Reform": "Anne Millar",
+        "Other": "Garry McClay (AtLS"
+      }
+    },
+    {
+      "name": "Kirkcaldy",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12230,
+        "Labour": 7483,
+        "Conservative": 1445,
+        "Green": 0,
+        "Liberal Democrat": 1607,
+        "Reform": 5484,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 43.3,
+        "Labour": 26.5,
+        "Conservative": 5.1,
+        "Green": 0,
+        "Liberal Democrat": 5.7,
+        "Reform": 19.4,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|David Torrance",
+        "Labour": "Claire Baker",
+        "Conservative": "Heather Greig",
+        "Green": null,
+        "Liberal Democrat": "Fraser Graham",
+        "Reform": "Julie MacDougall",
+        "Other": null
+      }
+    },
+    {
+      "name": "Mid Fife and Glenrothes",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12461,
+        "Labour": 3970,
+        "Conservative": 1414,
+        "Green": 0,
+        "Liberal Democrat": 3047,
+        "Reform": 4827,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 48.5,
+        "Labour": 15.4,
+        "Conservative": 5.5,
+        "Green": 0,
+        "Liberal Democrat": 11.8,
+        "Reform": 18.8,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Jenny Gilruth",
+        "Labour": "Afifa Khanam",
+        "Conservative": "Niamh Heald",
+        "Green": null,
+        "Liberal Democrat": "Ed Scotcher",
+        "Reform": "Sacha Haworth",
+        "Other": null
+      }
+    },
+    {
+      "name": "Midlothian North",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11250,
+        "Labour": 8754,
+        "Conservative": 2032,
+        "Green": 0,
+        "Liberal Democrat": 2387,
+        "Reform": 4506,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 38.9,
+        "Labour": 30.3,
+        "Conservative": 7,
+        "Green": 0,
+        "Liberal Democrat": 8.3,
+        "Reform": 15.6,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Colin Beattie",
+        "Labour": "Caitlin Stott",
+        "Conservative": "Phil Doggart",
+        "Green": null,
+        "Liberal Democrat": "Jenny Butler",
+        "Reform": "Pal Chidambaram",
+        "Other": null
+      }
+    },
+    {
+      "name": "Midlothian South, Tweeddale and Lauderdale",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14091,
+        "Labour": 4614,
+        "Conservative": 6930,
+        "Green": 0,
+        "Liberal Democrat": 4649,
+        "Reform": 4199,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 40.9,
+        "Labour": 13.4,
+        "Conservative": 20.1,
+        "Green": 0,
+        "Liberal Democrat": 13.5,
+        "Reform": 12.2,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Calum Kerr",
+        "Labour": "Daniel Coleman",
+        "Conservative": "Keith Cockburn",
+        "Green": null,
+        "Liberal Democrat": "Duncan Dunlop",
+        "Reform": "Carolyn Grant",
+        "Other": null
+      }
+    },
+    {
+      "name": "Moray",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 12646,
+        "Labour": 2340,
+        "Conservative": 9963,
+        "Green": 0,
+        "Liberal Democrat": 2064,
+        "Reform": 5540,
+        "Other": 210
+      },
+      "shares": {
+        "SNP": 38.6,
+        "Labour": 7.1,
+        "Conservative": 30.4,
+        "Green": 0,
+        "Liberal Democrat": 6.3,
+        "Reform": 16.9,
+        "Other": 0.6
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Laura Mitchell",
+        "Labour": "David Blair",
+        "Conservative": "Tim Eagle",
+        "Green": null,
+        "Liberal Democrat": "Morven-May MacCallum",
+        "Reform": "Max Bannerman",
+        "Other": "Allan Duffy (AtLS)"
+      }
+    },
+    {
+      "name": "Motherwell and Wishaw",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11962,
+        "Labour": 6447,
+        "Conservative": 1638,
+        "Green": 0,
+        "Liberal Democrat": 979,
+        "Reform": 5692,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 44.8,
+        "Labour": 24.1,
+        "Conservative": 6.1,
+        "Green": 0,
+        "Liberal Democrat": 3.7,
+        "Reform": 21.3,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Clare Adamson",
+        "Labour": "Ayeshah Khan",
+        "Conservative": "Bob Burgess",
+        "Green": null,
+        "Liberal Democrat": "Jenni Lang",
+        "Reform": "Duncan Macmillan",
+        "Other": null
+      }
+    },
+    {
+      "name": "Na h-Eileanan an Iar",
+      "winner": "Labour",
+      "votes": {
+        "SNP": 4511,
+        "Labour": 4665,
+        "Conservative": 594,
+        "Green": 812,
+        "Liberal Democrat": 1625,
+        "Reform": 0,
+        "Other": 298
+      },
+      "shares": {
+        "SNP": 36.1,
+        "Labour": 37.3,
+        "Conservative": 4.8,
+        "Green": 6.5,
+        "Liberal Democrat": 13,
+        "Reform": 0,
+        "Other": 2.4
+      },
+      "candidates": {
+        "SNP": "Alasdair Allan",
+        "Labour": "style=\"background:#FFCCD9;\" | Donald MacKinnon",
+        "Conservative": "George MacPherson",
+        "Green": "Jamie Dobson",
+        "Liberal Democrat": "Malcolm McTaggart",
+        "Reform": null,
+        "Other": "Kenneth McKenzie (AtLS/Sovereignty), Duncan MacPherson (Ind)"
+      }
+    },
+    {
+      "name": "Orkney Islands",
+      "winner": "Liberal Democrat",
+      "votes": {
+        "SNP": 1661,
+        "Labour": 199,
+        "Conservative": 358,
+        "Green": 0,
+        "Liberal Democrat": 7221,
+        "Reform": 844,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 16.2,
+        "Labour": 1.9,
+        "Conservative": 3.5,
+        "Green": 0,
+        "Liberal Democrat": 70.2,
+        "Reform": 8.2,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Robert Leslie",
+        "Labour": "Mike Macleod",
+        "Conservative": "Jamie Halcro Johnston",
+        "Green": null,
+        "Liberal Democrat": "style=\"background:#FDE6C1;\" |Liam McArthur",
+        "Reform": "John Coupland",
+        "Other": null
+      }
+    },
+    {
+      "name": "Paisley",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13164,
+        "Labour": 10136,
+        "Conservative": 940,
+        "Green": 0,
+        "Liberal Democrat": 1073,
+        "Reform": 4620,
+        "Other": 967
+      },
+      "shares": {
+        "SNP": 42.6,
+        "Labour": 32.8,
+        "Conservative": 3,
+        "Green": 0,
+        "Liberal Democrat": 3.5,
+        "Reform": 15,
+        "Other": 3.1
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|George Adam",
+        "Labour": "Neil Bibby",
+        "Conservative": "Satbir Gill",
+        "Green": null,
+        "Liberal Democrat": "James Kenyon",
+        "Reform": "Alec Leishman",
+        "Other": "Mark Turnbull (Freedom Alliance, 212), Sinead Daly (TUSC, 297), William Wallace (Ind, 458)"
+      }
+    },
+    {
+      "name": "Perthshire North",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 16414,
+        "Labour": 2240,
+        "Conservative": 10171,
+        "Green": 0,
+        "Liberal Democrat": 2741,
+        "Reform": 4620,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 45.7,
+        "Labour": 6.2,
+        "Conservative": 28.3,
+        "Green": 0,
+        "Liberal Democrat": 7.6,
+        "Reform": 12.9,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|John Swinney",
+        "Labour": "Angela Bailey",
+        "Conservative": "Murdo Fraser",
+        "Green": null,
+        "Liberal Democrat": "Claire McLaren",
+        "Reform": "Kenneth Morton",
+        "Other": null
+      }
+    },
+    {
+      "name": "Perthshire South and Kinross-shire",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14707,
+        "Labour": 2599,
+        "Conservative": 9646,
+        "Green": 0,
+        "Liberal Democrat": 4329,
+        "Reform": 5128,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 40.4,
+        "Labour": 7.1,
+        "Conservative": 26.5,
+        "Green": 0,
+        "Liberal Democrat": 11.9,
+        "Reform": 14.1,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Jim Fairlie",
+        "Labour": "Luke Thomson",
+        "Conservative": "Roz McCall",
+        "Green": null,
+        "Liberal Democrat": "Amanda Clark",
+        "Reform": "Helen McDade",
+        "Other": null
+      }
+    },
+    {
+      "name": "Renfrewshire North and Cardonald",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14300,
+        "Labour": 9424,
+        "Conservative": 1929,
+        "Green": 0,
+        "Liberal Democrat": 1642,
+        "Reform": 7083,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 41.6,
+        "Labour": 27.4,
+        "Conservative": 5.6,
+        "Green": 0,
+        "Liberal Democrat": 4.8,
+        "Reform": 20.6,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Michelle Campbell",
+        "Labour": "Mike McKirdy",
+        "Conservative": "Jack Hall",
+        "Green": null,
+        "Liberal Democrat": "Grant Toghill",
+        "Reform": "Moira Ramage",
+        "Other": "Jim Halfpenny (TUSC)"
+      }
+    },
+    {
+      "name": "Renfrewshire West and Levern Valley",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13819,
+        "Labour": 10548,
+        "Conservative": 2016,
+        "Green": 0,
+        "Liberal Democrat": 1610,
+        "Reform": 5844,
+        "Other": 374
+      },
+      "shares": {
+        "SNP": 40.4,
+        "Labour": 30.8,
+        "Conservative": 5.9,
+        "Green": 0,
+        "Liberal Democrat": 4.7,
+        "Reform": 17.1,
+        "Other": 1.1
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Tom Arthur",
+        "Labour": "Paul O'Kane",
+        "Conservative": "Farooq Choudhry",
+        "Green": null,
+        "Liberal Democrat": "Ross Stalker",
+        "Reform": "Jamie McGuire",
+        "Other": "Ken Thomson (ADF)"
+      }
+    },
+    {
+      "name": "Rutherglen and Cambuslang",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 14969,
+        "Labour": 9125,
+        "Conservative": 1321,
+        "Green": 0,
+        "Liberal Democrat": 1833,
+        "Reform": 6168,
+        "Other": 467
+      },
+      "shares": {
+        "SNP": 44.2,
+        "Labour": 26.9,
+        "Conservative": 3.9,
+        "Green": 0,
+        "Liberal Democrat": 5.4,
+        "Reform": 18.2,
+        "Other": 1.4
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Clare Haughey",
+        "Labour": "Monica Lennon",
+        "Conservative": "Annie Wells",
+        "Green": null,
+        "Liberal Democrat": "Patrick Logue",
+        "Reform": "Allan Lyons",
+        "Other": "Chris Sermanni (TUSC)"
+      }
+    },
+    {
+      "name": "Shetland Islands",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 5453,
+        "Labour": 169,
+        "Conservative": 137,
+        "Green": 949,
+        "Liberal Democrat": 3936,
+        "Reform": 725,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 48,
+        "Labour": 1.5,
+        "Conservative": 1.2,
+        "Green": 8.3,
+        "Liberal Democrat": 34.6,
+        "Reform": 6.4,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\" |Hannah Mary Goodlad",
+        "Labour": "John Erskine",
+        "Conservative": "Douglas Barnett",
+        "Green": "Alex Armitage",
+        "Liberal Democrat": "Emma Macdonald",
+        "Reform": "Vic Currie",
+        "Other": null
+      }
+    },
+    {
+      "name": "Skye, Lochaber and Badenoch",
+      "winner": "Liberal Democrat",
+      "votes": {
+        "SNP": 14273,
+        "Labour": 1751,
+        "Conservative": 2731,
+        "Green": 0,
+        "Liberal Democrat": 15223,
+        "Reform": 4669,
+        "Other": 506
+      },
+      "shares": {
+        "SNP": 36.5,
+        "Labour": 4.5,
+        "Conservative": 7,
+        "Green": 0,
+        "Liberal Democrat": 38.9,
+        "Reform": 11.9,
+        "Other": 1.3
+      },
+      "candidates": {
+        "SNP": "Eilidh Munro",
+        "Labour": "Isla McCay",
+        "Conservative": "Helen Crawford",
+        "Green": null,
+        "Liberal Democrat": "style=\"background:#FDE6C1;\" | Andrew Baxter",
+        "Reform": "Jon Whitton",
+        "Other": "Laùra Hänsler (AtLS)"
+      }
+    },
+    {
+      "name": "Stirling",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 13608,
+        "Labour": 5124,
+        "Conservative": 6166,
+        "Green": 0,
+        "Liberal Democrat": 2324,
+        "Reform": 4908,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 42.4,
+        "Labour": 15.9,
+        "Conservative": 19.2,
+        "Green": 0,
+        "Liberal Democrat": 7.2,
+        "Reform": 15.3,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Alyn Smith",
+        "Labour": "Kainde Manji",
+        "Conservative": "Stephen Kerr",
+        "Green": null,
+        "Liberal Democrat": "Jill Reilly",
+        "Reform": "Rachael Wright",
+        "Other": "Matthew Riley (Ind)"
+      }
+    },
+    {
+      "name": "Strathkelvin and Bearsden",
+      "winner": "Liberal Democrat",
+      "votes": {
+        "SNP": 13125,
+        "Labour": 4678,
+        "Conservative": 2122,
+        "Green": 0,
+        "Liberal Democrat": 15697,
+        "Reform": 4154,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 33,
+        "Labour": 11.8,
+        "Conservative": 5.3,
+        "Green": 0,
+        "Liberal Democrat": 39.5,
+        "Reform": 10.4,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "Denis Johnston",
+        "Labour": "Colette McDiarmid",
+        "Conservative": "Pam Gosal",
+        "Green": null,
+        "Liberal Democrat": "style=\"background:#FDE6C1;\" | Adam Harley",
+        "Reform": "Faten Hameed",
+        "Other": null
+      }
+    },
+    {
+      "name": "Uddingston and Bellshill",
+      "winner": "SNP",
+      "votes": {
+        "SNP": 11966,
+        "Labour": 8832,
+        "Conservative": 1750,
+        "Green": 0,
+        "Liberal Democrat": 1094,
+        "Reform": 5646,
+        "Other": 0
+      },
+      "shares": {
+        "SNP": 40.9,
+        "Labour": 30.2,
+        "Conservative": 6,
+        "Green": 0,
+        "Liberal Democrat": 3.7,
+        "Reform": 19.3,
+        "Other": 0
+      },
+      "candidates": {
+        "SNP": "style=\"background:#FEFDDE;\"|Steven Bonnar",
+        "Labour": "Mark Griffin",
+        "Conservative": "Meghan Gallacher",
+        "Green": null,
+        "Liberal Democrat": "Ben Munnoch",
+        "Reform": "George Hobbins",
+        "Other": null
+      }
+    }
+  ],
+  "constituencySeatCounts": {
+    "SNP": 57,
+    "Labour": 3,
+    "Conservative": 4,
+    "Green": 2,
+    "Liberal Democrat": 7,
+    "Reform": 0,
+    "Other": 0
+  },
+  "regionalSeatCounts": {
+    "SNP": 1,
+    "Labour": 14,
+    "Conservative": 8,
+    "Green": 13,
+    "Liberal Democrat": 3,
+    "Reform": 17,
+    "Other": 0
+  },
+  "combinedSeatCounts": {
+    "SNP": 58,
+    "Labour": 17,
+    "Conservative": 12,
+    "Green": 15,
+    "Liberal Democrat": 10,
+    "Reform": 17,
+    "Other": 0
+  }
+}

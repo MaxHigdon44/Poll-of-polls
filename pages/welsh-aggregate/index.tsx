@@ -195,7 +195,7 @@ export default function WelshAggregatePage() {
         subtitleStyle={{ fontSize: '1.5rem', color: '#172033' }}
       />
       <AggregateCard title="Welsh Voting Average" aggregate={aggregate} />
-      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Updated on request.</div>
+      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Frozen at May 7, 2026.</div>
     </PageShell>
   )
 }

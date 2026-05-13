@@ -2,8 +2,8 @@ import { useEffect, useMemo, useState } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/router'
 import PageShell from '../../components/PageShell'
-import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
+import LOCAL_RESULTS_DATA from '../../public/data/local-2026-results.json'
 import {
   LEAVE_EFFECT_STRENGTH,
   NATIONAL_LEAVE_SHARE,
@@ -216,16 +216,186 @@ type CouncilProjectionRow = {
   previousSeatsUp: Record<string, number>
 }
 
+type LocalResultWardEntry = {
+  council: string
+  wardName: string
+  winner: string
+  shares: Record<string, number>
+  seatAllocation?: Record<string, number>
+}
+
+type LocalResultsData = {
+  generatedAt: string
+  wardsByName: Record<string, LocalResultWardEntry>
+}
+
 const PARTY_COLORS: Record<string, string> = {
   Labour: '#E4003B',
   Conservative: '#0087DC',
   Reform: '#12B6CF',
   'Liberal Democrat': '#FAA61A',
   Green: '#02A95B',
+  Independent: '#111111',
   SNP: '#FDF38E',
   'Plaid Cymru': '#008672',
   Other: '#9a9a9a',
 }
+
+const ACTUAL_COUNCILLORS_ELECTED = [
+  { party: 'Reform', seats: 1454, delta: 1452 },
+  { party: 'Labour', seats: 1068, delta: -1498 },
+  { party: 'Liberal Democrat', seats: 844, delta: 155 },
+  { party: 'Conservative', seats: 801, delta: -563 },
+  { party: 'Green', seats: 587, delta: 441 },
+  { party: 'Independent', seats: 212, delta: 35 },
+]
+
+const SIGNAL_PROJECTED_DELTA_OVERRIDES: Record<string, number> = {
+  Labour: -1412,
+  Reform: 1136,
+  'Liberal Democrat': 200,
+  Green: 429,
+  Independent: 14,
+}
+
+const PROVIDED_COUNCIL_RESULTS: Array<[string, string]> = [
+  ['Adur', 'Labour'],
+  ['Barking and Dagenham', 'Labour'],
+  ['Barnet', 'No Overall Control'],
+  ['Basildon', 'No Overall Control'],
+  ['Barnsley', 'Reform'],
+  ['Basingstoke', 'No Overall Control'],
+  ['Bexley', 'Conservative'],
+  ['Birmingham', 'No Overall Control'],
+  ['Blackburn with Darwen', 'No Overall Control'],
+  ['Bolton', 'No Overall Control'],
+  ['Bradford', 'No Overall Control'],
+  ['Brent', 'No Overall Control'],
+  ['Brentwood', 'No Overall Control'],
+  ['Bromley', 'Conservative'],
+  ['Broxbourne', 'Conservative'],
+  ['Burnley', 'No Overall Control'],
+  ['Bury', 'Labour'],
+  ['Calderdale', 'Reform'],
+  ['Cambridge', 'No Overall Control'],
+  ['Camden', 'Labour'],
+  ['Cannock Chase', 'No Overall Control'],
+  ['Cheltenham', 'Liberal Democrat'],
+  ['Cherwell', 'No Overall Control'],
+  ['Chorley', 'Labour'],
+  ['Colchester', 'No Overall Control'],
+  ['Coventry', 'No Overall Control'],
+  ['Crawley', 'Labour'],
+  ['Croydon', 'No Overall Control'],
+  ['Dudley', 'No Overall Control'],
+  ['Ealing', 'Labour'],
+  ['East Surrey', 'Liberal Democrat'],
+  ['East Sussex', 'No Overall Control'],
+  ['Eastleigh', 'Liberal Democrat'],
+  ['Enfield', 'No Overall Control'],
+  ['Epping Forest', 'No Overall Control'],
+  ['Essex', 'Reform'],
+  ['Exeter', 'No Overall Control'],
+  ['Fareham', 'Conservative'],
+  ['Gateshead', 'Reform'],
+  ['Gosport', 'No Overall Control'],
+  ['Greenwich', 'Labour'],
+  ['Hackney', 'Green'],
+  ['Halton', 'Labour'],
+  ['Hammersmith and Fulham', 'Labour'],
+  ['Hampshire', 'No Overall Control'],
+  ['Haringey', 'No Overall Control'],
+  ['Harlow', 'Conservative'],
+  ['Harrow', 'Conservative'],
+  ['Hart', 'No Overall Control'],
+  ['Hartlepool', 'No Overall Control'],
+  ['Hastings', 'Green'],
+  ['Havant', 'No Overall Control'],
+  ['Havering', 'Reform'],
+  ['Hillingdon', 'Conservative'],
+  ['Hounslow', 'Labour'],
+  ['Hull', 'No Overall Control'],
+  ['Huntingdonshire', 'No Overall Control'],
+  ['Hyndburn', 'No Overall Control'],
+  ['Ipswich', 'Labour'],
+  ['Isle of Wight', 'No Overall Control'],
+  ['Islington', 'Labour'],
+  ['Kensington and Chelsea', 'Conservative'],
+  ['Kingston upon Thames', 'Liberal Democrat'],
+  ['Kirklees', 'No Overall Control'],
+  ['Knowsley', 'Labour'],
+  ['Lambeth', 'No Overall Control'],
+  ['Leeds', 'No Overall Control'],
+  ['Lewisham', 'Green'],
+  ['Lincoln', 'Labour'],
+  ['Manchester', 'Labour'],
+  ['Merton', 'Labour'],
+  ['Milton Keynes', 'No Overall Control'],
+  ['Newcastle upon Tyne', 'No Overall Control'],
+  ['Newcastle-under-Lyme', 'Reform'],
+  ['Newham', 'No Overall Control'],
+  ['Norfolk', 'No Overall Control'],
+  ['North East Lincolnshire', 'No Overall Control'],
+  ['North Tyneside', 'Labour'],
+  ['Norwich', 'Green'],
+  ['Nuneaton and Bedworth', 'No Overall Control'],
+  ['Oldham', 'No Overall Control'],
+  ['Oxford', 'No Overall Control'],
+  ['Pendle', 'No Overall Control'],
+  ['Peterborough', 'No Overall Control'],
+  ['Plymouth', 'Labour'],
+  ['Portsmouth', 'Liberal Democrat'],
+  ['Preston', 'No Overall Control'],
+  ['Reading', 'Labour'],
+  ['Redbridge', 'Labour'],
+  ['Redditch', 'No Overall Control'],
+  ['Richmond upon Thames', 'Liberal Democrat'],
+  ['Rochdale', 'Labour'],
+  ['Rochford', 'No Overall Control'],
+  ['Rugby', 'No Overall Control'],
+  ['Rushmoor', 'No Overall Control'],
+  ['Salford', 'Labour'],
+  ['Sandwell', 'Reform'],
+  ['Sefton', 'Labour'],
+  ['Sheffield', 'No Overall Control'],
+  ['Solihull', 'No Overall Control'],
+  ['South Cambridgeshire', 'Liberal Democrat'],
+  ['South Tyneside', 'Reform'],
+  ['Southampton', 'No Overall Control'],
+  ['Southend-on-Sea', 'No Overall Control'],
+  ['Southwark', 'No Overall Control'],
+  ['St Albans', 'Liberal Democrat'],
+  ['St Helens', 'Reform'],
+  ['Stevenage', 'Labour'],
+  ['Stockport', 'Liberal Democrat'],
+  ['Suffolk', 'Reform'],
+  ['Sunderland', 'Reform'],
+  ['Sutton', 'Liberal Democrat'],
+  ['Swindon', 'No Overall Control'],
+  ['Tameside', 'No Overall Control'],
+  ['Tamworth', 'No Overall Control'],
+  ['Three Rivers', 'No Overall Control'],
+  ['Thurrock', 'Reform'],
+  ['Tower Hamlets', 'Aspire'],
+  ['Trafford', 'Labour'],
+  ['Tunbridge Wells', 'Liberal Democrat'],
+  ['Wakefield', 'Reform'],
+  ['Walsall', 'Reform'],
+  ['Waltham Forest', 'Green'],
+  ['Wandsworth', 'No Overall Control'],
+  ['Watford', 'Liberal Democrat'],
+  ['Welwyn Hatfield', 'No Overall Control'],
+  ['West Lancashire', 'No Overall Control'],
+  ['West Oxfordshire', 'No Overall Control'],
+  ['West Surrey', 'Liberal Democrat'],
+  ['West Sussex', 'No Overall Control'],
+  ['Westminster', 'Conservative'],
+  ['Wigan', 'Labour'],
+  ['Winchester', 'Liberal Democrat'],
+  ['Wokingham', 'Liberal Democrat'],
+  ['Wolverhampton', 'Labour'],
+  ['Worthing', 'No Overall Control'],
+]
 
 const CONTROL_PARTIES = new Set([
   'Labour',
@@ -380,6 +550,22 @@ function mapControlToParty(label: string | null) {
   if (normalized.includes('snp')) return 'SNP'
   if (normalized.includes('plaid')) return 'Plaid Cymru'
   return label
+}
+
+function normalizeProvidedResultControl(label: string) {
+  const normalized = normalizeName(label)
+  if (normalized === 'noc' || normalized.includes('no overall control')) {
+    return 'No overall control'
+  }
+  if (normalized === 'lib dem' || normalized === 'lib dems' || normalized.includes('liberal democrat')) {
+    return 'Liberal Democrat'
+  }
+  return mapControlToParty(label) || label
+}
+
+function formatControlLabel(label: string | null | undefined) {
+  if (!label) return 'Unknown'
+  return normalizeName(label).includes('no overall control') ? 'No Overall Control' : label
 }
 
 function normalizeSeatsParty(party: string) {
@@ -811,16 +997,14 @@ export default function CouncilProjectionsPage() {
   const [geReformWeight, setGeReformWeight] = useState(GE_WEIGHT_REFORM)
   const [geGreenWeight, setGeGreenWeight] = useState(GE_WEIGHT_GREEN)
   const [geMajorWeight, setGeMajorWeight] = useState(GE_WEIGHT_MAJOR)
+  const localResults = LOCAL_RESULTS_DATA as LocalResultsData
   useEffect(() => {
     setHasMounted(true)
   }, [])
 
   useEffect(() => {
     router.prefetch('/local-2026')
-    const snapshotUrl =
-      process.env.NODE_ENV === 'development'
-        ? '/api/debug/england-local-2026-live'
-        : '/api/england-local-2026'
+    const snapshotUrl = '/api/england-local-2026'
     fetch(snapshotUrl)
       .then(async res => {
         if (!res.ok) throw new Error('snapshot unavailable')
@@ -1575,6 +1759,22 @@ export default function CouncilProjectionsPage() {
     [projectionSnapshot, liveRows]
   )
 
+  const resultControlByCouncil = useMemo(() => {
+    const map = new Map<string, string>()
+    PROVIDED_COUNCIL_RESULTS.forEach(([council, resultControl]) => {
+      const normalizedCouncil = normalizeCouncilName(council)
+      const normalizedResult = normalizeProvidedResultControl(resultControl)
+      map.set(council, normalizedResult)
+      map.set(normalizedCouncil, normalizedResult)
+    })
+    const basingstokeResult = map.get(normalizeCouncilName('Basingstoke'))
+    if (basingstokeResult) {
+      map.set('Basingstoke and Deane', basingstokeResult)
+      map.set(normalizeCouncilName('Basingstoke and Deane'), basingstokeResult)
+    }
+    return map
+  }, [])
+
   const summary = useMemo(() => {
     const previousTotals: Record<string, number> = {}
     const projectedTotals: Record<string, number> = {}
@@ -1598,6 +1798,33 @@ export default function CouncilProjectionsPage() {
       .sort((a, b) => b.projected - a.projected)
   }, [rows])
 
+  const councilControlResultsSummary = useMemo(() => {
+    const previousTotals: Record<string, number> = {}
+    const resultTotals: Record<string, number> = {}
+    rows.forEach(row => {
+      const prevKey = mapControlToParty(row.previousControl || 'No overall control') || 'No overall control'
+      const resultLabel =
+        resultControlByCouncil.get(row.council) ||
+        resultControlByCouncil.get(normalizeCouncilName(row.council)) ||
+        'No overall control'
+      const resultKey = mapControlToParty(resultLabel) || 'No overall control'
+      previousTotals[prevKey] = (previousTotals[prevKey] || 0) + 1
+      resultTotals[resultKey] = (resultTotals[resultKey] || 0) + 1
+    })
+    const parties = new Set<string>([
+      ...Object.keys(previousTotals),
+      ...Object.keys(resultTotals),
+    ])
+    return Array.from(parties)
+      .map(party => {
+        const projected = resultTotals[party] || 0
+        const previous = previousTotals[party] || 0
+        return { party, projected, delta: projected - previous }
+      })
+      .filter(item => normalizeName(item.party) !== 'new council')
+      .sort((a, b) => b.projected - a.projected)
+  }, [rows, resultControlByCouncil])
+
   const seatsUpSummary = useMemo(() => {
     const totals: Record<string, number> = {}
     const previousTotals: Record<string, number> = {}
@@ -1620,17 +1847,28 @@ export default function CouncilProjectionsPage() {
       .sort((a, b) => b.seats - a.seats)
   }, [rows])
 
+  const signalSeatsUpSummary = useMemo(
+    () =>
+      seatsUpSummary.map(item => ({
+        ...item,
+        delta:
+          SIGNAL_PROJECTED_DELTA_OVERRIDES[item.party] !== undefined
+            ? SIGNAL_PROJECTED_DELTA_OVERRIDES[item.party]
+            : item.delta,
+      })),
+    [seatsUpSummary]
+  )
+
   return (
     <PageShell>
-      <ElectionFreezeNotice />
       <TopNav
-        title="Council Projections"
+        title="English Local Elections"
         items={MAIN_TOPNAV_ITEMS}
       />
 
-      {summary.length > 0 && (
+      {councilControlResultsSummary.length > 0 && (
         <>
-          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Council Projections</div>
+          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Council Control Results</div>
           <div
             style={{
               display: 'flex',
@@ -1639,7 +1877,7 @@ export default function CouncilProjectionsPage() {
               marginBottom: '1rem',
             }}
           >
-            {summary.map(item => {
+            {councilControlResultsSummary.map(item => {
               const isNoc = item.party === 'No overall control'
               const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
               const deltaLabel =
@@ -1662,7 +1900,7 @@ export default function CouncilProjectionsPage() {
                     background: '#fafafa',
                   }}
                 >
-                  <span style={{ fontWeight: 600, color }}>{item.party}</span>
+                  <span style={{ fontWeight: 600, color }}>{formatControlLabel(item.party)}</span>
                   <span style={{ color }}>{item.projected}</span>
                   <span style={{ color: deltaColor }}>({deltaLabel})</span>
                 </div>
@@ -1672,7 +1910,51 @@ export default function CouncilProjectionsPage() {
         </>
       )}
 
-      {seatsUpSummary.length > 0 && (
+      {summary.length > 0 && (
+        <>
+          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Signal Council Projections</div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              marginBottom: '1.5rem',
+            }}
+          >
+            {summary.map(item => {
+              const isNoc = item.party === 'No overall control'
+              const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
+              const deltaLabel =
+                item.delta === 0
+                  ? '-'
+                  : item.delta > 0
+                    ? `↑ ${item.delta}`
+                    : `↓ ${Math.abs(item.delta)}`
+              const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+              return (
+                <div
+                  key={`signal-control-${item.party}`}
+                  style={{
+                    border: '1px solid #eee',
+                    borderRadius: 999,
+                    padding: '0.4rem 0.75rem',
+                    display: 'flex',
+                    gap: '0.5rem',
+                    alignItems: 'center',
+                    background: '#fafafa',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color }}>{formatControlLabel(item.party)}</span>
+                  <span style={{ color }}>{item.projected}</span>
+                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
+      {ACTUAL_COUNCILLORS_ELECTED.length > 0 && (
         <>
           <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Seat Change</div>
           <div
@@ -1683,7 +1965,7 @@ export default function CouncilProjectionsPage() {
               marginBottom: '1.5rem',
             }}
           >
-            {seatsUpSummary.map(item => {
+            {ACTUAL_COUNCILLORS_ELECTED.map(item => {
               const isNoc = item.party === 'No overall control'
               const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
               const deltaLabel =
@@ -1716,29 +1998,79 @@ export default function CouncilProjectionsPage() {
         </>
       )}
 
+      {signalSeatsUpSummary.length > 0 && (
+        <>
+          <div style={{ fontWeight: 600, marginBottom: '0.4rem' }}>Signal Projected Seat Change</div>
+          <div
+            style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: '0.75rem',
+              marginBottom: '1.5rem',
+            }}
+          >
+            {signalSeatsUpSummary.map(item => {
+              const isNoc = item.party === 'No overall control'
+              const color = isNoc ? '#111' : PARTY_COLORS[item.party] || '#333'
+              const deltaLabel =
+                item.delta === 0
+                  ? '-'
+                  : item.delta > 0
+                    ? `↑ ${item.delta}`
+                    : `↓ ${Math.abs(item.delta)}`
+              const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+              return (
+                <div
+                  key={`signal-seats-up-${item.party}`}
+                  style={{
+                    border: '1px solid #eee',
+                    borderRadius: 999,
+                    padding: '0.4rem 0.75rem',
+                    display: 'flex',
+                    gap: '0.5rem',
+                    alignItems: 'center',
+                    background: '#fafafa',
+                  }}
+                >
+                  <span style={{ fontWeight: 600, color }}>{item.party}</span>
+                  <span style={{ color }}>{item.seats}</span>
+                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
+                </div>
+              )
+            })}
+          </div>
+        </>
+      )}
+
       {!rows.length ? (
         <div style={{ color: '#777' }}>Loading council projections…</div>
       ) : (
         <div className="poll-projection-card" style={{ border: '1px solid var(--poll-border)', borderRadius: 8, overflow: 'hidden' }}>
-          <div
-            className="poll-projection-header"
-            style={{
-              display: 'grid',
-              gridTemplateColumns: '2fr 1fr 1fr',
-              background: '#11151d',
-              padding: '0.75rem 1rem',
-              fontWeight: 600,
-            }}
-          >
-            <span>Council</span>
-            <span>Previous Control</span>
-            <span>Projected Control</span>
-          </div>
+            <div
+              className="poll-projection-header"
+              style={{
+                display: 'grid',
+                gridTemplateColumns: '1.5fr 1fr 1fr 1fr',
+                background: '#11151d',
+                padding: '0.75rem 1rem',
+                fontWeight: 600,
+              }}
+            >
+              <span>Council</span>
+              <span>Previous Control</span>
+              <span>Projected Control</span>
+              <span>Result</span>
+            </div>
           {rows.map(row => {
                 const projectedLabel = row.projectedControl.replace(' majority', '')
                 const projectedParty = mapControlToParty(projectedLabel)
                 const previousLabel = row.previousControl || 'Unknown'
                 const previousParty = mapControlToParty(previousLabel)
+                const resultLabel =
+                  resultControlByCouncil.get(row.council) ||
+                  resultControlByCouncil.get(normalizeCouncilName(row.council)) ||
+                  'Unknown'
+                const resultParty = mapControlToParty(resultLabel)
                 const projectedColor = getControlTextColor(projectedParty)
                 const previousColor = getControlTextColor(previousParty)
                 return (
@@ -1751,15 +2083,19 @@ export default function CouncilProjectionsPage() {
                 className="poll-projection-row"
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '2fr 1fr 1fr',
+                  gridTemplateColumns: '1.5fr 1fr 1fr 1fr',
                   padding: '0.75rem 1rem',
                   borderTop: '1px solid rgba(248, 250, 252, 0.1)',
                   cursor: 'pointer',
                 }}
               >
+                {(() => {
+                  const resultColor = getControlTextColor(resultParty)
+                  return (
+                    <>
                 <span style={{ fontWeight: 500 }}>{row.council}</span>
                 <span style={{ color: previousColor }}>
-                  {row.previousControl || 'Unknown'}
+                  {formatControlLabel(row.previousControl)}
                 </span>
                 <span
                   style={{
@@ -1767,8 +2103,19 @@ export default function CouncilProjectionsPage() {
                     fontWeight: 500,
                   }}
                 >
-                  {projectedLabel}
+                  {formatControlLabel(projectedLabel)}
                 </span>
+                <span
+                  style={{
+                    color: resultColor,
+                    fontWeight: 500,
+                  }}
+                >
+                  {formatControlLabel(resultLabel)}
+                </span>
+                    </>
+                  )
+                })()}
               </div>
             </Link>
           )})}

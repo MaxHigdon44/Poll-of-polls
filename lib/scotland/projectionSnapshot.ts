@@ -19,6 +19,11 @@ import {
   computeScottishCombinedSeatCounts,
   computeScottishProjectedResults,
 } from '@/pages/scottish-parliament-projection'
+import {
+  getPreviousScottishConstituencyName,
+  getScottishConstituencyCode,
+  getScottishConstituencyName,
+} from '@/lib/scotland/constituencyNames'
 
 type ScottishPoll = Parameters<typeof computeConstituencyAggregate>[0][number]
 
@@ -147,10 +152,11 @@ export function computeScottishProjectionSnapshot(args: {
   const spcCodeByName = new Map<string, string>()
   args.constituencyGeo?.features?.forEach((feature: any) => {
     const props = feature.properties || {}
-    const name = props.SPC22NM || ''
-    const code = props.SPC22CD || ''
+    const name = getScottishConstituencyName(props)
+    const code = getScottishConstituencyCode(props)
     if (!name || !code) return
     spcCodeByName.set(normalizeScottishConstituencyName(name), code)
+    spcCodeByName.set(normalizeScottishConstituencyName(getPreviousScottishConstituencyName(name)), code)
   })
 
   const spcToWpcByName = new Map<string, { code: string; name: string }>()

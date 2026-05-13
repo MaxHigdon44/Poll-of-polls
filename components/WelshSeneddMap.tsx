@@ -6,6 +6,7 @@ import L from 'leaflet'
 type WelshSeneddMapProps = {
   constituencyGeo: FeatureCollection
   countriesGeo?: FeatureCollection | null
+  actualWinners?: Map<string, string>
   projectedResults: Map<
     string,
     {
@@ -115,7 +116,7 @@ function FocusSelectedConstituency({
 }
 
 function normalizeWelshName(name: string) {
-  return String(name || '')
+  const normalized = String(name || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
@@ -124,6 +125,9 @@ function normalizeWelshName(name: string) {
     .replace(/[-]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim()
+  if (normalized === 'gwynedd maldwynn') return 'gwynedd maldwyn'
+  if (normalized === 'ceredigion penifro') return 'ceredigion penfro'
+  return normalized
 }
 
 function getWinnerColor(winner: string | null) {
@@ -334,6 +338,7 @@ function findInteriorPoint(feature: any) {
 export default function WelshSeneddMap({
   constituencyGeo,
   countriesGeo,
+  actualWinners = new Map(),
   projectedResults,
   onSelectConstituency,
   selectedName,
@@ -418,13 +423,15 @@ export default function WelshSeneddMap({
           const normalizedRaw = normalizeWelshName(rawName)
           const normalizedDisplay = normalizeWelshName(displayName)
           const result = projectedResults.get(normalizedRaw)
+          const actualWinner =
+            actualWinners.get(normalizedRaw) || actualWinners.get(normalizedDisplay) || null
           const isSelected = selectedName
             ? normalizeWelshName(selectedName) === normalizedDisplay
             : false
           return {
             color: isSelected ? '#ffffff' : '#f8fafc',
             weight: isSelected ? 4.5 : 1.2,
-            fillColor: getWinnerColor(result?.projectedWinner || null),
+            fillColor: getWinnerColor(actualWinner),
             fillOpacity: isSelected ? 0.6 : 0.45,
           }
         }}

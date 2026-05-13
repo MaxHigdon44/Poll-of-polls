@@ -65,8 +65,8 @@ const PAGE_TITLE_STYLE: CSSProperties = {
 
 const DEFAULT_PAGE_TITLES: Record<string, ReactNode> = {
   '/aggregate': 'UK Polling Average',
-  '/council-projections': 'Projected English Local Elections',
-  '/council-projections-v2': 'Projected English Local Elections',
+  '/council-projections': 'English Local Elections',
+  '/council-projections-v2': 'English Local Elections',
   '/electoral-maps': 'UK Overview',
   '/local-2026': 'English Local Elections Map',
   '/local-2026-v2': 'English Local Elections Map',

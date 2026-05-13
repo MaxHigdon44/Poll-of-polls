@@ -3,6 +3,10 @@ import { GeoJSON, MapContainer, TileLayer, useMap } from 'react-leaflet'
 import type { GeoJsonObject } from 'geojson'
 import type { Feature, FeatureCollection, Geometry } from 'geojson'
 import L from 'leaflet'
+import {
+  getPreviousScottishConstituencyName,
+  getScottishConstituencyName,
+} from '../lib/scotland/constituencyNames'
 
 type ScottishParliamentMapProps = {
   constituencyGeo: FeatureCollection
@@ -10,7 +14,7 @@ type ScottishParliamentMapProps = {
   countriesGeo?: FeatureCollection | null
   onSelectCountry?: (country: 'england' | 'scotland' | 'wales') => void
   focusFeature?: Feature<Geometry, any> | null
-  displayMode?: 'projected' | 'incumbent'
+  displayMode?: 'projected' | 'incumbent' | 'results'
   constituencyResults: Map<
     string,
     {
@@ -43,6 +47,13 @@ type ScottishParliamentMapProps = {
         noDegree: number
       }
       projectedWinner?: string | null
+    }
+  >
+  actualResults?: Map<
+    string,
+    {
+      winner: string
+      shares: Record<string, number>
     }
   >
 }
@@ -216,6 +227,7 @@ export default function ScottishParliamentMap({
   focusFeature,
   displayMode = 'projected',
   constituencyResults,
+  actualResults = new Map(),
 }: ScottishParliamentMapProps) {
   const buildShareLines = (entries: Array<[string, number | null | undefined]>) => {
     return entries
@@ -304,12 +316,20 @@ export default function ScottishParliamentMap({
         data={constituencyGeo as GeoJsonObject}
         style={feature => {
           const props: any = feature?.properties || {}
-          const constituencyName = props.SPC22NM || ''
+          const constituencyName = getScottishConstituencyName(props)
+          const previousName = getPreviousScottishConstituencyName(constituencyName)
           const result =
             constituencyResults.get(constituencyName) ||
-            constituencyResults.get(normalizeScottishConstituencyName(constituencyName))
+            constituencyResults.get(normalizeScottishConstituencyName(constituencyName)) ||
+            constituencyResults.get(previousName) ||
+            constituencyResults.get(normalizeScottishConstituencyName(previousName))
+          const actual =
+            actualResults.get(constituencyName) ||
+            actualResults.get(normalizeScottishConstituencyName(constituencyName))
           const winner =
-            displayMode === 'incumbent'
+            displayMode === 'results'
+              ? actual?.winner || null
+              : displayMode === 'incumbent'
               ? result?.previousWinner2021 || null
               : result?.projectedWinner || result?.previousWinner2021 || null
           return {
@@ -321,20 +341,27 @@ export default function ScottishParliamentMap({
         }}
         onEachFeature={(feature, layer) => {
           const props: any = feature.properties || {}
-          const constituencyName = props.SPC22NM || ''
+          const constituencyName = getScottishConstituencyName(props)
+          const previousName = getPreviousScottishConstituencyName(constituencyName)
           const result =
             constituencyResults.get(constituencyName) ||
-            constituencyResults.get(normalizeScottishConstituencyName(constituencyName))
-          const shareLines2021 = result
+            constituencyResults.get(normalizeScottishConstituencyName(constituencyName)) ||
+            constituencyResults.get(previousName) ||
+            constituencyResults.get(normalizeScottishConstituencyName(previousName))
+          const actual =
+            actualResults.get(constituencyName) ||
+            actualResults.get(normalizeScottishConstituencyName(constituencyName))
+          const shareLinesActual = actual
             ? buildShareLines([
-                ['SNP', result.shares.snp],
-                ['Conservative', result.shares.conservative],
-                ['Labour', result.shares.labour],
-                ['Liberal Democrat', result.shares.libdem],
-                ['Green', result.shares.green],
-                ['Other', result.shares.other],
+                ['SNP', actual.shares.SNP],
+                ['Conservative', actual.shares.Conservative],
+                ['Labour', actual.shares.Labour],
+                ['Liberal Democrat', actual.shares['Liberal Democrat']],
+                ['Green', actual.shares.Green],
+                ['Reform', actual.shares.Reform],
+                ['Other', actual.shares.Other],
               ])
-            : 'No baseline loaded'
+            : ''
           const projectedLines = result?.projected
             ? buildShareLines([
                 ['SNP', result.projected.snp],
@@ -346,21 +373,11 @@ export default function ScottishParliamentMap({
                 ['Other', result.projected.other],
               ])
             : ''
-          const projectedOutcome =
-            result?.projectedWinner && result?.previousWinner2021
-              ? result.projectedWinner === result.previousWinner2021
-                ? `${result.projectedWinner} hold`
-                : `${result.projectedWinner} gain from ${result.previousWinner2021}`
-              : result?.projectedWinner
-                ? `${result.projectedWinner} projected`
-                : ''
           layer.bindPopup(
-            `<strong>${props.SPC22NM || 'Constituency'}</strong>${
+            `<strong>${constituencyName || 'Constituency'}</strong>${
               result?.region ? `<br/>Region: ${result.region}` : ''
-            }${
-              projectedOutcome ? `<br/>Projected result: ${projectedOutcome}` : ''
-            }${shareLines2021 ? `<br/><br/>2021 constituency vote share<br/>${shareLines2021}` : ''}${
-              projectedLines ? `<br/><br/>Projected constituency vote share<br/>${projectedLines}` : ''
+            }${shareLinesActual ? `<br/><br/>Vote Share<br/>${shareLinesActual}` : ''}${
+              projectedLines ? `<br/><br/>Signal Projected Vote Share<br/>${projectedLines}` : ''
             }`
           )
         }}
@@ -369,7 +386,7 @@ export default function ScottishParliamentMap({
         features={constituencyGeo.features}
         minZoom={6}
         className="poll-map-div-label--seat"
-        getLabel={feature => String(feature?.properties?.SPC22NM || '')}
+        getLabel={feature => getScottishConstituencyName((feature?.properties as any) || {})}
       />
       <FitToScotland regionGeo={regionGeo} focusFeature={focusFeature} />
     </MapContainer>

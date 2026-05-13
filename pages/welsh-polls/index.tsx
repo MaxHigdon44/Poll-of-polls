@@ -30,6 +30,7 @@ function PollTable({
 }) {
   const displayedPolls = useMemo(() => {
     return polls.filter(poll => {
+      if (poll.pollster === '2026 Senedd election') return false
       if (pollsterFilter && poll.pollster !== pollsterFilter) return false
       return true
     })
@@ -161,6 +162,7 @@ export default function WelshPollsPage() {
   const pollsterOptions = useMemo(() => {
     const unique = new Set<string>()
     polls.forEach(poll => {
+      if (poll.pollster === '2026 Senedd election') return
       if (poll.pollster) unique.add(poll.pollster)
     })
     return Array.from(unique).sort((a, b) => a.localeCompare(b))
@@ -170,7 +172,7 @@ export default function WelshPollsPage() {
     <PageShell>
       <TopNav title="Poll of Polls" items={MAIN_TOPNAV_ITEMS} />
       <div className="poll-card poll-stack">
-        <div className="poll-muted">Senedd poll results from the past 90 days</div>
+        <div className="poll-muted">Senedd poll results frozen at May 7, 2026</div>
         <div className="poll-toolbar">
           <label>
             Pollster
@@ -185,8 +187,8 @@ export default function WelshPollsPage() {
           </label>
         </div>
       </div>
-      <PollTable title="Polling Using the 2026 Electoral System" polls={polls} pollsterFilter={pollsterFilter} />
-      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Updated on request.</div>
+      <PollTable title="Voting Intention" polls={polls} pollsterFilter={pollsterFilter} />
+      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Frozen at May 7, 2026.</div>
     </PageShell>
   )
 }

@@ -3,8 +3,10 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import type { FeatureCollection } from 'geojson'
 import PageShell from '../../components/PageShell'
-import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
+import { getScottishConstituencyName } from '../../lib/scotland/constituencyNames'
+import SCOTLAND_2026_RESULTS from '../../public/data/scotland-2026-results.json'
+import { computeWalesElectedMsTotals } from '../../lib/wales/electionResults2026'
 
 const UkElectoralMap = dynamic(() => import('../../components/UkElectoralMap'), { ssr: false })
 const UkBlankMap = dynamic(() => import('../../components/UkBlankMap'), { ssr: false })
@@ -59,6 +61,41 @@ type CountryProjectionSummary = {
   view: Exclude<ViewMode, 'overview'>
   metric: string
   rows: Array<{ party: string; count: number; delta: number }>
+}
+
+const ENGLAND_RESULTS_SUMMARY: CountryProjectionSummary = {
+  country: 'England',
+  view: 'england',
+  metric: 'Council control results',
+  rows: [
+    { party: 'No overall control', count: 64, delta: 0 },
+    { party: 'Labour', count: 24, delta: 0 },
+    { party: 'Liberal Democrat', count: 17, delta: 0 },
+    { party: 'Reform', count: 13, delta: 0 },
+    { party: 'Conservative', count: 10, delta: 0 },
+    { party: 'Green', count: 5, delta: 0 },
+    { party: 'Other', count: 1, delta: 0 },
+  ],
+}
+
+const SCOTLAND_RESULTS_BASELINE: Record<string, number> = {
+  SNP: 64,
+  Conservative: 31,
+  Labour: 22,
+  'Liberal Democrat': 4,
+  Green: 8,
+  Reform: 0,
+  Other: 0,
+}
+
+const WALES_RESULTS_BASELINE: Record<string, number> = {
+  Labour: 30,
+  Conservative: 16,
+  'Plaid Cymru': 13,
+  'Liberal Democrat': 1,
+  Reform: 0,
+  Green: 0,
+  Other: 0,
 }
 
 const SENTIMENT_LABELS: Record<SentimentLayerKey, string> = {
@@ -436,7 +473,6 @@ export default function ElectoralMapsPage() {
   const [scotlandConstituencies, setScotlandConstituencies] = useState<FeatureCollection | null>(null)
   const [scotlandRegions, setScotlandRegions] = useState<FeatureCollection | null>(null)
   const [baseline, setBaseline] = useState<BaselineData | null>(null)
-  const [countrySummaries, setCountrySummaries] = useState<CountryProjectionSummary[]>([])
   const [searchQuery, setSearchQuery] = useState('')
 
   useEffect(() => {
@@ -447,13 +483,38 @@ export default function ElectoralMapsPage() {
     void loadJson<FeatureCollection>('/data/scotland-constituencies.geojson').then(setScotlandConstituencies)
     void loadJson<FeatureCollection>('/data/scotland-regions.geojson').then(setScotlandRegions)
     void loadJson<BaselineData>('/data/ward-baseline.json').then(setBaseline)
-    void loadJson<{ summaries?: CountryProjectionSummary[] }>('/api/home-summaries').then(data =>
-      setCountrySummaries(data?.summaries ?? [])
-    )
     void router.prefetch('/local-2026')
     void router.prefetch('/scottish-map')
     void router.prefetch('/welsh-map')
   }, [router])
+
+  const countrySummaries = useMemo<CountryProjectionSummary[]>(() => {
+    const scotlandCounts = ((SCOTLAND_2026_RESULTS as any).combinedSeatCounts || {}) as Record<string, number>
+    const scotlandRows = Object.entries(scotlandCounts)
+      .filter(([, count]) => Number(count) > 0)
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .map(([party, count]) => ({
+        party,
+        count: Number(count),
+        delta: Number(count) - (SCOTLAND_RESULTS_BASELINE[party] || 0),
+      }))
+
+    const walesCounts = computeWalesElectedMsTotals()
+    const walesRows = Object.entries(walesCounts)
+      .filter(([, count]) => Number(count) > 0)
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .map(([party, count]) => ({
+        party,
+        count: Number(count),
+        delta: Number(count) - (WALES_RESULTS_BASELINE[party] || 0),
+      }))
+
+    return [
+      ENGLAND_RESULTS_SUMMARY,
+      { country: 'Scotland', view: 'scotland', metric: 'MSP results', rows: scotlandRows },
+      { country: 'Wales', view: 'wales', metric: 'MS results', rows: walesRows },
+    ]
+  }, [])
 
   const searchOptions = useMemo(() => {
     const options: SearchOption[] = []
@@ -499,7 +560,7 @@ export default function ElectoralMapsPage() {
     if (scotlandConstituencies?.features?.length) {
       options.push(
         ...scotlandConstituencies.features
-          .map(feature => String((feature.properties as any)?.SPC22NM || '').trim())
+          .map(feature => getScottishConstituencyName((feature.properties as any) || {}))
           .filter(Boolean)
           .map(name => ({
             type: 'scottish-constituency' as const,
@@ -537,7 +598,6 @@ export default function ElectoralMapsPage() {
 
   return (
     <PageShell>
-      <ElectionFreezeNotice />
       <TopNav title="Poll of Polls" items={MAIN_TOPNAV_ITEMS} />
       <div className="poll-card poll-stack" style={{ marginBottom: '0.75rem' }}>
         <div style={{ fontWeight: 700, fontSize: '1.08rem' }}>How to use the map</div>

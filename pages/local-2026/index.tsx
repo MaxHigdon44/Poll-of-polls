@@ -3,7 +3,6 @@ import { useRouter } from 'next/router'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
 import PageShell from '../../components/PageShell'
-import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import {
   LEAVE_EFFECT_STRENGTH,
@@ -231,6 +230,25 @@ type CountryProjectionSummary = {
   rows: Array<{ party: string; count: number; delta: number }>
 }
 
+type LocalResultWardEntry = {
+  council: string
+  wardName: string
+  winner: string
+  shares: Record<string, number>
+  seatAllocation?: Record<string, number>
+  totalVotes?: number
+  seatsContested?: number
+  resultsSource?: string | null
+  ballotPaperId?: string
+}
+
+type LocalResultsData = {
+  generatedAt: string
+  source?: string
+  wardsByName: Record<string, LocalResultWardEntry>
+  skippedBallots?: Array<[string, string]>
+}
+
 function normalizeSummaryParty(party: string | null | undefined) {
   const normalized = String(party || '').toLowerCase().trim()
   if (!normalized) return 'Other'
@@ -284,6 +302,15 @@ const PARTY_COLORS: Record<string, string> = {
   'Plaid Cymru': '#008672',
   Other: '#9a9a9a',
 }
+
+const ACTUAL_COUNCILLOR_TOTALS = [
+  { party: 'Reform', seats: 1454 },
+  { party: 'Labour', seats: 1068 },
+  { party: 'Liberal Democrat', seats: 844 },
+  { party: 'Conservative', seats: 801 },
+  { party: 'Green', seats: 587 },
+  { party: 'Independent', seats: 212 },
+]
 
 const SUMMARY_COLORS: Record<string, string> = {
   Labour: '#E4003B',
@@ -671,6 +698,7 @@ const SURREY_WEST_DIVISIONS = new Set(
 function normalizeName(value: string | undefined | null) {
   return String(value || '')
     .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[’']/g, "'")
     .replace(/'s\b/gi, 's')
     .toLowerCase()
     .replace(/&/g, ' and ')
@@ -944,11 +972,32 @@ function mergeNorfolkCedOverride(base: GeoCollection | null, override: GeoCollec
 }
 
 function canonicalizePartyLabel(party: string | null | undefined) {
+  const summaryParty = normalizeSummaryParty(party)
+  if (summaryParty === 'Labour') return 'Labour'
   const normalized = normalizeName(party)
   if (normalized === 'ind' || normalized === 'independent' || normalized === 'independents') {
     return 'Independent'
   }
   return party || 'Other'
+}
+
+function normalizeLocalResultEntry(entry: LocalResultWardEntry): LocalResultWardEntry {
+  const shares: Record<string, number> = {}
+  Object.entries(entry.shares || {}).forEach(([party, value]) => {
+    const normalizedParty = canonicalizePartyLabel(party)
+    shares[normalizedParty] = (shares[normalizedParty] || 0) + (Number(value) || 0)
+  })
+  const seatAllocation: Record<string, number> = {}
+  Object.entries(entry.seatAllocation || {}).forEach(([party, seats]) => {
+    const normalizedParty = canonicalizePartyLabel(party)
+    seatAllocation[normalizedParty] = (seatAllocation[normalizedParty] || 0) + (Number(seats) || 0)
+  })
+  return {
+    ...entry,
+    winner: canonicalizePartyLabel(entry.winner),
+    shares,
+    seatAllocation,
+  }
 }
 
 function isNationalOrStandardParty(party: string) {
@@ -1161,7 +1210,8 @@ export default function Local2026Page() {
   const [pendingSearchSelection, setPendingSearchSelection] = useState<SearchSelectionOption | null>(null)
   const [hasMounted, setHasMounted] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent'>('projected')
+  const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent' | 'results'>('projected')
+  const [localResults, setLocalResults] = useState<LocalResultsData | null>(null)
   const [leaveStrength, setLeaveStrength] = useState(LEAVE_EFFECT_STRENGTH)
   const [ageStrength, setAgeStrength] = useState(AGE_EFFECT_STRENGTH)
   const [regionStrength, setRegionStrength] = useState(REGION_EFFECT_STRENGTH)
@@ -1244,15 +1294,17 @@ export default function Local2026Page() {
       .then(setCouncilPrevious)
       .catch(() => setCouncilPrevious(null))
 
+    fetch('/data/local-2026-results.json')
+      .then(res => res.json())
+      .then(setLocalResults)
+      .catch(() => setLocalResults(null))
+
     fetch('/api/home-summaries')
       .then(res => res.json())
       .then(data => setCountrySummaries(Array.isArray(data?.summaries) ? data.summaries : []))
       .catch(() => setCountrySummaries([]))
 
-    const snapshotUrl =
-      process.env.NODE_ENV === 'development'
-        ? '/api/debug/england-local-2026-live'
-        : '/api/england-local-2026'
+    const snapshotUrl = '/api/england-local-2026'
     fetch(snapshotUrl)
       .then(async res => {
         if (!res.ok) throw new Error('snapshot unavailable')
@@ -1942,6 +1994,32 @@ export default function Local2026Page() {
     return map
   }, [baseline, selectedLad, wardMap, selectedBaselineWards])
 
+  const resultsWardMapByName = useMemo(() => {
+    const map = new Map<string, any>()
+    Object.entries(localResults?.wardsByName || {}).forEach(([key, entry]) => {
+      const normalizedEntry = normalizeLocalResultEntry(entry)
+      map.set(key, {
+        ...normalizedEntry,
+        color: PARTY_COLORS[normalizedEntry.winner] || '#9a9a9a',
+      })
+    })
+    return map
+  }, [localResults])
+
+  const resultsWardMapByWardName = useMemo(() => {
+    const map = new Map<string, any>()
+    Object.values(localResults?.wardsByName || {}).forEach(entry => {
+      const key = normalizeName(entry.wardName)
+      if (map.has(key)) return
+      const normalizedEntry = normalizeLocalResultEntry(entry)
+      map.set(key, {
+        ...normalizedEntry,
+        color: PARTY_COLORS[normalizedEntry.winner] || '#9a9a9a',
+      })
+    })
+    return map
+  }, [localResults])
+
   const ladFallbackProjection = useMemo(() => {
     if (!baseline || !selectedLad || wardMap.size === 0) return null
     const wards = selectedBaselineWards
@@ -1981,6 +2059,12 @@ export default function Local2026Page() {
       prevWinner: null,
     }
   }, [baseline, selectedLad, wardMap, wardMapByWardName, selectedBaselineWards])
+
+  const activeWardMap = mapDisplayMode === 'results' ? new Map<string, any>() : wardMap
+  const activeWardMapByName = mapDisplayMode === 'results' ? resultsWardMapByName : wardMapByName
+  const activeWardMapByWardName =
+    mapDisplayMode === 'results' ? resultsWardMapByWardName : wardMapByWardName
+  const activeFallbackProjection = mapDisplayMode === 'results' ? null : ladFallbackProjection
 
   const wardVacancies = useMemo(() => {
     if (!baseline || !selectedLad) return new Map<string, number>()
@@ -2251,7 +2335,13 @@ export default function Local2026Page() {
     return features.length ? ({ type: 'FeatureCollection' as const, features } satisfies GeoCollection) : null
   }, [surreyOverlay, isleOfWightOverlay])
 
-  const councilComposition = useMemo<CouncilComposition | null>(() => {
+  const buildSelectedCouncilComposition = (
+    sourceWardMap: Map<string, any>,
+    sourceWardMapByName: Map<string, any>,
+    sourceWardMapByWardName: Map<string, any>,
+    sourceFallbackProjection: any | null,
+    controlSuffix: string
+  ): CouncilComposition | null => {
     if (!baseline || !selectedLad || !councilSeats?.councils?.length) return null
     const selectedFeature = (() => {
       if (!selectedLad) return null
@@ -2388,19 +2478,21 @@ export default function Local2026Page() {
     })
     const useFeatureContested = contestedWardFeatures.length > 0
     wards.forEach(ward => {
-      if (useFeatureContested) {
-        return
-      }
+      if (useFeatureContested) return
       const seatsUpCount = shouldUseWardIncumbents
         ? 1
         : getSeatsPerWardForPopup(wards, seatRow, ward, wardVacancyLookup)
       const seats = seatsUpCount * seatMultiplier
       const projection =
-        wardMap.get(ward.wardCode) || wardMapByWardName.get(normalizeName(ward.wardName))
-      const projectedSeatAllocation = allocateProjectedSeats(
-        projection?.shares || ladFallbackProjection?.shares || {},
-        seatsUpCount
-      )
+        sourceWardMap.get(ward.wardCode) || sourceWardMapByWardName.get(normalizeName(ward.wardName))
+      if (!projection && !sourceFallbackProjection) return
+      const projectedSeatAllocation =
+        projection?.seatAllocation && Object.keys(projection.seatAllocation).length
+          ? projection.seatAllocation
+          : allocateProjectedSeats(
+              projection?.shares || sourceFallbackProjection?.shares || {},
+              seatsUpCount
+            )
       const previousShares: Record<string, number> = {
         ...ward.nationalShares,
         ...ward.localShares,
@@ -2409,9 +2501,7 @@ export default function Local2026Page() {
       const incumbentWinner = shouldUseWardIncumbents
         ? normalizedWardIncumbents.get(normalizeName(ward.wardName))
         : null
-      if (incumbentWinner) {
-        prevWinner = canonicalizePartyLabel(incumbentWinner)
-      }
+      if (incumbentWinner) prevWinner = canonicalizePartyLabel(incumbentWinner)
       let prevTop = -1
       if (!prevWinner) {
         Object.entries(previousShares).forEach(([party, value]) => {
@@ -2426,28 +2516,26 @@ export default function Local2026Page() {
       const lastYear = ward.lastYear || 2026
       let contested = shouldUseWardIncumbents ? Boolean(incumbentWinner) : true
       if (useLastYear) {
-        if (cycle === 'thirds') {
-          contested = (2026 - lastYear) % 3 === 0
-        } else if (cycle === 'halves') {
-          contested = (2026 - lastYear) % 2 === 0
-        }
+        if (cycle === 'thirds') contested = (2026 - lastYear) % 3 === 0
+        else if (cycle === 'halves') contested = (2026 - lastYear) % 2 === 0
       }
       const fallbackProjectedWinner = canonicalizePartyLabel(
-        projection?.winner || ladFallbackProjection?.winner || 'Other'
+        projection?.winner || sourceFallbackProjection?.winner || 'Other'
       )
       const prev = canonicalizePartyLabel(prevWinner || fallbackProjectedWinner)
       previousTotals[prev] = (previousTotals[prev] || 0) + seats
       if (contested) {
         Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
+          const seatCount = Number(allocatedSeats) || 0
           const contestedProjected = canonicalizePartyLabel(party)
           contestedTotals[contestedProjected] =
-            (contestedTotals[contestedProjected] || 0) + allocatedSeats
+            (contestedTotals[contestedProjected] || 0) + seatCount
           totals[contestedProjected] =
-            (totals[contestedProjected] || 0) + allocatedSeats * seatMultiplier
+            (totals[contestedProjected] || 0) + seatCount * seatMultiplier
           seatChangeEvents.push({
             prevWinner: prev,
             projectedWinner: contestedProjected,
-            seats: allocatedSeats,
+            seats: seatCount,
           })
         })
         contestedPreviousTotals[prev] = (contestedPreviousTotals[prev] || 0) + seatsUpCount
@@ -2458,10 +2546,10 @@ export default function Local2026Page() {
     if (useFeatureContested) {
       contestedWardFeatures.forEach(feature => {
         const projection =
-          wardMap.get(getGeoWardCode(feature) || '') ||
-          wardMapByName.get(getGeoWardNameKey(feature) || '') ||
-          wardMapByWardName.get(normalizeName(getGeoWardName(feature))) ||
-          ladFallbackProjection
+          sourceWardMap.get(getGeoWardCode(feature) || '') ||
+          sourceWardMapByName.get(getGeoWardNameKey(feature) || '') ||
+          sourceWardMapByWardName.get(normalizeName(getGeoWardName(feature))) ||
+          sourceFallbackProjection
         if (!projection) return
         const code = getGeoWardCode(feature)
         const nameKey = getGeoWardNameKey(feature) || ''
@@ -2477,15 +2565,19 @@ export default function Local2026Page() {
           (shouldUseWardIncumbents ? normalizedWardIncumbents.get(wardName) : null) ||
           canonicalizePartyLabel(projection.prevWinner || '')
         if (!prevWinner) return
-        const projectedSeatAllocation = allocateProjectedSeats(projection.shares || {}, seatsUpCount)
+        const projectedSeatAllocation =
+          projection?.seatAllocation && Object.keys(projection.seatAllocation).length
+            ? projection.seatAllocation
+            : allocateProjectedSeats(projection.shares || {}, seatsUpCount)
         Object.entries(projectedSeatAllocation).forEach(([party, allocatedSeats]) => {
+          const seatCount = Number(allocatedSeats) || 0
           const projectedWinner = canonicalizePartyLabel(party)
-          contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + allocatedSeats
-          totals[projectedWinner] = (totals[projectedWinner] || 0) + allocatedSeats * seatMultiplier
+          contestedTotals[projectedWinner] = (contestedTotals[projectedWinner] || 0) + seatCount
+          totals[projectedWinner] = (totals[projectedWinner] || 0) + seatCount * seatMultiplier
           seatChangeEvents.push({
             prevWinner,
             projectedWinner,
-            seats: allocatedSeats,
+            seats: seatCount,
           })
         })
         contestedPreviousTotals[prevWinner] =
@@ -2514,7 +2606,6 @@ export default function Local2026Page() {
     const adjustedContestedPreviousTotals = normalizeContested
       ? normalizeTotalsToTotal(seatsUp, contestedPreviousTotals)
       : { ...contestedPreviousTotals }
-    // Use raw counts when we know the contested wards; otherwise normalize to seatsUp
 
     let projectedTotals = adjustedTotals
     let projectedPreviousTotals = adjustedPreviousTotals
@@ -2564,10 +2655,9 @@ export default function Local2026Page() {
     Object.entries(projectedTotals).forEach(([party, seats]) => {
       if (seats > totalSeats / 2) projectedControl = party
     })
-    const controlLabel = projectedControl ? `${projectedControl} majority` : 'No overall control'
+    const controlLabel = projectedControl ? `${projectedControl}${controlSuffix}` : 'No overall control'
 
     return {
-      council: seatRow.council,
       control: seatRow.control,
       seatsUp,
       totalSeats,
@@ -2576,23 +2666,129 @@ export default function Local2026Page() {
       previousTotals: projectedPreviousTotals,
       contestedTotals: adjustedContestedTotals,
       contestedPreviousTotals: adjustedContestedPreviousTotals,
-    projectedControl: controlLabel,
+      projectedControl: controlLabel,
       previousSource: previousRow?.url || null,
     }
+  }
+
+  const councilComposition = useMemo<CouncilComposition | null>(() => {
+    return buildSelectedCouncilComposition(
+      wardMap,
+      wardMapByName,
+      wardMapByWardName,
+      ladFallbackProjection,
+      ' majority'
+    )
   }, [
-    baseline,
-    selectedLad,
-    councilSeats,
     wardMap,
+    wardMapByName,
     wardMapByWardName,
     ladFallbackProjection,
-    councilGeo,
-    wardGeo,
-    cedGeo,
-    surreyOverlay,
-    syntheticCouncilOverlay,
-    selectedBaselineWards,
+    buildSelectedCouncilComposition,
   ])
+
+  const actualCouncilComposition = useMemo<CouncilComposition | null>(() => {
+    return buildSelectedCouncilComposition(
+      new Map<string, any>(),
+      resultsWardMapByName,
+      resultsWardMapByWardName,
+      null,
+      ''
+    )
+  }, [
+    resultsWardMapByName,
+    resultsWardMapByWardName,
+    buildSelectedCouncilComposition,
+  ])
+
+  const actualCouncilRows = useMemo(() => {
+    if (!localResults || !councilSeats?.councils?.length) return []
+    const resultsByCouncil = new Map<string, LocalResultWardEntry[]>()
+    Object.values(localResults.wardsByName || {}).forEach(entry => {
+      const key = normalizeCouncilName(entry.council)
+      const list = resultsByCouncil.get(key) || []
+      list.push(normalizeLocalResultEntry(entry))
+      resultsByCouncil.set(key, list)
+    })
+    const ladCodeByCouncil = new Map<string, string>()
+    councilGeo?.features.forEach(feature => {
+      const code = feature.properties?.reference
+      const name = feature.properties?.name
+      if (!code || !name) return
+      ladCodeByCouncil.set(normalizeCouncilLookupName(name), code)
+    })
+    syntheticCouncilOverlay?.features.forEach(feature => {
+      const code = feature.properties?.reference
+      const name = feature.properties?.name
+      if (!code || !name) return
+      ladCodeByCouncil.set(normalizeCouncilLookupName(name), code)
+    })
+    return councilSeats.councils
+      .map(seatRow => {
+        const councilKey = normalizeCouncilName(seatRow.council)
+        const entries = resultsByCouncil.get(councilKey) || []
+        if (!entries.length) return null
+        const contestedTotals: Record<string, number> = {}
+        entries.forEach(entry => {
+          Object.entries(entry.seatAllocation || {}).forEach(([party, seats]) => {
+            const seatCount = Number(seats) || 0
+            const key = canonicalizePartyLabel(party)
+            contestedTotals[key] = (contestedTotals[key] || 0) + seatCount
+          })
+        })
+        let totals: Record<string, number> = {}
+        const previousRow = councilPrevious?.councils?.find(
+          row => normalizeCouncilName(row.council) === councilKey
+        )
+        if (seatRow.seatsUp === seatRow.totalSeats) {
+          totals = normalizeTotalsToTotal(seatRow.totalSeats, contestedTotals)
+        } else if (previousRow?.seatsBefore && Object.keys(previousRow.seatsBefore).length) {
+          totals = { ...previousRow.seatsBefore }
+          const currentSum = Object.values(totals).reduce((acc, value) => acc + (value || 0), 0)
+          if (currentSum && currentSum < seatRow.totalSeats) {
+            totals.Other = (totals.Other || 0) + (seatRow.totalSeats - currentSum)
+          }
+          const wardIncumbents = previousRow.wardIncumbents || {}
+          entries.forEach(entry => {
+            const prevWinner = canonicalizePartyLabel(
+              wardIncumbents[entry.wardName] || wardIncumbents[entry.wardName.replace(/\band\b/gi, '&')] || ''
+            )
+            if (!prevWinner) return
+            Object.entries(entry.seatAllocation || {}).forEach(([party, seats]) => {
+              const seatCount = Number(seats) || 0
+              const projectedWinner = canonicalizePartyLabel(party)
+              const prevBucket = resolvePreviousSeatBucket(prevWinner, totals)
+              totals[prevBucket] = Math.max(0, (totals[prevBucket] || 0) - seatCount)
+              totals[projectedWinner] = (totals[projectedWinner] || 0) + seatCount
+            })
+          })
+          totals = normalizeTotalsToTotal(seatRow.totalSeats, totals)
+        } else {
+          totals = normalizeTotalsToTotal(seatRow.totalSeats, contestedTotals)
+        }
+        let projectedControl: string | null = null
+        Object.entries(totals).forEach(([party, seats]) => {
+          if (seats > seatRow.totalSeats / 2) projectedControl = party
+        })
+        return {
+          council: seatRow.council,
+          ladCode:
+            ladCodeByCouncil.get(normalizeCouncilLookupName(seatRow.council)) ||
+            ladCodeByCouncil.get(normalizeCouncilLookupName(OFFICIAL_NAMES[normalizeName(seatRow.council)] || seatRow.council)) ||
+            null,
+          projectedControl: projectedControl || 'No overall control',
+          projectedSeatsUp: contestedTotals,
+          totals,
+        }
+      })
+      .filter(Boolean) as Array<{
+      council: string
+      ladCode: string | null
+      projectedControl: string
+      projectedSeatsUp: Record<string, number>
+      totals: Record<string, number>
+    }>
+  }, [localResults, councilSeats, councilPrevious, councilGeo, syntheticCouncilOverlay])
 
   const liveCouncilRows = useMemo(() => {
     if (
@@ -2690,10 +2886,7 @@ export default function Local2026Page() {
   ])
 
   const projectedControlByLad = useMemo(() => {
-    const rows =
-      projectionSnapshot?.councilRows ||
-      (forceLiveEnglandProjection ? liveCouncilRows : null) ||
-      []
+    const rows = actualCouncilRows
     const map = new Map<string, string>()
     if (rows.length) {
       rows.forEach(row => {
@@ -2705,36 +2898,9 @@ export default function Local2026Page() {
       map.set(selectedLad, councilComposition.projectedControl.replace(/\s+majority$/i, ''))
     }
     return map
-  }, [projectionSnapshot, forceLiveEnglandProjection, liveCouncilRows, selectedLad, councilComposition])
+  }, [actualCouncilRows, selectedLad, councilComposition])
 
-  const seatChangeSummary = useMemo(() => {
-    const rows =
-      projectionSnapshot?.councilRows ||
-      (forceLiveEnglandProjection ? liveCouncilRows : null) ||
-      []
-    const totals: Record<string, number> = {}
-    rows.forEach(row => {
-      Object.entries(row.projectedSeatsUp || {}).forEach(([party, seats]) => {
-        const key = normalizeSummaryParty(party)
-        totals[key] = (totals[key] || 0) + (seats || 0)
-      })
-    })
-    const independentSeats = totals.Independent || 0
-    let otherSeats = totals.Other || 0
-    const keptRows = Object.entries(totals)
-      .filter(([party]) => party !== 'Other')
-      .map(([party, seats]) => ({ party, seats }))
-      .filter(({ party, seats }) => {
-        if (party === 'Independent') return true
-        if (independentSeats > 0 && seats < independentSeats) {
-          otherSeats += seats
-          return false
-        }
-        return true
-      })
-    if (otherSeats > 0) keptRows.push({ party: 'Other', seats: otherSeats })
-    return keptRows.sort((a, b) => b.seats - a.seats)
-  }, [projectionSnapshot, forceLiveEnglandProjection, liveCouncilRows])
+  const seatChangeSummary = useMemo(() => ACTUAL_COUNCILLOR_TOTALS, [])
 
   const showNoComposition =
     Boolean(selectedLad) && (!councilComposition || !Object.keys(councilComposition.totals).length)
@@ -2777,10 +2943,7 @@ export default function Local2026Page() {
   }, [selectedLadFeature])
 
   const projectedControlByName = useMemo(() => {
-    const rows =
-      projectionSnapshot?.councilRows ||
-      (forceLiveEnglandProjection ? liveCouncilRows : null) ||
-      []
+    const rows = actualCouncilRows
     const map = new Map<string, string>()
     if (rows.length) {
       rows.forEach(row => {
@@ -2793,7 +2956,7 @@ export default function Local2026Page() {
       map.set(normalizeCouncilLookupName(selectedCouncilName), councilComposition.projectedControl)
     }
     return map
-  }, [projectionSnapshot, forceLiveEnglandProjection, liveCouncilRows, selectedCouncilName, councilComposition])
+  }, [actualCouncilRows, selectedCouncilName, councilComposition])
 
   const isCountySelection = useMemo(() => {
     if (selectedLad === 'surrey-east' || selectedLad === 'surrey-west') return true
@@ -2942,7 +3105,6 @@ export default function Local2026Page() {
 
   return (
     <PageShell>
-      <ElectionFreezeNotice />
       {!isEmbed && (
         <TopNav
           title="Local Elections 2026"
@@ -3027,7 +3189,7 @@ export default function Local2026Page() {
               <div style={{ marginBottom: '1rem' }}>
                 <div style={{ fontWeight: 600, marginBottom: '0.45rem' }}>Map View</div>
                 <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginLeft: '-0.15rem' }}>
-                  {(['projected', 'incumbent'] as const).map(mode => {
+                  {(['projected', 'results', 'incumbent'] as const).map(mode => {
                     const isActive = mapDisplayMode === mode
                     return (
                       <button
@@ -3044,7 +3206,11 @@ export default function Local2026Page() {
                           cursor: 'pointer',
                         }}
                       >
-                        {mode === 'projected' ? 'Predicted' : 'Incumbent'}
+                        {mode === 'projected'
+                          ? 'Predicted'
+                          : mode === 'results'
+                            ? 'Results'
+                            : 'Incumbent'}
                       </button>
                     )
                   })}
@@ -3057,6 +3223,55 @@ export default function Local2026Page() {
                     Previous control: {councilComposition.control || 'Unknown'}
                     <br />
                     Seats up: {councilComposition.seatsUp} of {councilComposition.totalSeats}
+                  </div>
+                  {actualCouncilComposition ? (
+                    <>
+                      <div style={{ fontWeight: 600, marginTop: '0.75rem', marginBottom: '0.35rem' }}>
+                        Actual Composition
+                      </div>
+                      <div style={{ color: '#555', marginBottom: '0.5rem' }}>
+                        Actual control: {actualCouncilComposition.projectedControl}
+                      </div>
+                      {Object.entries(actualCouncilComposition.totals)
+                        .sort((a, b) => b[1] - a[1])
+                        .map(([party, seats]) => {
+                          const previous = actualCouncilComposition.previousTotals[party] || 0
+                          const delta = seats - previous
+                          const showArrow =
+                            selectedLad !== 'surrey-east' && selectedLad !== 'surrey-west'
+                          const deltaLabel =
+                            delta === 0 ? '0' : delta > 0 ? `↑ ${delta}` : `↓ ${Math.abs(delta)}`
+                          const deltaColor = delta > 0 ? '#1B8A3A' : delta < 0 ? '#B02A37' : '#666'
+                          const partyColor = PARTY_COLORS[party] || '#999'
+                          return (
+                            <div
+                              key={`actual-${party}`}
+                              style={{
+                                display: 'grid',
+                                gridTemplateColumns: 'minmax(0, 1fr) auto',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                              }}
+                            >
+                              <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', minWidth: 0 }}>
+                                <span style={{ width: '10px', height: '10px', background: partyColor }} />
+                                {party}
+                              </span>
+                              <span style={{ whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                {seats}
+                                {showArrow ? (
+                                  <span style={{ color: deltaColor, marginLeft: '0.35rem' }}>
+                                    ({deltaLabel})
+                                  </span>
+                                ) : null}
+                              </span>
+                            </div>
+                          )
+                        })}
+                    </>
+                  ) : null}
+                  <div style={{ fontWeight: 600, marginTop: '0.75rem', marginBottom: '0.35rem' }}>
+                    Signal Projected Composition
                   </div>
                   <div style={{ color: '#555', marginBottom: '0.5rem' }}>
                     Projected control: {councilComposition.projectedControl}
@@ -3074,7 +3289,7 @@ export default function Local2026Page() {
                       const partyColor = PARTY_COLORS[party] || '#999'
                       return (
                         <div
-                          key={party}
+                          key={`projected-${party}`}
                           style={{
                             display: 'grid',
                             gridTemplateColumns: 'minmax(0, 1fr) auto',
@@ -3128,7 +3343,7 @@ export default function Local2026Page() {
                     marginBottom: '1rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700 }}>Projected Council Control</div>
+                  <div style={{ fontWeight: 700 }}>Council Control Results</div>
                   <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
                     {englandSummary.rows.map(({ party, count }) => (
                       <div
@@ -3167,7 +3382,7 @@ export default function Local2026Page() {
                     marginBottom: '1rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700 }}>Overall Seat Projections</div>
+                  <div style={{ fontWeight: 700 }}>Councillors Elected</div>
                   <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
                     {seatChangeSummary.map(({ party, seats }) => {
                       return (
@@ -3206,7 +3421,7 @@ export default function Local2026Page() {
               <div style={{ marginTop: '0.75rem', color: '#555' }}>
                 For a full list of Council Results and Seat Changes, visit the{' '}
                 <a href="/council-projections" style={{ color: '#f8fafc' }}>
-                  Projected English Local Elections Page
+                  English Local Elections Page
                 </a>
                 .
               </div>
@@ -3240,10 +3455,15 @@ export default function Local2026Page() {
               contestedWardNameKeys={contestedWardKeys.names}
               wardVacancies={wardVacancies}
               wardVacanciesByName={wardVacanciesByName}
-              wardMap={wardMap}
-              wardMapByName={wardMapByName}
-              wardMapByWardName={wardMapByWardName}
-              fallbackProjection={ladFallbackProjection}
+              wardMap={activeWardMap}
+              wardMapByName={activeWardMapByName}
+              wardMapByWardName={activeWardMapByWardName}
+              projectedWardMap={wardMap}
+              projectedWardMapByName={wardMapByName}
+              projectedWardMapByWardName={wardMapByWardName}
+              resultsWardMapByName={resultsWardMapByName}
+              resultsWardMapByWardName={resultsWardMapByWardName}
+              fallbackProjection={activeFallbackProjection}
               selectedLad={selectedLad}
               selectedLadFeature={selectedLadFeature}
               onSelectLad={lad => {

@@ -3,7 +3,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/router'
 import type { FeatureCollection } from 'geojson'
 import PageShell from '../../components/PageShell'
-import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import { blendShare } from '../../lib/local2026/ge'
 import {
@@ -34,6 +33,12 @@ import {
 } from '../../lib/scotland/tenure'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
 import type { ScotlandProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
+import {
+  getPreviousScottishConstituencyName,
+  getScottishConstituencyCode,
+  getScottishConstituencyName,
+} from '../../lib/scotland/constituencyNames'
+import SCOTLAND_2026_RESULTS from '../../public/data/scotland-2026-results.json'
 
 const ScottishParliamentMap = dynamic(
   () => import('../../components/ScottishParliamentMap'),
@@ -355,7 +360,7 @@ export default function ScottishMapPage() {
   const [hasMounted, setHasMounted] = useState(false)
   const [focusConstituency, setFocusConstituency] = useState<string | null>(null)
   const [searchValue, setSearchValue] = useState('')
-  const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent'>('projected')
+  const [mapDisplayMode, setMapDisplayMode] = useState<'projected' | 'incumbent' | 'results'>('projected')
   const [projectionSnapshot, setProjectionSnapshot] = useState<ScotlandProjectionSnapshot | null>(null)
   const [projectionSnapshotStatus, setProjectionSnapshotStatus] = useState<
     'loading' | 'ready' | 'missing'
@@ -501,10 +506,11 @@ export default function ScottishMapPage() {
     if (!constituencyGeo) return map
     constituencyGeo.features.forEach(feature => {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
-      const code = props.SPC22CD || ''
+      const name = getScottishConstituencyName(props)
+      const code = getScottishConstituencyCode(props)
       if (!name || !code) return
       map.set(normalizeScottishConstituencyName(name), code)
+      map.set(normalizeScottishConstituencyName(getPreviousScottishConstituencyName(name)), code)
     })
     return map
   }, [constituencyGeo])
@@ -557,6 +563,19 @@ export default function ScottishMapPage() {
         map.set(entry.name, nextValue)
         map.set(normalizedName, nextValue)
       })
+      if (constituencyGeo) {
+        constituencyGeo.features.forEach(feature => {
+          const props: any = feature.properties || {}
+          const newName = getScottishConstituencyName(props)
+          const previousName = getPreviousScottishConstituencyName(newName)
+          if (!newName || previousName === newName) return
+          const aliasValue =
+            map.get(previousName) || map.get(normalizeScottishConstituencyName(previousName))
+          if (!aliasValue) return
+          map.set(newName, aliasValue)
+          map.set(normalizeScottishConstituencyName(newName), aliasValue)
+        })
+      }
       return map
     }
     if (!constituencyAggregate) return constituencyResults
@@ -831,9 +850,14 @@ export default function ScottishMapPage() {
     if (!constituencyGeo) return counts
     constituencyGeo.features.forEach(feature => {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
+      const name = getScottishConstituencyName(props)
+      const previousName = getPreviousScottishConstituencyName(name)
       const normalizedName = normalizeScottishConstituencyName(name)
-      const result = projectedResults.get(name) || projectedResults.get(normalizedName)
+      const result =
+        projectedResults.get(name) ||
+        projectedResults.get(normalizedName) ||
+        projectedResults.get(previousName) ||
+        projectedResults.get(normalizeScottishConstituencyName(previousName))
       const winner = result?.projectedWinner || 'Unknown'
       counts[winner] = (counts[winner] || 0) + 1
     })
@@ -854,9 +878,14 @@ export default function ScottishMapPage() {
     if (!constituencyGeo) return counts
     constituencyGeo.features.forEach(feature => {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
+      const name = getScottishConstituencyName(props)
+      const previousName = getPreviousScottishConstituencyName(name)
       const normalizedName = normalizeScottishConstituencyName(name)
-      const result = projectedResults.get(name) || projectedResults.get(normalizedName)
+      const result =
+        projectedResults.get(name) ||
+        projectedResults.get(normalizedName) ||
+        projectedResults.get(previousName) ||
+        projectedResults.get(normalizeScottishConstituencyName(previousName))
       const prevWinner = result?.previousWinner2021 || 'Unknown'
       counts[prevWinner] = (counts[prevWinner] || 0) + 1
     })
@@ -894,12 +923,40 @@ export default function ScottishMapPage() {
       .sort((a, b) => b.seats - a.seats)
   }, [projectionSnapshot, projectedSeatCounts])
 
+  const actualResultsMap = useMemo(() => {
+    const map = new Map<string, { winner: string; shares: Record<string, number> }>()
+    ;((SCOTLAND_2026_RESULTS as any).constituencyRows || []).forEach((row: any) => {
+      const value = { winner: row.winner, shares: row.shares || {} }
+      map.set(row.name, value)
+      map.set(normalizeScottishConstituencyName(row.name), value)
+    })
+    return map
+  }, [])
+
+  const actualConstituencySeatSummary = useMemo(
+    () =>
+      Object.entries((SCOTLAND_2026_RESULTS as any).constituencySeatCounts || {})
+        .filter(([, seats]) => Number(seats) > 0)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .map(([party, seats]) => ({ party, seats: Number(seats) })),
+    []
+  )
+
+  const actualRegionalSeatSummary = useMemo(
+    () =>
+      Object.entries((SCOTLAND_2026_RESULTS as any).regionalSeatCounts || {})
+        .filter(([, seats]) => Number(seats) > 0)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .map(([party, seats]) => ({ party, seats: Number(seats) })),
+    []
+  )
+
   const focusFeature = useMemo(() => {
     if (!constituencyGeo || !focusConstituency) return null
     const target = normalizeScottishConstituencyName(focusConstituency)
     for (const feature of constituencyGeo.features) {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
+      const name = getScottishConstituencyName(props)
       if (!name) continue
       if (normalizeScottishConstituencyName(name) !== target) continue
       return feature
@@ -912,7 +969,7 @@ export default function ScottishMapPage() {
     if (!constituencyGeo) return map
     constituencyGeo.features.forEach(feature => {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
+      const name = getScottishConstituencyName(props)
       if (!name) return
       map.set(normalizeScottishConstituencyName(name), name)
     })
@@ -945,7 +1002,6 @@ export default function ScottishMapPage() {
 
   return (
     <PageShell>
-      <ElectionFreezeNotice />
       {!isEmbed && (
         <TopNav
           title="Poll of Polls"
@@ -1015,28 +1071,48 @@ export default function ScottishMapPage() {
           <div className="poll-card poll-map-sidebar" style={{ maxHeight: '100%', overflow: 'auto' }}>
             <div style={{ marginBottom: '1rem' }}>
               <div style={{ fontWeight: 600, marginBottom: '0.45rem' }}>Map View</div>
-              <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap', marginLeft: '-0.15rem' }}>
-                {(['projected', 'incumbent'] as const).map(mode => {
-                  const isActive = mapDisplayMode === mode
-                  return (
-                    <button
-                      key={mode}
-                      type="button"
-                      onClick={() => setMapDisplayMode(mode)}
-                      style={{
-                        padding: '0.45rem 0.65rem',
-                        borderRadius: '999px',
-                        border: '1px solid var(--poll-border)',
-                        background: isActive ? '#2b3444' : '#11151d',
-                        color: 'var(--poll-nav-ink)',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {mode === 'projected' ? 'Predicted' : 'Incumbent'}
-                    </button>
-                  )
-                })}
+              <div style={{ display: 'grid', gap: '0.5rem', marginLeft: '-0.15rem', maxWidth: '250px' }}>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'nowrap' }}>
+                  {(['projected', 'results'] as const).map(mode => {
+                    const isActive = mapDisplayMode === mode
+                    return (
+                      <button
+                        key={mode}
+                        type="button"
+                        onClick={() => setMapDisplayMode(mode)}
+                        style={{
+                          flex: 1,
+                          padding: '0.45rem 0.65rem',
+                          borderRadius: '999px',
+                          border: '1px solid var(--poll-border)',
+                          background: isActive ? '#2b3444' : '#11151d',
+                          color: 'var(--poll-nav-ink)',
+                          fontWeight: 600,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {mode === 'projected' ? 'Predicted' : 'Results'}
+                      </button>
+                    )
+                  })}
+                </div>
+                <div style={{ display: 'flex' }}>
+                  <button
+                    type="button"
+                    onClick={() => setMapDisplayMode('incumbent')}
+                    style={{
+                      padding: '0.45rem 0.65rem',
+                      borderRadius: '999px',
+                      border: '1px solid var(--poll-border)',
+                      background: mapDisplayMode === 'incumbent' ? '#2b3444' : '#11151d',
+                      color: 'var(--poll-nav-ink)',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                    }}
+                  >
+                    Incumbent
+                  </button>
+                </div>
               </div>
             </div>
             <div
@@ -1049,9 +1125,9 @@ export default function ScottishMapPage() {
                 marginBottom: '1rem',
               }}
             >
-              <div style={{ fontWeight: 700 }}>Projected Constituency Seats</div>
+              <div style={{ fontWeight: 700 }}>Constituency Seat Results</div>
               <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
-                {projectedSeatSummary.map(item => {
+                {actualConstituencySeatSummary.map(item => {
                   return (
                     <div
                       key={item.party}
@@ -1079,6 +1155,84 @@ export default function ScottishMapPage() {
                 })}
               </div>
             </div>
+            {actualRegionalSeatSummary.length > 0 ? (
+              <div
+                style={{
+                  border: '1px solid var(--poll-border)',
+                  borderRadius: '14px',
+                  padding: '0.75rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  marginBottom: '1rem',
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>Regional List Seat Results</div>
+                <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
+                  {actualRegionalSeatSummary.map(item => (
+                    <div
+                      key={`regional-${item.party}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span
+                          style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '999px',
+                            background: PARTY_COLORS[item.party] || '#9a9a9a',
+                          }}
+                        />
+                        {item.party}
+                      </span>
+                      <strong>{item.seats}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+            {projectedSeatSummary.length > 0 ? (
+              <div
+                style={{
+                  border: '1px solid var(--poll-border)',
+                  borderRadius: '14px',
+                  padding: '0.75rem',
+                  background: 'rgba(255,255,255,0.05)',
+                  marginBottom: '1rem',
+                }}
+              >
+                <div style={{ fontWeight: 700 }}>Signal Projected Constituency Seats</div>
+                <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
+                  {projectedSeatSummary.map(item => (
+                    <div
+                      key={`projected-${item.party}`}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        gap: '0.5rem',
+                      }}
+                    >
+                      <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+                        <span
+                          style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '999px',
+                            background: PARTY_COLORS[item.party] || '#9a9a9a',
+                          }}
+                        />
+                        {item.party}
+                      </span>
+                      <strong>{item.seats}</strong>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             {projectedRegionalSeatSummary.length > 0 ? (
               <div
                 style={{
@@ -1089,11 +1243,11 @@ export default function ScottishMapPage() {
                   marginBottom: '1rem',
                 }}
               >
-                <div style={{ fontWeight: 700 }}>Projected Regional List Seats</div>
+                <div style={{ fontWeight: 700 }}>Signal Projected Regional List Results</div>
                 <div style={{ display: 'grid', gap: '0.3rem', marginTop: '0.45rem' }}>
                   {projectedRegionalSeatSummary.map(item => (
                     <div
-                      key={`regional-${item.party}`}
+                      key={`projected-regional-${item.party}`}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
@@ -1124,7 +1278,7 @@ export default function ScottishMapPage() {
             <div style={{ marginTop: '0.5rem', color: '#f8fafc' }}>
               To see seat changes and how the Regional List Seats are split by region, please see the{' '}
               <a href="/scottish-parliament-projection" style={{ color: '#f8fafc' }}>
-                Scottish Parliamentary Elections Projections Page
+                Scottish Parliamentary Elections Page
               </a>
               .
             </div>
@@ -1148,6 +1302,7 @@ export default function ScottishMapPage() {
                     if (country === 'wales') void router.push('/welsh-map', undefined, { scroll: false })
                   }}
                   constituencyResults={projectedResults}
+                  actualResults={actualResultsMap}
                   focusFeature={focusFeature as any}
                 />
               </div>

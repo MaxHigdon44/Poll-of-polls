@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { FeatureCollection } from 'geojson'
 import PageShell from '../../components/PageShell'
-import ElectionFreezeNotice from '../../components/ElectionFreezeNotice'
 import TopNav, { MAIN_TOPNAV_ITEMS } from '../../components/TopNav'
 import { blendShare } from '../../lib/local2026/ge'
 import {
@@ -32,6 +31,12 @@ import {
 } from '../../lib/scotland/tenure'
 import { computePollsterWeight, computeSampleWeight } from '../../lib/weights'
 import type { ScotlandProjectionSnapshot } from '@/lib/scotland/projectionSnapshot'
+import {
+  getPreviousScottishConstituencyName,
+  getScottishConstituencyCode,
+  getScottishConstituencyName,
+} from '../../lib/scotland/constituencyNames'
+import SCOTLAND_2026_RESULTS from '../../public/data/scotland-2026-results.json'
 
 type Poll = {
   poll_date: string
@@ -818,6 +823,11 @@ function buildHemicyclePositions(rows: number[]) {
   return { dots, centerX, centerY, maxRadius }
 }
 
+function formatSeatDelta(delta: number) {
+  if (delta === 0) return '-'
+  return delta > 0 ? `↑ ${delta}` : `↓ ${Math.abs(delta)}`
+}
+
 export default function ScottishParliamentProjectionPage() {
   const settingsKey = 'scotlandModelSettings'
   const [constituencyGeo, setConstituencyGeo] = useState<FeatureCollection | null>(null)
@@ -913,8 +923,6 @@ export default function ScottishParliamentProjectionPage() {
   }, [])
 
   useEffect(() => {
-    if (projectionSnapshotStatus !== 'missing') return
-
     fetch('/data/scotland-constituencies.geojson')
       .then(res => res.json())
       .then(data => setConstituencyGeo(data))
@@ -977,17 +985,18 @@ export default function ScottishParliamentProjectionPage() {
       .then(res => res.json())
       .then(data => setNssecLookup(data))
       .catch(() => setNssecLookup(null))
-  }, [projectionSnapshotStatus])
+  }, [])
 
   const spcCodeByName = useMemo(() => {
     const map = new Map<string, string>()
     if (!constituencyGeo) return map
     constituencyGeo.features.forEach(feature => {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
-      const code = props.SPC22CD || ''
+      const name = getScottishConstituencyName(props)
+      const code = getScottishConstituencyCode(props)
       if (!name || !code) return
       map.set(normalizeScottishConstituencyName(name), code)
+      map.set(normalizeScottishConstituencyName(getPreviousScottishConstituencyName(name)), code)
     })
     return map
   }, [constituencyGeo])
@@ -1266,31 +1275,66 @@ export default function ScottishParliamentProjectionPage() {
     regionStrength,
   ])
 
+  const displayConstituencyList = useMemo(() => {
+    if (constituencyGeo?.features?.length) {
+      return constituencyGeo.features
+        .map(feature => {
+          const props: any = feature.properties || {}
+          const name = getScottishConstituencyName(props)
+          const previousName = getPreviousScottishConstituencyName(name)
+          const resultValue =
+            constituencyResults.get(name) ||
+            constituencyResults.get(normalizeScottishConstituencyName(name)) ||
+            constituencyResults.get(previousName) ||
+            constituencyResults.get(normalizeScottishConstituencyName(previousName))
+          const snapshotValue =
+            projectionSnapshot?.constituencyRows.find(row => row.name === previousName) ||
+            projectionSnapshot?.constituencyRows.find(
+              row =>
+                normalizeScottishConstituencyName(row.name) ===
+                normalizeScottishConstituencyName(previousName)
+            )
+          return {
+            name,
+            region: resultValue?.region || snapshotValue?.region || '',
+            previousWinner2021:
+              resultValue?.previousWinner2021 ?? snapshotValue?.previousWinner2021 ?? null,
+          }
+        })
+        .filter(entry => entry.name)
+        .sort((a, b) => a.name.localeCompare(b.name))
+    }
+    return constituencyList
+  }, [constituencyGeo, constituencyResults, projectionSnapshot, constituencyList])
+
   const constituencyWinners = useMemo(() => {
-    if (projectionSnapshot) return projectionSnapshot.constituencyRows
-    return constituencyList.map(entry => {
+    return displayConstituencyList.map(entry => {
+      const previousName = getPreviousScottishConstituencyName(entry.name)
       const result =
         projectedResults.get(entry.name) ||
-        projectedResults.get(normalizeScottishConstituencyName(entry.name))
+        projectedResults.get(normalizeScottishConstituencyName(entry.name)) ||
+        projectedResults.get(previousName) ||
+        projectedResults.get(normalizeScottishConstituencyName(previousName))
+      if (projectionSnapshot) {
+        const snapshotRow =
+          projectionSnapshot.constituencyRows.find(row => row.name === previousName) ||
+          projectionSnapshot.constituencyRows.find(
+            row => normalizeScottishConstituencyName(row.name) === normalizeScottishConstituencyName(previousName)
+          )
+        return {
+          ...entry,
+          projectedWinner:
+            snapshotRow?.projectedWinner || result?.projectedWinner || 'Unknown',
+        }
+      }
       return {
         ...entry,
         projectedWinner: result?.projectedWinner || 'Unknown',
       }
     })
-  }, [projectionSnapshot, constituencyList, projectedResults])
+  }, [projectionSnapshot, displayConstituencyList, projectedResults])
 
   const constituencySeatsByRegion = useMemo(() => {
-    if (projectionSnapshot) {
-      const map = new Map<string, Record<string, number>>()
-      projectionSnapshot.constituencyRows.forEach(entry => {
-        const regionKey = normalizeRegionName(entry.region || 'Unknown')
-        if (!map.has(regionKey)) map.set(regionKey, {})
-        const bucket = map.get(regionKey) as Record<string, number>
-        const party = entry.projectedWinner || 'Unknown'
-        bucket[party] = (bucket[party] || 0) + 1
-      })
-      return map
-    }
     const map = new Map<string, Record<string, number>>()
     constituencyWinners.forEach(entry => {
       const regionKey = normalizeRegionName(entry.region || 'Unknown')
@@ -1300,7 +1344,7 @@ export default function ScottishParliamentProjectionPage() {
       bucket[party] = (bucket[party] || 0) + 1
     })
     return map
-  }, [projectionSnapshot, constituencyWinners])
+  }, [constituencyWinners])
 
   const regionalVotesByRegion = useMemo(() => {
     if (projectionSnapshot) return new Map<string, Record<string, number>>()
@@ -1386,11 +1430,34 @@ export default function ScottishParliamentProjectionPage() {
     return counts
   }, [projectionSnapshot, constituencySeatCounts, regionalSeatCounts])
 
+  const actualResultByName = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const row of (SCOTLAND_2026_RESULTS.constituencyRows || []) as Array<{
+      name: string
+      winner: string
+    }>) {
+      map.set(row.name, row.winner)
+      map.set(normalizeScottishConstituencyName(row.name), row.winner)
+    }
+    return map
+  }, [])
+
+  const actualCombinedSeatCounts = useMemo(
+    () => ((SCOTLAND_2026_RESULTS as any).combinedSeatCounts || {}) as Record<string, number>,
+    []
+  )
+
   const seatOrder = useMemo(() => {
     const entries = Object.entries(combinedSeatCounts)
     entries.sort((a, b) => b[1] - a[1])
     return entries.map(([party]) => party)
   }, [combinedSeatCounts])
+
+  const actualSeatOrder = useMemo(() => {
+    const entries = Object.entries(actualCombinedSeatCounts)
+    entries.sort((a, b) => b[1] - a[1])
+    return entries.map(([party]) => party)
+  }, [actualCombinedSeatCounts])
 
   const seatAssignments = useMemo(() => {
     const seats: string[] = []
@@ -1402,6 +1469,17 @@ export default function ScottishParliamentProjectionPage() {
     })
     return seats.slice(0, TOTAL_SEATS)
   }, [seatOrder, combinedSeatCounts])
+
+  const actualSeatAssignments = useMemo(() => {
+    const seats: string[] = []
+    actualSeatOrder.forEach(party => {
+      const count = actualCombinedSeatCounts[party] || 0
+      for (let i = 0; i < count; i += 1) {
+        seats.push(party)
+      }
+    })
+    return seats.slice(0, TOTAL_SEATS)
+  }, [actualSeatOrder, actualCombinedSeatCounts])
 
   const hemicycle = useMemo(() => buildHemicyclePositions(SEAT_ROWS), [])
 
@@ -1415,6 +1493,17 @@ export default function ScottishParliamentProjectionPage() {
       party: seatAssignments[index] || 'Regional TBD',
     }))
   }, [hemicycle.dots, seatAssignments])
+
+  const actualHemicycleDots = useMemo(() => {
+    const ordered = [...hemicycle.dots].sort((a, b) => {
+      if (a.angle !== b.angle) return b.angle - a.angle
+      return b.radius - a.radius
+    })
+    return ordered.map((dot, index) => ({
+      ...dot,
+      party: actualSeatAssignments[index] || 'Regional TBD',
+    }))
+  }, [hemicycle.dots, actualSeatAssignments])
 
   const regionGroups = useMemo(() => {
     const groups = new Map<string, typeof constituencyWinners>()
@@ -1446,13 +1535,22 @@ export default function ScottishParliamentProjectionPage() {
       .sort((a, b) => b.count - a.count)
   }, [combinedSeatCounts])
 
+  const actualSeatSummary = useMemo(() => {
+    return Object.entries(actualCombinedSeatCounts)
+      .map(([party, count]) => ({
+        party,
+        count,
+        delta: count - (SCOTLAND_2021_SEAT_BASELINE[party] ?? 0),
+      }))
+      .sort((a, b) => b.count - a.count)
+  }, [actualCombinedSeatCounts])
+
   return (
     <PageShell>
-      <ElectionFreezeNotice />
       <TopNav
         title="Poll of Polls"
         items={MAIN_TOPNAV_ITEMS}
-        subtitle="Projected Scottish Parliament"
+        subtitle="Scottish Parliament"
         subtitleStyle={{ fontSize: '1.5rem', color: '#172033' }}
       />
       <div className="poll-card poll-stack">
@@ -1461,18 +1559,18 @@ export default function ScottishParliamentProjectionPage() {
         </div>
       </div>
       <div className="poll-card poll-stack">
-        <div className="poll-section-title">Projected Parliament (129 seats)</div>
+        <div className="poll-section-title">Scottish Parliament (129 seats)</div>
         <div style={{ display: 'grid', gap: '1.25rem' }}>
           <svg
             viewBox={`0 0 ${HEMICYCLE_WIDTH} ${HEMICYCLE_HEIGHT}`}
             width="100%"
             height="380"
             role="img"
-            aria-label="Projected Scottish Parliament hemicycle"
+            aria-label="Scottish Parliament hemicycle"
             preserveAspectRatio="xMidYMid meet"
             style={{ display: 'block' }}
           >
-            {hemicycleDots.map((dot, index) => (
+            {actualHemicycleDots.map((dot, index) => (
               <circle
                 key={`${dot.party}-${index}`}
                 className="poll-hemicycle-seat"
@@ -1489,13 +1587,7 @@ export default function ScottishParliamentProjectionPage() {
             ))}
           </svg>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.5rem' }}>
-            {seatSummary.map(item => {
-              const deltaLabel =
-                item.delta === 0
-                  ? '-'
-                  : item.delta > 0
-                    ? `↑ ${item.delta}`
-                    : `↓ ${Math.abs(item.delta)}`
+            {actualSeatSummary.map(item => {
               const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
               return (
                 <div key={item.party} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
@@ -1509,11 +1601,34 @@ export default function ScottishParliamentProjectionPage() {
                   />
                   <span style={{ fontWeight: 600 }}>{item.party}</span>
                   <span style={{ color: 'var(--poll-nav-muted)' }}>{item.count}</span>
-                  <span style={{ color: deltaColor }}>({deltaLabel})</span>
+                  <span style={{ color: deltaColor }}>({formatSeatDelta(item.delta)})</span>
                 </div>
               )
             })}
           </div>
+        </div>
+      </div>
+      <div className="poll-card poll-stack">
+        <div className="poll-section-title">Signal Projections (129 seats)</div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.75rem 1.5rem' }}>
+          {seatSummary.map(item => {
+            const deltaColor = item.delta > 0 ? '#1B8A3A' : item.delta < 0 ? '#B02A37' : '#666'
+            return (
+              <div key={item.party} style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                <span
+                  style={{
+                    width: '10px',
+                    height: '10px',
+                    borderRadius: '999px',
+                    background: SCOTTISH_PARTY_COLORS[item.party] || '#ccc',
+                  }}
+                />
+                <span style={{ fontWeight: 600 }}>{item.party}</span>
+                <span style={{ color: 'var(--poll-nav-muted)' }}>{item.count}</span>
+                <span style={{ color: deltaColor }}>({formatSeatDelta(item.delta)})</span>
+              </div>
+            )
+          })}
         </div>
       </div>
       <div className="poll-card poll-stack poll-projection-card">
@@ -1524,7 +1639,7 @@ export default function ScottishParliamentProjectionPage() {
               <div
                 style={{
                   display: 'grid',
-                  gridTemplateColumns: '1fr 160px 160px',
+                  gridTemplateColumns: '1fr 150px 150px 150px',
                   gap: '0.75rem',
                   alignItems: 'center',
                   padding: '0.45rem 0.6rem',
@@ -1535,6 +1650,7 @@ export default function ScottishParliamentProjectionPage() {
                 </div>
                 <div style={{ fontWeight: 700, color: '#f8fafc', textAlign: 'left' }}>Incumbent</div>
                 <div style={{ fontWeight: 700, color: '#f8fafc', textAlign: 'left' }}>Projected</div>
+                <div style={{ fontWeight: 700, color: '#f8fafc', textAlign: 'left' }}>Result</div>
               </div>
               <div style={{ display: 'grid', gap: '0.35rem' }}>
                 {entries.map(entry => (
@@ -1543,7 +1659,7 @@ export default function ScottishParliamentProjectionPage() {
                     key={entry.name}
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: '1fr 160px 160px',
+                      gridTemplateColumns: '1fr 150px 150px 150px',
                       gap: '0.75rem',
                       alignItems: 'center',
                       padding: '0.45rem 0.6rem',
@@ -1561,6 +1677,19 @@ export default function ScottishParliamentProjectionPage() {
                     </div>
                     <div style={{ color: SCOTTISH_PARTY_COLORS[entry.projectedWinner || 'Unknown'] }}>
                       {entry.projectedWinner || 'Unknown'}
+                    </div>
+                    <div
+                      style={{
+                        color: SCOTTISH_PARTY_COLORS[
+                          actualResultByName.get(entry.name) ||
+                            actualResultByName.get(normalizeScottishConstituencyName(entry.name)) ||
+                            'Unknown'
+                        ],
+                      }}
+                    >
+                      {actualResultByName.get(entry.name) ||
+                        actualResultByName.get(normalizeScottishConstituencyName(entry.name)) ||
+                        'Unknown'}
                     </div>
                   </div>
                 ))}

@@ -22,6 +22,11 @@ import { REGION_EFFECT_STRENGTH, getRegionAdjustment } from '@/lib/local2026/reg
 import { getConcentrationMultiplier } from '@/lib/local2026/concentration'
 import { allocateProjectedSeats, getSeatAllocationLabel } from '@/lib/local2026/multiMember'
 import {
+  getPreviousScottishConstituencyName,
+  getScottishConstituencyCode,
+  getScottishConstituencyName,
+} from '@/lib/scotland/constituencyNames'
+import {
   NSSEC_EFFECT_STRENGTH,
   getNssecAdjustment,
   type NssecBaseline,
@@ -1915,7 +1920,11 @@ export default function CombinedOverviewMap({
     const map = new Map<string, string>()
     ;(scotlandConstituencies?.features || []).forEach(feature => {
       const props: any = feature.properties || {}
-      if (props.SPC22NM && props.SPC22CD) map.set(normalizeScottishConstituencyName(props.SPC22NM), props.SPC22CD)
+      const name = getScottishConstituencyName(props)
+      const code = getScottishConstituencyCode(props)
+      if (!name || !code) return
+      map.set(normalizeScottishConstituencyName(name), code)
+      map.set(normalizeScottishConstituencyName(getPreviousScottishConstituencyName(name)), code)
     })
     return map
   }, [scotlandConstituencies])
@@ -2075,10 +2084,13 @@ export default function CombinedOverviewMap({
     if (!scotlandConstituencies) return counts
     scotlandConstituencies.features.forEach(feature => {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
+      const name = getScottishConstituencyName(props)
+      const previousName = getPreviousScottishConstituencyName(name)
       const result =
         scottishProjected.get(name) ||
-        scottishProjected.get(normalizeScottishConstituencyName(name))
+        scottishProjected.get(normalizeScottishConstituencyName(name)) ||
+        scottishProjected.get(previousName) ||
+        scottishProjected.get(normalizeScottishConstituencyName(previousName))
       const prevWinner = result?.previousWinner2021 || 'Unknown'
       counts[prevWinner] = (counts[prevWinner] || 0) + 1
     })
@@ -2099,10 +2111,13 @@ export default function CombinedOverviewMap({
     if (!scotlandConstituencies) return counts
     scotlandConstituencies.features.forEach(feature => {
       const props: any = feature.properties || {}
-      const name = props.SPC22NM || ''
+      const name = getScottishConstituencyName(props)
+      const previousName = getPreviousScottishConstituencyName(name)
       const result =
         scottishProjected.get(name) ||
-        scottishProjected.get(normalizeScottishConstituencyName(name))
+        scottishProjected.get(normalizeScottishConstituencyName(name)) ||
+        scottishProjected.get(previousName) ||
+        scottishProjected.get(normalizeScottishConstituencyName(previousName))
       const winner = result?.projectedWinner || 'Unknown'
       counts[winner] = (counts[winner] || 0) + 1
     })
@@ -2598,10 +2613,13 @@ export default function CombinedOverviewMap({
           data={scotlandConstituencies as GeoJsonObject}
           style={feature => {
             const props: any = feature?.properties || {}
-            const constituencyName = props.SPC22NM || ''
+            const constituencyName = getScottishConstituencyName(props)
+            const previousName = getPreviousScottishConstituencyName(constituencyName)
             const result =
               scottishProjected.get(constituencyName) ||
-              scottishProjected.get(normalizeScottishConstituencyName(constituencyName))
+              scottishProjected.get(normalizeScottishConstituencyName(constituencyName)) ||
+              scottishProjected.get(previousName) ||
+              scottishProjected.get(normalizeScottishConstituencyName(previousName))
             const fill =
               (result?.projectedWinner || result?.previousWinner2021) === 'SNP' ? '#FDF38E' :
               (result?.projectedWinner || result?.previousWinner2021) === 'Conservative' ? '#0087DC' :
@@ -2613,11 +2631,14 @@ export default function CombinedOverviewMap({
           }}
           onEachFeature={(feature, layer) => {
             const props: any = feature.properties || {}
-            const constituencyName = props.SPC22NM || ''
+            const constituencyName = getScottishConstituencyName(props)
+            const previousName = getPreviousScottishConstituencyName(constituencyName)
             const result =
               scottishProjected.get(constituencyName) ||
-              scottishProjected.get(normalizeScottishConstituencyName(constituencyName))
-            const shareLines2021 = result
+              scottishProjected.get(normalizeScottishConstituencyName(constituencyName)) ||
+              scottishProjected.get(previousName) ||
+              scottishProjected.get(normalizeScottishConstituencyName(previousName))
+            const shareLinesActual = result
               ? buildPopupShareLines([
                   ['SNP', result.shares.snp],
                   ['Conservative', result.shares.conservative],
@@ -2638,24 +2659,14 @@ export default function CombinedOverviewMap({
                   ['Other', result.projected.other],
                 ])
               : ''
-            const projectedOutcome =
-              result?.baselineSource === 'fallback-2021'
-                ? ''
-                : result?.projectedWinner && result?.previousWinner2021
-                ? result.projectedWinner === result.previousWinner2021
-                  ? `${result.projectedWinner} hold`
-                  : `${result.projectedWinner} gain from ${result.previousWinner2021}`
-                : result?.projectedWinner
-                  ? `${result.projectedWinner} projected`
-                  : ''
             const baselineHeading =
               result?.baselineSource === 'fallback-2021'
-                ? '2021 constituency vote share (fallback)'
-                : '2021 constituency vote share'
+                ? 'Vote Share (fallback)'
+                : 'Vote Share'
             const projectedHeading =
               result?.baselineSource === 'fallback-2021'
                 ? ''
-                : 'Projected constituency vote share'
+                : 'Signal Projected Vote Share'
             layer.bindPopup(
               `<strong>${constituencyName}</strong>${
                 result?.region ? `<br/>Region: ${result.region}` : ''
@@ -2663,9 +2674,7 @@ export default function CombinedOverviewMap({
                 result?.baselineSource === 'fallback-2021' && result?.previousWinner2021
                   ? `<br/>2021 winner: ${result.previousWinner2021}`
                   : ''
-              }${
-                projectedOutcome ? `<br/>Projected result: ${projectedOutcome}` : ''
-              }${shareLines2021 ? `<br/><br/>${baselineHeading}<br/>${shareLines2021}` : ''}${
+              }${shareLinesActual ? `<br/><br/>${baselineHeading}<br/>${shareLinesActual}` : ''}${
                 projectedLines && projectedHeading ? `<br/><br/>${projectedHeading}<br/>${projectedLines}` : ''
               }`
             )

@@ -203,7 +203,7 @@ export default function ScottishAggregatePage() {
         <AggregateCard title="Scottish Constituency Voting Average" aggregate={constituencyAggregate} />
         <AggregateCard title="Scottish Regional Voting Average" aggregate={regionalAggregate} />
       </div>
-      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Updated on request.</div>
+      <div className="poll-note">Data sourced from Wikipedia (CC BY-SA 4.0). Frozen at May 7, 2026.</div>
     </PageShell>
   )
 }
