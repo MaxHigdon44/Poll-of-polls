@@ -267,6 +267,8 @@ export default function ScottishParliamentMap({
     }
   }
 
+  const constituencyLayerKey = `${displayMode}-${constituencyResults.size}-${actualResults.size}`
+
   return (
     <MapContainer
       center={[56.5, -4]}
@@ -313,6 +315,7 @@ export default function ScottishParliamentMap({
         interactive={false}
       />
       <GeoJSON
+        key={constituencyLayerKey}
         data={constituencyGeo as GeoJsonObject}
         style={feature => {
           const props: any = feature?.properties || {}

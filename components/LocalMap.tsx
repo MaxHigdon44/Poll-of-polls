@@ -21,6 +21,15 @@ const PARTY_COLORS: Record<string, string> = {
   Independent: '#9a9a9a',
 }
 
+type WardMapEntry = {
+  winner: string
+  shares: Record<string, number>
+  color: string
+  wardName?: string
+  prevWinner?: string | null
+  seatAllocation?: Record<string, number>
+}
+
 function formatDisplayPartyLabel(party: string) {
   const trimmed = String(party || '').trim()
   if (!trimmed) return trimmed
@@ -60,91 +69,37 @@ type LocalMapProps = {
   wardVacanciesByName?: Map<string, number>
   wardMap: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
   wardMapByName: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
   wardMapByWardName?: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
   projectedWardMap?: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
   projectedWardMapByName?: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
   projectedWardMapByWardName?: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
   resultsWardMapByName?: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
   resultsWardMapByWardName?: Map<
     string,
-    {
-      winner: string
-      shares: Record<string, number>
-      color: string
-      prevWinner?: string | null
-      seatAllocation?: Record<string, number>
-    }
+    WardMapEntry
   >
-  fallbackProjection?: {
-    winner: string
-    shares: Record<string, number>
-    color: string
-    prevWinner?: string | null
-    seatAllocation?: Record<string, number>
-  } | null
+  fallbackProjection?: WardMapEntry | null
   selectedLad: string | null
   selectedLadFeature: GeoFeature | null
   onSelectLad: (lad: string | null) => void
@@ -940,10 +895,22 @@ export default function LocalMap({
       wardMapByName.get(getWardNameKey(feature) || '') ||
       wardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
       fallbackProjection
+    const resultsProjection =
+      resultsWardMapByName?.get(getWardNameKey(feature) || '') ||
+      resultsWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
+      null
     const vacancies =
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
       1
+    if (displayMode === 'results' && !resultsProjection) {
+      return {
+        color: '#cbd5e1',
+        weight: 0.5,
+        fillColor: '#475569',
+        fillOpacity: 0.28,
+      }
+    }
     const projectedColor = projection ? projection.color || '#ccc' : '#ccc'
     const incumbentColor =
       projection?.prevWinner ? PARTY_COLORS[formatDisplayPartyLabel(projection.prevWinner)] || '#9a9a9a' : '#9a9a9a'
@@ -970,9 +937,17 @@ export default function LocalMap({
     }
   }
 
+  const getResolvedWardDisplayName = (feature: GeoFeature) => {
+    const resultsProjection =
+      resultsWardMapByName?.get(getWardNameKey(feature) || '') ||
+      resultsWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
+      null
+    return resultsProjection?.wardName || getWardDisplayName(feature)
+  }
+
   const wardOnEachFeature = (feature: GeoFeature, layer: Layer) => {
     const wardCode = getWardCode(feature)
-    const wardName = getWardDisplayName(feature)
+    const wardName = getResolvedWardDisplayName(feature)
     const wardNameKey = getWardNameKey(feature)
     const isContested =
       !selectedLad ||
@@ -1054,7 +1029,13 @@ export default function LocalMap({
       ? `${previousWinnerLabel}: ${formatDisplayPartyLabel(projection.prevWinner)}`
       : null
     const popupSections = [
-      resultsPopupLines ? `Results:<br/>${resultsPopupLines}` : null,
+      displayMode === 'results'
+        ? resultsPopupLines
+          ? `Results:<br/>${resultsPopupLines}`
+          : 'Results:<br/>No May 7 result is available for this ward in the current results file.'
+        : resultsPopupLines
+          ? `Results:<br/>${resultsPopupLines}`
+          : null,
       projectedPopupLines ? `Signal Projected Vote Share:<br/>${projectedPopupLines}` : null,
     ]
       .filter(Boolean)
@@ -1201,7 +1182,7 @@ export default function LocalMap({
             features={wardFeatures}
             minZoom={10}
             className="poll-map-div-label--ward"
-            getLabel={getWardDisplayName}
+            getLabel={getResolvedWardDisplayName}
           />
           <FitBounds feature={selectedLadFeature} />
         </>

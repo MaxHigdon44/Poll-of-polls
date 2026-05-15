@@ -1053,6 +1053,188 @@ function normalizeTotalsToTotal(targetTotal: number, totals: Record<string, numb
   return Object.fromEntries(floored.map(entry => [entry.party, entry.seats]))
 }
 
+function getLocalResultsWardAliases(council: string, wardName: string) {
+  const councilKey = normalizeCouncilName(council)
+  const wardKey = normalizeName(wardName)
+  const aliases = new Set<string>([wardKey])
+
+  if (councilKey === normalizeCouncilName('Milton Keynes')) {
+    if (wardKey === normalizeName('Olney & Rural')) {
+      aliases.add(normalizeName('Olney'))
+    }
+    if (wardKey === normalizeName('Newport Pagnell')) {
+      aliases.add(normalizeName('Newport Pagnell North & Hanslope'))
+      aliases.add(normalizeName('Newport Pagnell South'))
+    }
+  }
+
+  if (councilKey === normalizeCouncilName('Sunderland')) {
+    if (wardKey === normalizeName('Hylton Castle')) {
+      aliases.add(normalizeName('Castle'))
+    }
+    if (wardKey === normalizeName('Redhouse')) {
+      aliases.add(normalizeName('Redhill'))
+    }
+    if (wardKey === normalizeName('Roker')) {
+      aliases.add(normalizeName("St Peter's"))
+    }
+    if (wardKey === normalizeName('Deptford & Hendon')) {
+      aliases.add(normalizeName('Hendon'))
+    }
+    if (wardKey === normalizeName('Pallion & Ford')) {
+      aliases.add(normalizeName('Millfield'))
+      aliases.add(normalizeName('Pallion'))
+    }
+    if (wardKey === normalizeName('Pennywell & South Hylton')) {
+      aliases.add(normalizeName("St Anne's"))
+    }
+    if (wardKey === normalizeName('Penshaw & Shiney Row')) {
+      aliases.add(normalizeName('Shiney Row'))
+    }
+    if (wardKey === normalizeName('Houghton North')) {
+      aliases.add(normalizeName('Houghton'))
+    }
+    if (wardKey === normalizeName('Houghton South & Hetton Downs')) {
+      aliases.add(normalizeName('Copt Hill'))
+    }
+    if (wardKey === normalizeName('Farringdon & Silksworth')) {
+      aliases.add(normalizeName('Silksworth'))
+      aliases.add(normalizeName('Doxford'))
+    }
+    if (wardKey === normalizeName('Herrington & Newbottle')) {
+      aliases.add(normalizeName("St Chad's"))
+    }
+    if (wardKey === normalizeName('Barnes & Thornhill')) {
+      aliases.add(normalizeName('Barnes'))
+    }
+    if (wardKey === normalizeName('Tunstall & Humbledon')) {
+      aliases.add(normalizeName("St Michael's"))
+    }
+    if (wardKey === normalizeName('Grindon & Thorney Close')) {
+      aliases.add(normalizeName('Sandhill'))
+    }
+  }
+
+  return Array.from(aliases)
+}
+
+const ACTUAL_COUNCIL_COMPOSITION_OVERRIDES: Record<
+  string,
+  {
+    totals: Record<string, number>
+    contestedTotals?: Record<string, number>
+  }
+> = {
+  [normalizeCouncilName('Basingstoke and Deane')]: {
+    totals: {
+      Conservative: 11,
+      'Liberal Democrat': 11,
+      'B&DI': 10,
+      Labour: 10,
+      Reform: 3,
+      Independent: 3,
+      Green: 2,
+      'All In': 2,
+    },
+    contestedTotals: {
+      Conservative: 3,
+      'Liberal Democrat': 4,
+      'B&DI': 3,
+      Labour: 2,
+      Reform: 2,
+      Independent: 1,
+      Green: 1,
+      'All In': 1,
+    },
+  },
+  [normalizeCouncilName('Brentwood')]: {
+    totals: {
+      'Liberal Democrat': 16,
+      Conservative: 12,
+      Reform: 8,
+      Labour: 2,
+      Independent: 1,
+    },
+    contestedTotals: {
+      'Liberal Democrat': 4,
+      Conservative: 3,
+      Reform: 7,
+    },
+  },
+  [normalizeCouncilName('Broxbourne')]: {
+    totals: {
+      Conservative: 25,
+      Labour: 3,
+      Reform: 2,
+    },
+  },
+  [normalizeCouncilName('Colchester')]: {
+    totals: {
+      Conservative: 18,
+      'Liberal Democrat': 12,
+      Labour: 12,
+      Reform: 5,
+      Green: 3,
+      Independent: 1,
+    },
+  },
+  [normalizeCouncilName('Epping Forest')]: {
+    totals: {
+      Conservative: 19,
+      'Loughton Residents': 12,
+      Reform: 12,
+      'Liberal Democrat': 6,
+      Independent: 4,
+      Labour: 1,
+    },
+  },
+  [normalizeCouncilName('Hart')]: {
+    totals: {
+      'Liberal Democrat': 13,
+      CCH: 11,
+      Conservative: 8,
+      Independent: 1,
+    },
+  },
+  [normalizeCouncilName('Rushmoor')]: {
+    totals: {
+      Labour: 17,
+      Conservative: 10,
+      Reform: 6,
+      'Liberal Democrat': 3,
+      Independent: 3,
+    },
+  },
+  [normalizeCouncilName('Stockport')]: {
+    totals: {
+      'Liberal Democrat': 33,
+      Labour: 14,
+      Green: 4,
+      Independent: 3,
+      'Heald Green Ratepayers': 3,
+      'Community Association': 3,
+      Reform: 2,
+      Conservative: 1,
+    },
+    contestedTotals: {
+      'Liberal Democrat': 13,
+      Labour: 2,
+      Green: 2,
+      'Heald Green Ratepayers': 1,
+      'Community Association': 1,
+      Reform: 2,
+    },
+  },
+  [normalizeCouncilName('Welwyn Hatfield')]: {
+    totals: {
+      Labour: 16,
+      'Liberal Democrat': 15,
+      Conservative: 12,
+      Reform: 3,
+    },
+  },
+}
+
 const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
   birmingham: {
     'acocks green': 2,
@@ -1998,10 +2180,17 @@ export default function Local2026Page() {
     const map = new Map<string, any>()
     Object.entries(localResults?.wardsByName || {}).forEach(([key, entry]) => {
       const normalizedEntry = normalizeLocalResultEntry(entry)
-      map.set(key, {
+      const value = {
         ...normalizedEntry,
         color: PARTY_COLORS[normalizedEntry.winner] || '#9a9a9a',
-      })
+      }
+      map.set(key, value)
+      const councilKey = normalizeName(normalizedEntry.council)
+      getLocalResultsWardAliases(normalizedEntry.council, normalizedEntry.wardName).forEach(
+        alias => {
+          map.set(`${councilKey}|${alias}`, value)
+        }
+      )
     })
     return map
   }, [localResults])
@@ -2009,13 +2198,17 @@ export default function Local2026Page() {
   const resultsWardMapByWardName = useMemo(() => {
     const map = new Map<string, any>()
     Object.values(localResults?.wardsByName || {}).forEach(entry => {
-      const key = normalizeName(entry.wardName)
-      if (map.has(key)) return
       const normalizedEntry = normalizeLocalResultEntry(entry)
-      map.set(key, {
+      const value = {
         ...normalizedEntry,
         color: PARTY_COLORS[normalizedEntry.winner] || '#9a9a9a',
-      })
+      }
+      getLocalResultsWardAliases(normalizedEntry.council, normalizedEntry.wardName).forEach(
+        alias => {
+          if (map.has(alias)) return
+          map.set(alias, value)
+        }
+      )
     })
     return map
   }, [localResults])
@@ -2364,6 +2557,8 @@ export default function Local2026Page() {
     const previousRow = councilPrevious?.councils?.find(
       row => normalizeCouncilName(row.council) === normalizedTarget
     )
+    const actualCompositionOverride =
+      controlSuffix === '' ? ACTUAL_COUNCIL_COMPOSITION_OVERRIDES[normalizedTarget] : null
     const wardIncumbents = previousRow?.wardIncumbents || null
     const normalizedWardIncumbents = new Map<string, string>(
       Object.entries(wardIncumbents || {}).map(([wardName, party]) => [
@@ -2648,6 +2843,18 @@ export default function Local2026Page() {
           projected[party] = Math.max(0, Math.round(next))
         })
         projectedTotals = normalizeTotalsToTotal(totalSeats, projected)
+      }
+    }
+
+    if (actualCompositionOverride) {
+      projectedTotals = normalizeTotalsToTotal(totalSeats, actualCompositionOverride.totals)
+      if (actualCompositionOverride.contestedTotals) {
+        Object.keys(adjustedContestedTotals).forEach(key => {
+          delete adjustedContestedTotals[key]
+        })
+        Object.entries(actualCompositionOverride.contestedTotals).forEach(([party, seats]) => {
+          adjustedContestedTotals[party] = seats
+        })
       }
     }
 
