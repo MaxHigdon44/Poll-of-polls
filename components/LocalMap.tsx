@@ -896,6 +896,12 @@ export default function LocalMap({
       wardMapByName.get(getWardNameKey(feature) || '') ||
       wardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
       fallbackProjection
+    const projectedProjection =
+      projectedWardMap?.get(wardCode || '') ||
+      projectedWardMapByName?.get(getWardNameKey(feature) || '') ||
+      projectedWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
+      fallbackProjection ||
+      projection
     const resultsProjection =
       resultsWardMapByName?.get(getWardNameKey(feature) || '') ||
       resultsWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
@@ -912,11 +918,12 @@ export default function LocalMap({
         fillOpacity: 0.28,
       }
     }
-    const projectedColor = projection ? projection.color || '#ccc' : '#ccc'
+    const activeProjection = displayMode === 'projected' ? projectedProjection || projection : projection
+    const projectedColor = activeProjection ? activeProjection.color || '#ccc' : '#ccc'
     const incumbentColor =
       projection?.prevWinner ? PARTY_COLORS[formatDisplayPartyLabel(projection.prevWinner)] || '#9a9a9a' : '#9a9a9a'
     const color = displayMode === 'incumbent' ? incumbentColor : projectedColor
-    const { electedParties } = getElectedParties(projection, vacancies)
+    const { electedParties } = getElectedParties(activeProjection, vacancies)
     if (displayMode !== 'incumbent' && electedParties.length >= 2) {
       const primaryColor = PARTY_COLORS[electedParties[0][0]] || color
       const secondaryColor = PARTY_COLORS[electedParties[1][0]] || '#9a9a9a'
@@ -1004,9 +1011,14 @@ export default function LocalMap({
       seatAllocation: projectedSeatAllocation,
       electedParties: projectedElectedParties,
     } = getElectedParties(projectedProjection, vacancies)
-    if (displayMode !== 'incumbent' && electedParties.length >= 2 && 'setStyle' in layer) {
-      const primaryColor = PARTY_COLORS[electedParties[0][0]] || projection.color || '#ccc'
-      const secondaryColor = PARTY_COLORS[electedParties[1][0]] || '#9a9a9a'
+    const displaySeatAllocation =
+      displayMode === 'projected' ? projectedSeatAllocation : seatAllocation
+    const displayElectedParties =
+      displayMode === 'projected' ? projectedElectedParties : electedParties
+    const displayProjection = displayMode === 'projected' ? projectedProjection : projection
+    if (displayMode !== 'incumbent' && displayElectedParties.length >= 2 && 'setStyle' in layer) {
+      const primaryColor = PARTY_COLORS[displayElectedParties[0][0]] || displayProjection.color || '#ccc'
+      const secondaryColor = PARTY_COLORS[displayElectedParties[1][0]] || '#9a9a9a'
       const id = ensurePartyStripePattern(primaryColor, secondaryColor)
       if (id) {
         ;(layer as any).setStyle({ fillColor: `url(#${id})` })
