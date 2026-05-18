@@ -28,6 +28,7 @@ type WardMapEntry = {
   wardName?: string
   prevWinner?: string | null
   seatAllocation?: Record<string, number>
+  seatsContested?: number
 }
 
 function formatDisplayPartyLabel(party: string) {
@@ -994,10 +995,15 @@ export default function LocalMap({
       .sort((a, b) => b.value - a.value)
       .slice(0, 3)
     const vacancies =
+      resultsProjection?.seatsContested ||
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
       1
     const { seatAllocation, electedParties } = getElectedParties(projection, vacancies)
+    const {
+      seatAllocation: projectedSeatAllocation,
+      electedParties: projectedElectedParties,
+    } = getElectedParties(projectedProjection, vacancies)
     if (displayMode !== 'incumbent' && electedParties.length >= 2 && 'setStyle' in layer) {
       const primaryColor = PARTY_COLORS[electedParties[0][0]] || projection.color || '#ccc'
       const secondaryColor = PARTY_COLORS[electedParties[1][0]] || '#9a9a9a'
@@ -1016,9 +1022,9 @@ export default function LocalMap({
       .join('<br/>')
     const projectedPopupLines = projectedSorted
       .map(entry => {
-        const seats = (projectedProjection?.seatAllocation?.[entry.party] || seatAllocation[entry.party] || 0)
+        const seats = projectedSeatAllocation[entry.party] || 0
         const suffix =
-          electedParties.length >= 2 && seats > 0 ? ` (${getSeatAllocationLabel(seats)})` : ''
+          projectedElectedParties.length >= 2 && seats > 0 ? ` (${getSeatAllocationLabel(seats)})` : ''
         return `${formatDisplayPartyLabel(entry.party)}: ${Math.round(entry.value)}%${suffix}`
       })
       .join('<br/>')
