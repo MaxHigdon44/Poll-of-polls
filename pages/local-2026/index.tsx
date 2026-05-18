@@ -1115,6 +1115,18 @@ function getLocalResultsWardAliases(council: string, wardName: string) {
     }
   }
 
+  if (councilKey === normalizeCouncilName('South Tyneside')) {
+    if (wardKey === normalizeName('Cleadon Village and East Boldon')) {
+      aliases.add(normalizeName('Cleadon and East Boldon'))
+    }
+    if (wardKey === normalizeName('Cleadon Park and Harton Moor')) {
+      aliases.add(normalizeName('Cleadon Park'))
+    }
+    if (wardKey === normalizeName('Horsley Hill and Westoe Crown')) {
+      aliases.add(normalizeName('Horsley Hill'))
+    }
+  }
+
   return Array.from(aliases)
 }
 
