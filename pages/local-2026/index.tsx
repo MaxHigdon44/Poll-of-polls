@@ -1127,6 +1127,24 @@ function getLocalResultsWardAliases(council: string, wardName: string) {
     }
   }
 
+  if (councilKey === normalizeCouncilName('Calderdale')) {
+    if (wardKey === normalizeName('Greetland')) {
+      aliases.add(normalizeName('Greetland and Stainland'))
+    }
+    if (wardKey === normalizeName('Halifax Town')) {
+      aliases.add(normalizeName('Town'))
+    }
+    if (wardKey === normalizeName('Hebden Bridge & Todmorden East')) {
+      aliases.add(normalizeName('Calder'))
+    }
+    if (wardKey === normalizeName('Salterhebble, Southowram & Skircoat Green')) {
+      aliases.add(normalizeName('Skircoat'))
+    }
+    if (wardKey === normalizeName('Todmorden West')) {
+      aliases.add(normalizeName('Todmorden'))
+    }
+  }
+
   return Array.from(aliases)
 }
 
