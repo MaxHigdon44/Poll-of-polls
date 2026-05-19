@@ -907,9 +907,9 @@ export default function LocalMap({
       resultsWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
       null
     const vacancies =
-      resultsProjection?.seatsContested ||
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
+      resultsProjection?.seatsContested ||
       1
     if (displayMode === 'results' && !resultsProjection) {
       return {
@@ -1003,9 +1003,9 @@ export default function LocalMap({
       .sort((a, b) => b.value - a.value)
       .slice(0, 3)
     const vacancies =
-      resultsProjection?.seatsContested ||
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
+      resultsProjection?.seatsContested ||
       1
     const { seatAllocation, electedParties } = getElectedParties(projection, vacancies)
     const {

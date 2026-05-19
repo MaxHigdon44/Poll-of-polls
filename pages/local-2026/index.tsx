@@ -1298,25 +1298,30 @@ const PROJECTED_COUNCIL_COMPOSITION_OVERRIDES: Record<
 > = {
   [normalizeCouncilName('Calderdale')]: {
     totals: {
-      Reform: 24,
+      Reform: 26,
       Labour: 7,
       Conservative: 11,
       'Liberal Democrat': 3,
       WP: 3,
-      Green: 3,
+      Green: 4,
     },
     contestedTotals: {
-      Reform: 24,
+      Reform: 26,
       Labour: 7,
       Conservative: 11,
       'Liberal Democrat': 3,
       WP: 3,
-      Green: 3,
+      Green: 4,
     },
   },
 }
 
 const MIXED_ALL_OUT_SEAT_OVERRIDES: Record<string, Record<string, number>> = {
+  calderdale: {
+    'northowram and shelf': 4,
+    ovenden: 4,
+    warley: 4,
+  },
   birmingham: {
     'acocks green': 2,
     'alum rock': 2,
