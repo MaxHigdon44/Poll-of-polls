@@ -1145,6 +1145,30 @@ function getLocalResultsWardAliases(council: string, wardName: string) {
     }
   }
 
+  if (councilKey === normalizeCouncilName('Walsall')) {
+    if (wardKey === normalizeName('Beechdale, Leamore & Reedswood')) {
+      aliases.add(normalizeName('Birchills-Leamore'))
+    }
+    if (wardKey === normalizeName('Bloxwich East & Blakenall Heath')) {
+      aliases.add(normalizeName('Bloxwich East'))
+    }
+    if (wardKey === normalizeName('Harden, Goscote & Ryecroft')) {
+      aliases.add(normalizeName('Blakenall'))
+    }
+    if (wardKey === normalizeName('New Invention')) {
+      aliases.add(normalizeName('Willenhall North'))
+    }
+    if (wardKey === normalizeName('Palfrey & The Delves')) {
+      aliases.add(normalizeName('Palfrey'))
+    }
+    if (wardKey === normalizeName("St Matthew's")) {
+      aliases.add(normalizeName('St. Matthews'))
+    }
+    if (wardKey === normalizeName('Willenhall')) {
+      aliases.add(normalizeName('Willenhall South'))
+    }
+  }
+
   return Array.from(aliases)
 }
 
@@ -1261,6 +1285,33 @@ const ACTUAL_COUNCIL_COMPOSITION_OVERRIDES: Record<
       'Liberal Democrat': 15,
       Conservative: 12,
       Reform: 3,
+    },
+  },
+}
+
+const PROJECTED_COUNCIL_COMPOSITION_OVERRIDES: Record<
+  string,
+  {
+    totals: Record<string, number>
+    contestedTotals?: Record<string, number>
+  }
+> = {
+  [normalizeCouncilName('Calderdale')]: {
+    totals: {
+      Reform: 24,
+      Labour: 7,
+      Conservative: 11,
+      'Liberal Democrat': 3,
+      WP: 3,
+      Green: 3,
+    },
+    contestedTotals: {
+      Reform: 24,
+      Labour: 7,
+      Conservative: 11,
+      'Liberal Democrat': 3,
+      WP: 3,
+      Green: 3,
     },
   },
 }
@@ -2589,6 +2640,8 @@ export default function Local2026Page() {
     )
     const actualCompositionOverride =
       controlSuffix === '' ? ACTUAL_COUNCIL_COMPOSITION_OVERRIDES[normalizedTarget] : null
+    const projectedCompositionOverride =
+      controlSuffix !== '' ? PROJECTED_COUNCIL_COMPOSITION_OVERRIDES[normalizedTarget] : null
     const wardIncumbents = previousRow?.wardIncumbents || null
     const normalizedWardIncumbents = new Map<string, string>(
       Object.entries(wardIncumbents || {}).map(([wardName, party]) => [
@@ -2883,6 +2936,18 @@ export default function Local2026Page() {
           delete adjustedContestedTotals[key]
         })
         Object.entries(actualCompositionOverride.contestedTotals).forEach(([party, seats]) => {
+          adjustedContestedTotals[party] = seats
+        })
+      }
+    }
+
+    if (projectedCompositionOverride) {
+      projectedTotals = normalizeTotalsToTotal(totalSeats, projectedCompositionOverride.totals)
+      if (projectedCompositionOverride.contestedTotals) {
+        Object.keys(adjustedContestedTotals).forEach(key => {
+          delete adjustedContestedTotals[key]
+        })
+        Object.entries(projectedCompositionOverride.contestedTotals).forEach(([party, seats]) => {
           adjustedContestedTotals[party] = seats
         })
       }
