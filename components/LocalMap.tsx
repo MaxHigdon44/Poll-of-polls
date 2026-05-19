@@ -907,6 +907,7 @@ export default function LocalMap({
       resultsWardMapByWardName?.get(normalizeMapName(getWardDisplayName(feature))) ||
       null
     const vacancies =
+      resultsProjection?.seatsContested ||
       (wardCode ? wardVacancies?.get(wardCode) : 0) ||
       (wardNameKey ? wardVacanciesByName?.get(wardNameKey) : 0) ||
       1
