@@ -1169,6 +1169,72 @@ function getLocalResultsWardAliases(council: string, wardName: string) {
     }
   }
 
+  if (councilKey === normalizeCouncilName('Essex')) {
+    if (wardKey === normalizeName('Colchester Abbey')) {
+      aliases.add(normalizeName('Abbey'))
+    }
+    if (wardKey === normalizeName('Colchester Lexden')) {
+      aliases.add(normalizeName('Drury'))
+    }
+    if (wardKey === normalizeName('Colchester North')) {
+      aliases.add(normalizeName('Mile End & Highwoods'))
+    }
+    if (wardKey === normalizeName("Colchester St John's")) {
+      aliases.add(normalizeName('Parsons Heath & East Gates'))
+    }
+    if (wardKey === normalizeName('Pitsea')) {
+      aliases.add(normalizeName('Basildon Pitsea'))
+    }
+    if (wardKey === normalizeName('Westley Heights')) {
+      aliases.add(normalizeName('Basildon Westley Heights'))
+    }
+    if (wardKey === normalizeName('Loughton South & Buckhurst Hill West')) {
+      aliases.add(normalizeName('Buckhurst Hill & Loughton South'))
+    }
+    if (wardKey === normalizeName('Chigwell & Buckhurst Hill East')) {
+      aliases.add(normalizeName('Chigwell & Loughton Broadway'))
+    }
+    if (wardKey === normalizeName('Clacton South')) {
+      aliases.add(normalizeName('Clacton East'))
+    }
+    if (wardKey === normalizeName('Clacton West & St Osyth')) {
+      aliases.add(normalizeName('Clacton West'))
+    }
+    if (wardKey === normalizeName('Great Baddow & Galleywood')) {
+      aliases.add(normalizeName('Great Baddow'))
+    }
+    if (wardKey === normalizeName('Maldon Town & Heybridge')) {
+      aliases.add(normalizeName('Heybridge & Tollesbury'))
+    }
+    if (wardKey === normalizeName('Maldon Rural South')) {
+      aliases.add(normalizeName('Maldon'))
+    }
+    if (wardKey === normalizeName('Colchester Maypole')) {
+      aliases.add(normalizeName('Maypole'))
+    }
+    if (wardKey === normalizeName('Loughton North')) {
+      aliases.add(normalizeName('Loughton Central'))
+    }
+    if (wardKey === normalizeName('Burnham & Southminster')) {
+      aliases.add(normalizeName('Southminster'))
+    }
+    if (wardKey === normalizeName('Stanway & Marks Tey')) {
+      aliases.add(normalizeName('Stanway & Pyefleet'))
+    }
+    if (wardKey === normalizeName('Three Fields & Great Notley')) {
+      aliases.add(normalizeName('Three Fields With Great Notley'))
+    }
+    if (wardKey === normalizeName('Woodham Ferrers')) {
+      aliases.add(normalizeName('South Woodham Ferrers'))
+    }
+    if (wardKey === normalizeName('Witham Town')) {
+      aliases.add(normalizeName('Witham Southern'))
+    }
+    if (wardKey === normalizeName('Witham West & Rural')) {
+      aliases.add(normalizeName('Witham Northern'))
+    }
+  }
+
   return Array.from(aliases)
 }
 
@@ -1240,6 +1306,30 @@ const ACTUAL_COUNCIL_COMPOSITION_OVERRIDES: Record<
       'Liberal Democrat': 6,
       Independent: 4,
       Labour: 1,
+    },
+  },
+  [normalizeCouncilName('Essex')]: {
+    totals: {
+      Reform: 53,
+      Conservative: 13,
+      'Liberal Democrat': 5,
+      Independent: 2,
+      Labour: 1,
+      Green: 1,
+      'The People’s Independent Party': 1,
+      'Residents for Uttlesford': 1,
+      Vacant: 1,
+    },
+    contestedTotals: {
+      Reform: 53,
+      Conservative: 13,
+      'Liberal Democrat': 5,
+      Independent: 2,
+      Labour: 1,
+      Green: 1,
+      'The People’s Independent Party': 1,
+      'Residents for Uttlesford': 1,
+      Vacant: 1,
     },
   },
   [normalizeCouncilName('Hart')]: {
